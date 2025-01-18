@@ -94,8 +94,17 @@ LexerNodeArray lexer(char *str) {
       } else if (c == '*') {
         lexerPushClear(&result, &result_size, iter - 1, &node_str_begin,
                        &node_token, LEXER_TOKEN_NONE);
-        printLog("Not implemented"); // TODO: implement it
-        exit(1);
+        ++iter;
+        int in = 1;
+        for (; in != 0; ++iter) {
+          if (*iter == '*' && *(iter + 1) == '/') {
+            --in;
+          } else if (*iter == '/' && *(iter + 1) == '*') {
+            ++in;
+          } else if (*iter == '\0') {
+            goto RETURN_ERROR;
+          }
+        }
       }
     }
     if (isSpace(c)) {
@@ -121,6 +130,7 @@ LexerNodeArray lexer(char *str) {
       lexerPushClear(&result, &result_size, iter, &node_str_begin, &node_token,
                      LEXER_TOKEN_SYMBOL);
     } else {
+    RETURN_ERROR:
       free(result.data);
       printLog("Unexpected character '%c' at position %ld", c, iter - str);
       return LEXER_NODE_ARRAY_ERROR;
