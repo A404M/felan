@@ -1,3 +1,8 @@
 main :: () -> void {
   print;
 };
+
+a :: () -> void {
+  print;
+  print;
+};

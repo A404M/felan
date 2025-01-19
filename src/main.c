@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int runWithPrint(const char *filePath) {
+int runWithPrint(const char *filePath, const char *outFilePath) {
   char *code = readWholeFile(filePath);
   if (code == NULL) {
     return 1;
@@ -49,11 +49,12 @@ int runWithPrint(const char *filePath) {
 
   char *fasm = codeGeneratorToFlatASM(codes);
   printf("%s", fasm);
-  if (codeGeneratorFlatASMExec("build/test-file", fasm)) {
-    system("./build/test-file");
+  if (codeGeneratorFlatASMExec(outFilePath, fasm)) {
+    system(outFilePath);
   }
 
   free(fasm);
+  codeGeneratorDelete(codes);
   astTreeRootDelete(astTree);
   parserNodeDelete(parsedRoot);
   lexerNodeArrayDestroy(lexed);
@@ -61,7 +62,7 @@ int runWithPrint(const char *filePath) {
   return 0;
 }
 
-int run(const char *filePath) {
+int run(const char *filePath, const char *outFilePath) {
   char *code = readWholeFile(filePath);
   if (code == NULL) {
     return 1;
@@ -98,11 +99,12 @@ int run(const char *filePath) {
   }
 
   char *fasm = codeGeneratorToFlatASM(codes);
-  if (codeGeneratorFlatASMExec("build/test-file", fasm)) {
-    system("./build/test-file");
+  if (codeGeneratorFlatASMExec(outFilePath, fasm)) {
+    system(outFilePath);
   }
 
   free(fasm);
+  codeGeneratorDelete(codes);
   astTreeRootDelete(astTree);
   parserNodeDelete(parsedRoot);
   lexerNodeArrayDestroy(lexed);
@@ -111,13 +113,10 @@ int run(const char *filePath) {
 }
 
 int main(int argc, char *argv[]) {
-  (void)argc;
-  (void)argv;
-
-  if (argc < 2) {
+  if (argc < 3) {
     printLog("Too few args");
     return 1;
   }
 
-  return runWithPrint(argv[1]);
+  return runWithPrint(argv[1], argv[2]);
 }

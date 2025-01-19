@@ -6,6 +6,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+void codeGeneratorDelete(CodeGeneratorCodes *code) {
+  for (size_t i = 0; i < code->codes_size; ++i) {
+    continue;
+  }
+  free(code->codes);
+  free(code);
+}
+
 CodeGeneratorCode createGenerateCode(char *label_begin, char *label_end,
                                      CodeGeneratorInstruction instruction) {
   CodeGeneratorCode code = {
@@ -119,7 +127,6 @@ char *codeGeneratorToFlatASM(const CodeGeneratorCodes *codes) {
   size_t fasm_size = TEMPLATE_LEN + 1;
   char *fasm = a404m_malloc(fasm_size * sizeof(*fasm));
   size_t fasm_inserted = 0;
-  fasm[0] = '\0';
 
   codeGeneratorAppendFlatASMCommand(&fasm, &fasm_size, &fasm_inserted, TEMPLATE,
                                     TEMPLATE_LEN);
@@ -165,6 +172,7 @@ bool codeGeneratorFlatASMExec(const char *filePath, const char *fasm) {
   FILE *file = fopen(asmFilePath, "w");
 
   if (file == NULL) {
+    free(asmFilePath);
     return false;
   }
 
@@ -174,6 +182,7 @@ bool codeGeneratorFlatASMExec(const char *filePath, const char *fasm) {
 
   char *command;
   asprintf(&command, "fasm -m 102400 \"%s\" \"%s\"", asmFilePath, filePath);
+  free(asmFilePath);
 
   if (system(command) != 0) {
     free(command);
@@ -187,6 +196,7 @@ bool codeGeneratorFlatASMExec(const char *filePath, const char *fasm) {
     free(command);
     return false;
   }
+  free(command);
 
   return true;
 }

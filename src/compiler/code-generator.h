@@ -20,6 +20,8 @@ typedef struct CodeGeneratorCodes {
   size_t codes_size;
 } CodeGeneratorCodes;
 
+void codeGeneratorDelete(CodeGeneratorCodes *code);
+
 CodeGeneratorCode createGenerateCode(char *label_begin, char *label_end,
                                    CodeGeneratorInstruction instruction);
 

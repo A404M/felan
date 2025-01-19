@@ -1,3 +1,5 @@
+PROJECT_NAME := felan
+
 CC := gcc
 # CC := tcc
 
@@ -16,11 +18,11 @@ NC := \033[0m
 INC_DIRS := $(SRC_DIR)
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
-CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -O3
+# CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -O3
 # CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -Oz
-# CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -g
+CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -g
 
-EXEC_FILE := $(BUILD_DIR)/felan
+EXEC_FILE := $(BUILD_DIR)/$(PROJECT_NAME)
 
 all: $(EXEC_FILE)
 
@@ -49,10 +51,10 @@ gdb-run: $(EXEC_FILE)
 
 .PHONY: test
 test: $(EXEC_FILE)
-	$(EXEC_FILE) test/main.felan
+	$(EXEC_FILE) test/main.felan build/out
 
 val-test: $(EXEC_FILE)
-	valgrind --log-file="val.log" --leak-check=full --track-origins=yes --show-leak-kinds=all -s $(EXEC_FILE) test/main.felan
+	valgrind --log-file="val.log" --leak-check=full --track-origins=yes --show-leak-kinds=all -s $(EXEC_FILE) test/main.felan build/out
 
 # $@ = left hand of :
 # $< = right hand of : first one of them

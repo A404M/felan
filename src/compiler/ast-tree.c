@@ -59,6 +59,8 @@ void astTreeDestroy(AstTree tree) {
     for (size_t i = 0; i < metadata->expressions_size; ++i) {
       astTreeDestroy(metadata->expressions[i]);
     }
+    free(metadata->expressions);
+    free(metadata);
   case AST_TREE_TOKEN_KEYWORD_PRINT:
     return;
   case AST_TREE_TOKEN_NONE:
@@ -75,6 +77,7 @@ void astTreeDelete(AstTree *tree) {
 void astTreeRootDelete(AstTreeRoot *root) {
   for (size_t i = 0; i < root->variables.size; ++i) {
     astTreeDelete(root->variables.data[i]->value);
+    free(root->variables.data[i]);
   }
   free(root->variables.data);
   free(root);
