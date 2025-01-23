@@ -18,6 +18,7 @@ typedef enum ParserToken {
   PARSER_TOKEN_SYMBOL_EOL,
   PARSER_TOKEN_SYMBOL_CURLY_BRACKET,
   PARSER_TOKEN_SYMBOL_PARENTHESIS,
+  PARSER_TOKEN_SYMBOL_COMMA,
 
   PARSER_TOKEN_FUNCTION_DEFINITION,
 
@@ -82,6 +83,7 @@ ParserNode *parserIdentifier(LexerNode *node, ParserNode *parent);
 ParserNode *parserVoid(LexerNode *node, ParserNode *parent);
 ParserNode *parserPrint(LexerNode *node, ParserNode *parent);
 ParserNode *parserEol(LexerNode *node, LexerNode *begin, ParserNode *parent);
+ParserNode *parserComma(LexerNode *node, LexerNode *begin, ParserNode *parent);
 ParserNode *parserParenthesis(LexerNode *closing, LexerNode *begin,
                               ParserNode *parent);
 ParserNode *parserCurlyBrackets(LexerNode *closing, LexerNode *begin,
@@ -90,6 +92,8 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
                            ParserNode *parent);
 ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
                            ParserNode *parent);
+
+bool isAllArguments(const ParserNodeArray *nodes);
 
 bool isExpression(ParserNode *node);
 bool isType(ParserNode *node);

@@ -2,7 +2,7 @@ main :: () -> void {
   print;
 };
 
-a :: () -> void {
+a :: (b:void,c:void) -> void {
   print;
   print;
 };

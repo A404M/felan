@@ -23,12 +23,13 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET",
     "LEXER_TOKEN_SYMBOL_FUNCTION_ARROW",
     "LEXER_TOKEN_SYMBOL_COLON",
+    "LEXER_TOKEN_SYMBOL_COMMA",
 
     "LEXER_TOKEN_NONE",
 };
 
 const char *LEXER_SYMBOL_STRINGS[] = {
-    ";", "(", ")", "{", "}", "->", ":",
+    ";", "(", ")", "{", "}", "->", ":", ",",
 };
 const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_EOL,
@@ -38,6 +39,7 @@ const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET,
     LEXER_TOKEN_SYMBOL_FUNCTION_ARROW,
     LEXER_TOKEN_SYMBOL_COLON,
+    LEXER_TOKEN_SYMBOL_COMMA,
 };
 const size_t LEXER_SYMBOL_SIZE =
     sizeof(LEXER_SYMBOL_TOKENS) / sizeof(*LEXER_SYMBOL_TOKENS);
@@ -178,6 +180,7 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET:
   case LEXER_TOKEN_SYMBOL_FUNCTION_ARROW:
   case LEXER_TOKEN_SYMBOL_COLON:
+  case LEXER_TOKEN_SYMBOL_COMMA:
     if (*array_size == array->size) {
       *array_size += 1 + *array_size / 2;
       array->data =

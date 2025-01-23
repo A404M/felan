@@ -22,6 +22,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_SYMBOL_EOL",
     "PARSER_TOKEN_SYMBOL_CURLY_BRACKET",
     "PARSER_TOKEN_SYMBOL_PARENTHESIS",
+    "PARSER_TOKEN_SYMBOL_COMMA",
 
     "PARSER_TOKEN_FUNCTION_DEFINITION",
 
@@ -34,8 +35,8 @@ static constexpr ParserOrder PARSER_ORDER[] = {
         .size = 2,
         .data =
             {
-                LEXER_TOKEN_IDENTIFIER,
-                LEXER_TOKEN_KEYWORD_VOID,
+                LEXER_TOKEN_SYMBOL_CLOSE_PARENTHESIS,
+                LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET,
             },
     },
     {
@@ -43,8 +44,8 @@ static constexpr ParserOrder PARSER_ORDER[] = {
         .size = 2,
         .data =
             {
-                LEXER_TOKEN_SYMBOL_CLOSE_PARENTHESIS,
-                LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET,
+                LEXER_TOKEN_IDENTIFIER,
+                LEXER_TOKEN_KEYWORD_VOID,
             },
     },
     {
@@ -66,10 +67,11 @@ static constexpr ParserOrder PARSER_ORDER[] = {
     },
     {
         .ltr = true,
-        .size = 1,
+        .size = 2,
         .data =
             {
                 LEXER_TOKEN_SYMBOL_EOL,
+                LEXER_TOKEN_SYMBOL_COMMA,
             },
     },
 };
@@ -129,6 +131,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
       printf(" ");
   }
     goto RETURN_SUCCESS;
+  case PARSER_TOKEN_SYMBOL_COMMA:
   case PARSER_TOKEN_SYMBOL_EOL: {
     const ParserNodeEOLMetadata *metadata = node->metadata;
     printf(",\n");
@@ -201,6 +204,7 @@ void parserNodeDelete(ParserNode *node) {
     free(metadata);
   }
     goto RETURN_SUCCESS;
+  case PARSER_TOKEN_SYMBOL_COMMA:
   case PARSER_TOKEN_SYMBOL_EOL: {
     ParserNodeEOLMetadata *metadata = node->metadata;
     parserNodeDelete(metadata);
@@ -271,34 +275,36 @@ bool parserNodeArray(LexerNode *begin, LexerNode *end, ParserNode *parent) {
           if (parserNode == NULL) {
             goto RETURN_ERROR;
           }
-          if (parsedNodes->size == parsedNodes_size) {
-            parsedNodes_size += parsedNodes_size / 2 + 1;
-            parsedNodes->data =
-                a404m_realloc(parsedNodes->data,
-                              sizeof(*parsedNodes->data) * parsedNodes_size);
-          }
-          parsedNodes->data[parsedNodes->size] = parserNode;
-          parsedNodes->size += 1;
         }
       }
     }
   }
 
-  size_t inserted = 0;
-  for (size_t i = 0; i < parsedNodes->size; ++i) {
-    ParserNode *parserNode = parsedNodes->data[i];
-    if (parserNode->parent == parent) {
-      // TODO: check here
-      if (inserted != i) {
-        parsedNodes->data[inserted] = parserNode;
-      }
-      ++inserted;
+  for (LexerNode *iter = begin; iter < end; ++iter) {
+    ParserNode *pNode = iter->parserNode;
+    if (pNode->parent != parent) {
+      continue;
+    } else if (pNode == NULL) {
+      printLog("Bad child");
+      goto RETURN_ERROR;
     }
+    for (size_t i = 0; i < parsedNodes->size; ++i) {
+      if (parsedNodes->data[i] == pNode) {
+        goto CONTINUE;
+      }
+    }
+    if (parsedNodes->size == parsedNodes_size) {
+      parsedNodes_size += parsedNodes_size / 2 + 1;
+      parsedNodes->data = a404m_realloc(
+          parsedNodes->data, sizeof(*parsedNodes->data) * parsedNodes_size);
+    }
+    parsedNodes->data[parsedNodes->size] = pNode;
+    parsedNodes->size += 1;
+  CONTINUE:
   }
 
-  parsedNodes->data =
-      a404m_realloc(parsedNodes->data, inserted * sizeof(*parsedNodes->data));
-  parsedNodes->size = inserted;
+  parsedNodes->data = a404m_realloc(
+      parsedNodes->data, parsedNodes->size * sizeof(*parsedNodes->data));
 
   parent->metadata = parsedNodes;
 
@@ -332,6 +338,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserFunction(node, begin, end, parent);
   case LEXER_TOKEN_SYMBOL_COLON:
     return parserVariable(node, begin, end, parent);
+  case LEXER_TOKEN_SYMBOL_COMMA:
+    return parserComma(node, begin, parent);
   case LEXER_TOKEN_NONE:
   case LEXER_TOKEN_NUMBER:
   case LEXER_TOKEN_SYMBOL:
@@ -393,6 +401,25 @@ ParserNode *parserEol(LexerNode *node, LexerNode *begin, ParserNode *parent) {
     parserNodeBefore->parent = parserNode;
   }
   return parserNode;
+}
+
+ParserNode *parserComma(LexerNode *node, LexerNode *begin, ParserNode *parent) {
+  LexerNode *nodeBefore = node - 1;
+  ParserNode *parserNodeBefore;
+  if (nodeBefore < begin || nodeBefore->parserNode == NULL) {
+    printLog("Bad Comma after %s", LEXER_TOKEN_STRINGS[nodeBefore->token]);
+    return NULL;
+  } else {
+    parserNodeBefore = getUntilCommonParent(nodeBefore->parserNode, parent);
+    if (parserNodeBefore == NULL || !isExpression(parserNodeBefore)) {
+      printLog("Bad Comma");
+      return NULL;
+    }
+  }
+  printLog("%s", PARSER_TOKEN_STRINGS[parserNodeBefore->token]);
+  return node->parserNode = parserNodeBefore->parent = newParserNode(
+             PARSER_TOKEN_SYMBOL_COMMA, node->str_begin, node->str_end,
+             (ParserNodeEOLMetadata *)parserNodeBefore, parent);
 }
 
 ParserNode *parserParenthesis(LexerNode *closing, LexerNode *begin,
@@ -462,8 +489,6 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
   LexerNode *paramsNode = node - 1;
   LexerNode *retTypeNode = node + 1;
   LexerNode *bodyNode = node + 2;
-  // TODO: if body is not there then it is a function type not a function
-  // definition
   if (paramsNode < begin || paramsNode->parserNode == NULL) {
   NO_PARAMS:
     printLog("No params");
@@ -480,20 +505,34 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
   if (bodyNode >= end || bodyNode->parserNode == NULL) {
     body = NULL;
     // TODO: implement
+    // if body is not there then it is a function type not a function
+    // definition
     printLog("Not implemented");
     return NULL;
   } else {
     body = getUntilCommonParent(bodyNode->parserNode, parent);
+    if (body == NULL || body->token != PARSER_TOKEN_SYMBOL_CURLY_BRACKET) {
+      printLog("Bad body");
+      return NULL;
+    }
+    ParserNodeArray *bodyArray = body->metadata;
+    for (size_t i = 0; i < bodyArray->size; ++i) {
+      if (bodyArray->data[i]->token != PARSER_TOKEN_SYMBOL_EOL) {
+        printLog("Bad body %s",
+                 PARSER_TOKEN_STRINGS[bodyArray->data[i]->token]);
+        return NULL;
+      }
+    }
   }
 
-  // TODO: check parenthesis
   if (params->token != PARSER_TOKEN_SYMBOL_PARENTHESIS) {
     goto NO_PARAMS;
   } else if (!isType(retType)) {
     goto NO_RETURN_TYPE;
+  } else if (!isAllArguments(params->metadata)) {
+    printLog("Bad arguments");
+    return NULL;
   }
-
-  // TODO: check body
 
   ParserNodeFunctionDefnitionMetadata *metadata =
       a404m_malloc(sizeof(*metadata));
@@ -509,10 +548,14 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
 
 ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
                            ParserNode *parent) {
+  ParserNode *variableNode = a404m_malloc(sizeof(*variableNode));
+  variableNode->token = PARSER_TOKEN_CONSTANT;
+  variableNode->parent = parent;
+
   LexerNode *nameNode = node - 1;
   if (nameNode < begin || nameNode->parserNode == NULL) {
     printLog("No name");
-    return NULL;
+    goto RETURN_ERROR;
   }
 
   ParserNode *name = getUntilCommonParent(nameNode->parserNode, parent);
@@ -520,37 +563,80 @@ ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
   if (name->token != PARSER_TOKEN_IDENTIFIER) {
     printLog("Name should be identifier");
     return NULL;
+  } else {
+    name->parent = variableNode;
+    variableNode->str_begin = name->str_begin;
   }
 
   LexerNode *node1 = node + 1;
+  ParserNode *type;
 
-  if (node1 >= end || node1->token != LEXER_TOKEN_SYMBOL_COLON) {
+  if (node1 >= end) {
     printLog("Bad variable definition");
     return NULL;
+  } else if (node1->token == LEXER_TOKEN_SYMBOL_COLON) {
+    type = NULL;
+    node1->parserNode = variableNode;
+  } else if (node1->parserNode == NULL) {
+    printLog("Bad variable type with token '%s' %d",
+             LEXER_TOKEN_STRINGS[node1->token], node1->token);
+    return NULL;
+  } else {
+    type = getUntilCommonParent(node1->parserNode, parent);
+    if (type == NULL || !isType(type)) {
+      printLog("Bad variable type");
+      return NULL;
+    }
+    type->parent = variableNode;
+    printLog("Here is");
   }
 
   LexerNode *valueNode = node + 2;
+  ParserNode *value;
 
   if (valueNode >= end || valueNode->parserNode == NULL) {
-    printLog("No initialziation");
-    return NULL;
-  }
-
-  ParserNode *value = getUntilCommonParent(valueNode->parserNode, parent);
-
-  if (!isValue(value)) {
-    printLog("No value");
-    return NULL;
+    value = NULL;
+  } else {
+    value = getUntilCommonParent(valueNode->parserNode, parent);
+    if (!isValue(value)) {
+      printLog("No value");
+      return NULL;
+    }
+    value->parent = variableNode;
   }
 
   ParserNodeVariableMetadata *metadata = a404m_malloc(sizeof(*metadata));
   metadata->value = value;
   metadata->name = name;
-  metadata->type = NULL;
+  metadata->type = type;
 
-  return name->parent = node1->parserNode = value->parent = node->parserNode =
-             newParserNode(PARSER_TOKEN_CONSTANT, name->str_begin,
-                           value->str_end, metadata, parent);
+  variableNode->metadata = metadata;
+
+  if (value != NULL) {
+    variableNode->str_end = value->str_end;
+  } else {
+    variableNode->str_end = type->str_end;
+  }
+
+  return node->parserNode = variableNode;
+
+RETURN_ERROR:
+  free(variableNode);
+  return NULL;
+}
+
+bool isAllArguments(const ParserNodeArray *nodes) {
+  printLog("%d", nodes->size);
+  for (size_t i = 0; i < nodes->size; ++i) {
+    const ParserNode *node = nodes->data[i];
+    if (node->token != PARSER_TOKEN_SYMBOL_COMMA && i + 1 != nodes->size) {
+      printLog("%d %s %d %.*s", i, PARSER_TOKEN_STRINGS[node->token],
+               node->token, (int)(node->str_end - node->str_begin),
+               node->str_begin);
+      return false;
+    }
+  }
+  return true;
 }
 
 bool isExpression(ParserNode *node) {
@@ -566,6 +652,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_SYMBOL_EOL:
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
+  case PARSER_TOKEN_SYMBOL_COMMA:
     return false;
   case PARSER_TOKEN_NONE:
   }
@@ -586,6 +673,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_SYMBOL_EOL:
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
+  case PARSER_TOKEN_SYMBOL_COMMA:
     return false;
   case PARSER_TOKEN_NONE:
   }
@@ -606,6 +694,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_SYMBOL_EOL:
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
+  case PARSER_TOKEN_SYMBOL_COMMA:
     return false;
   case PARSER_TOKEN_NONE:
   }
