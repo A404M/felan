@@ -23,8 +23,20 @@ void astTreePrint(const AstTree *tree, int indent) {
       printf(" ");
     printf("arguments=[\n");
     for (size_t i = 0; i < metadata->arguments_size; ++i) {
-      // astTreePrint(metadata->arguments[i], indent + 1); // TODO: do it
-      printf(",\n");
+      for (int i = 0; i < indent + 1; ++i)
+        printf(" ");
+      printf("{name=%.*s,\n",
+             (int)(metadata->arguments[i].name_end -
+                   metadata->arguments[i].name_begin),
+             metadata->arguments[i].name_begin);
+      for (int i = 0; i < indent + 1; ++i)
+        printf(" ");
+      printf("type=\n");
+      astTreePrint(metadata->arguments[i].type, indent + 2);
+      printf("\n");
+      for (int i = 0; i < indent + 1; ++i)
+        printf(" ");
+      printf("},\n");
     }
     for (int i = 0; i < indent; ++i)
       printf(" ");
@@ -281,8 +293,10 @@ AstTree *astTreeParseFunction(ParserNode *parserNode,
 
     function->arguments[function->arguments_size].value = NULL;
     function->arguments[function->arguments_size].type = type;
-    function->arguments[function->arguments_size].name_begin = arg_metadata->name->str_begin;
-    function->arguments[function->arguments_size].name_end = arg_metadata->name->str_end;
+    function->arguments[function->arguments_size].name_begin =
+        arg_metadata->name->str_begin;
+    function->arguments[function->arguments_size].name_end =
+        arg_metadata->name->str_end;
     function->arguments_size += 1;
   }
 

@@ -63,6 +63,8 @@ CodeGeneratorCodes *codeGenerator(AstTreeRoot *astTreeRoot) {
           codes,
           createGenerateCode(NULL, NULL, CODE_GENERATOR_INSTRUCTION_PRINT));
       continue;
+    case AST_TREE_TOKEN_TYPE_FUNCTION:
+    case AST_TREE_TOKEN_TYPE_VOID:
     case AST_TREE_TOKEN_NONE:
     }
     printLog("Bad token %d", variable->value->token);
@@ -85,6 +87,8 @@ bool codeGeneratorAstTreeFunction(char *label_begin, char *label_end,
                                     CODE_GENERATOR_INSTRUCTION_PRINT));
       goto OK;
     case AST_TREE_TOKEN_FUNCTION:
+    case AST_TREE_TOKEN_TYPE_FUNCTION:
+    case AST_TREE_TOKEN_TYPE_VOID:
     case AST_TREE_TOKEN_NONE:
     }
     printLog("Bad token %d", tree.token);
