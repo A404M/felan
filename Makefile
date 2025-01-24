@@ -56,6 +56,9 @@ test: $(EXEC_FILE)
 val-test: $(EXEC_FILE)
 	valgrind --log-file="val.log" --leak-check=full --track-origins=yes --show-leak-kinds=all -s $(EXEC_FILE) test/main.felan build/out
 
+gdb-test: $(EXEC_FILE)
+	gdb $(EXEC_FILE) test/main.felan build/out
+
 # $@ = left hand of :
 # $< = right hand of : first one of them
 # $^ = right hand of : all

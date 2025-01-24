@@ -123,14 +123,11 @@ LexerNodeArray lexer(char *str) {
         lexerPushClear(&result, &result_size, iter, &node_str_begin,
                        &node_token, LEXER_TOKEN_NUMBER);
       }
-    } else if (isSymbol(c)) {
-      if (node_token != LEXER_TOKEN_SYMBOL) {
+    } else if (isSymbol(c) || isSingleSymbol(c)) {
+      if (node_token != LEXER_TOKEN_SYMBOL || isSingleSymbol(*node_str_begin)) {
         lexerPushClear(&result, &result_size, iter, &node_str_begin,
                        &node_token, LEXER_TOKEN_SYMBOL);
       }
-    } else if (isSingleSymbol(c)) {
-      lexerPushClear(&result, &result_size, iter, &node_str_begin, &node_token,
-                     LEXER_TOKEN_SYMBOL);
     } else {
     RETURN_ERROR:
       free(result.data);

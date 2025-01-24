@@ -73,10 +73,11 @@ CodeGeneratorCodes *codeGenerator(AstTreeRoot *astTreeRoot) {
 
 bool codeGeneratorAstTreeFunction(char *label_begin, char *label_end,
                                   AstTree astTree, CodeGeneratorCodes *codes) {
-  AstTreeScope *scope = astTree.metadata;
+  AstTreeFunction *metadata = astTree.metadata;
+  AstTreeScope scope = metadata->scope;
 
-  for (size_t i = 0; i < scope->expressions_size; ++i) {
-    AstTree tree = scope->expressions[i];
+  for (size_t i = 0; i < scope.expressions_size; ++i) {
+    AstTree tree = scope.expressions[i];
     switch (tree.token) {
     case AST_TREE_TOKEN_KEYWORD_PRINT:
       generateCodePushCode(

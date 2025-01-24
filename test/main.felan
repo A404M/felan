@@ -1,8 +1,3 @@
-main :: () -> void {
-  print;
-};
-
-a :: (b:void,c:void) -> void {
-  print;
+main : ()->void : () -> void {
   print;
 };
