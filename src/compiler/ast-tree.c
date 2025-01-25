@@ -123,30 +123,39 @@ void astTreeRootPrint(const AstTreeRoot *root) {
 void astTreeDestroy(AstTree tree) {
   switch (tree.token) {
   case AST_TREE_TOKEN_FUNCTION: {
-    AstTreeScope *metadata = tree.metadata;
-    for (size_t i = 0; i < metadata->expressions_size; ++i) {
-      astTreeDestroy(metadata->expressions[i]);
+    AstTreeFunction *metadata = tree.metadata;
+    for (size_t i = 0; i < metadata->scope.expressions_size; ++i) {
+      astTreeDestroy(metadata->scope.expressions[i]);
     }
-    free(metadata->expressions);
+    for (size_t i = 0; i < metadata->scope.variables_size; ++i) {
+      astTreeVariableDestroy(metadata->scope.variables[i]);
+    }
+    for (size_t i = 0; i < metadata->arguments_size; ++i) {
+      astTreeVariableDestroy(metadata->arguments[i]);
+    }
+    astTreeDelete(metadata->returnType);
+    free(metadata->scope.variables);
+    free(metadata->scope.expressions);
+    free(metadata->arguments);
     free(metadata);
   }
     return;
   case AST_TREE_TOKEN_KEYWORD_PRINT:
   case AST_TREE_TOKEN_TYPE_VOID:
-  case AST_TREE_TOKEN_IDENTIFIER:
     return;
   case AST_TREE_TOKEN_TYPE_FUNCTION: {
     AstTreeTypeFunction *metadata = tree.metadata;
     for (size_t i = 0; i < metadata->arguments_size; ++i) {
       astTreeDelete(metadata->arguments[i]);
     }
+    astTreeDelete(metadata->returnType);
     free(metadata->arguments);
-    free(metadata->returnType);
     free(metadata);
   }
     return;
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = tree.metadata;
+    astTreeDelete(metadata->function);
     for (size_t i = 0; i < metadata->parameters_size; ++i) {
       astTreeDelete(metadata->parameters[i]);
     }
@@ -154,11 +163,23 @@ void astTreeDestroy(AstTree tree) {
     free(metadata);
   }
     return;
+  case AST_TREE_TOKEN_IDENTIFIER: {
+    // AstTreeIdentifier *metadata = tree.metadata; // not needed
+  }
+    return;
   case AST_TREE_TOKEN_NONE:
-    break;
   }
   printLog("Bad token '%d'", tree.token);
   exit(1);
+}
+
+void astTreeVariableDestroy(AstTreeVariable variable) {
+  if (variable.value != NULL) {
+    astTreeDelete(variable.value);
+  }
+  if (variable.type != NULL) {
+    astTreeDelete(variable.type);
+  }
 }
 
 void astTreeDelete(AstTree *tree) {
@@ -168,7 +189,7 @@ void astTreeDelete(AstTree *tree) {
 
 void astTreeRootDelete(AstTreeRoot *root) {
   for (size_t i = 0; i < root->variables.size; ++i) {
-    astTreeDelete(root->variables.data[i]->value);
+    astTreeVariableDestroy(*root->variables.data[i]);
     free(root->variables.data[i]);
   }
   free(root->variables.data);
@@ -446,10 +467,7 @@ AstTree *astTreeParseTypeFunction(ParserNode *parserNode,
     goto RETURN_ERROR;
   }
 
-  AstTree *tree = a404m_malloc(sizeof(*tree));
-  tree->metadata = typeFunction;
-  tree->token = AST_TREE_TOKEN_TYPE_FUNCTION;
-  return tree;
+  return newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, typeFunction);
 
 RETURN_ERROR:
   return NULL;

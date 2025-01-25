@@ -9,7 +9,19 @@
 
 void codeGeneratorDelete(CodeGeneratorCodes *code) {
   for (size_t i = 0; i < code->codes_size; ++i) {
-    continue;
+    CodeGeneratorCode current = code->codes[i];
+    switch (current.instruction) {
+    case CODE_GENERATOR_INSTRUCTION_PRINT:
+    case CODE_GENERATOR_INSTRUCTION_RET:
+      continue;
+    case CODE_GENERATOR_INSTRUCTION_CALL: {
+      CodeGeneratorCall *metadata = current.metadata;
+      free(metadata);
+    }
+      continue;
+    }
+    printLog("Bad instruction %d", current.instruction);
+    exit(1);
   }
   free(code->codes);
   free(code);

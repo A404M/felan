@@ -68,6 +68,7 @@ void astTreePrint(const AstTree *tree, int indent);
 void astTreeRootPrint(const AstTreeRoot *root);
 
 void astTreeDestroy(AstTree tree);
+void astTreeVariableDestroy(AstTreeVariable variable);
 void astTreeDelete(AstTree *tree);
 void astTreeRootDelete(AstTreeRoot *root);
 
