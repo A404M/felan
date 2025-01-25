@@ -1,3 +1,10 @@
-main : (a:void)->void : (a:void) -> void {
+main : ()->void : () -> void {
+  a();
+  a();
+};
+
+a :: () -> void {
+  print;
+  print;
   print;
 };

@@ -22,6 +22,8 @@ typedef enum ParserToken {
 
   PARSER_TOKEN_FUNCTION_DEFINITION,
 
+  PARSER_TOKEN_FUNCTION_CALL,
+
   PARSER_TOKEN_NONE,
 } ParserToken;
 
@@ -63,9 +65,14 @@ typedef struct ParserNodeArray {
   size_t size;
 } ParserNodeArray;
 
+typedef struct ParserNodeFunctionCall {
+  ParserNode *function;
+  ParserNodeArray *params;
+} ParserNodeFunctionCall;
+
 typedef ParserNode ParserNodeEOLMetadata;
 
-void parserNodePrint(const ParserNode *node,int indent);
+void parserNodePrint(const ParserNode *node, int indent);
 void parserNodeDelete(ParserNode *node);
 
 ParserNode *parser(LexerNodeArray lexed);

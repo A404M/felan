@@ -8,6 +8,8 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_KEYWORD_PRINT,
   AST_TREE_TOKEN_TYPE_FUNCTION,
   AST_TREE_TOKEN_TYPE_VOID,
+  AST_TREE_TOKEN_FUNCTION_CALL,
+  AST_TREE_TOKEN_IDENTIFIER,
   AST_TREE_TOKEN_NONE,
 } AstTreeToken;
 
@@ -52,6 +54,14 @@ typedef struct AstTreeTypeFunction {
   AstTree *returnType;
 } AstTreeTypeFunction;
 
+typedef struct AstTreeFunctionCall {
+  AstTree *function;
+  AstTree **parameters;
+  size_t parameters_size;
+} AstTreeFunctionCall;
+
+typedef AstTreeVariable AstTreeIdentifier;
+
 extern const char *AST_TREE_TOKEN_STRINGS[];
 
 void astTreePrint(const AstTree *tree, int indent);
@@ -67,6 +77,8 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot);
 
 void pushVariable(AstTreeVariables *variables, size_t *variables_size,
                   AstTreeVariable *variable);
+AstTreeVariable *getVariable(AstTreeVariables *variables, size_t variables_size,
+                             char *name_begin, char *name_end);
 
 AstTree *astTreeParse(ParserNode *parserNode, AstTreeVariables *variables,
                       size_t variables_size);
@@ -78,6 +90,14 @@ AstTree *astTreeParseFunction(ParserNode *parserNode,
 AstTree *astTreeParseTypeFunction(ParserNode *parserNode,
                                   AstTreeVariables *variables,
                                   size_t variables_size);
+
+AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
+                                  AstTreeVariables *variables,
+                                  size_t variables_size);
+
+AstTree *astTreeParseIdentifier(ParserNode *parserNode,
+                                AstTreeVariables *variables,
+                                size_t variables_size);
 
 bool hasTypeOf(AstTree *value, AstTree *type);
 bool typeIsEqual(AstTree *type0, AstTree *type1);

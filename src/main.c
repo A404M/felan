@@ -77,5 +77,5 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  return runWithPrint(argv[1], argv[2]);
+  return run(argv[1], argv[2]);
 }

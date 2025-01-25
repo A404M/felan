@@ -6,6 +6,7 @@
 
 typedef enum CodeGeneratorInstruction : uint8_t {
   CODE_GENERATOR_INSTRUCTION_PRINT,
+  CODE_GENERATOR_INSTRUCTION_CALL,
   CODE_GENERATOR_INSTRUCTION_RET,
 } CodeGeneratorInstruction;
 
@@ -13,7 +14,13 @@ typedef struct CodeGeneratorCode {
   char *label_begin;
   char *label_end;
   CodeGeneratorInstruction instruction;
+  void *metadata;
 } CodeGeneratorCode;
+
+typedef struct CodeGeneratorCall {
+  char *label_begin;
+  char *label_end;
+} CodeGeneratorCall;
 
 typedef struct CodeGeneratorCodes {
   CodeGeneratorCode *codes;
@@ -23,7 +30,7 @@ typedef struct CodeGeneratorCodes {
 void codeGeneratorDelete(CodeGeneratorCodes *code);
 
 CodeGeneratorCode createGenerateCode(char *label_begin, char *label_end,
-                                   CodeGeneratorInstruction instruction);
+                                     CodeGeneratorInstruction instruction,void *metadata);
 
 CodeGeneratorCode *newGenerateCode(char *label_begin, char *label_end,
                                    CodeGeneratorInstruction instruction);
@@ -32,8 +39,9 @@ void generateCodePushCode(CodeGeneratorCodes *codes, CodeGeneratorCode code);
 
 CodeGeneratorCodes *codeGenerator(AstTreeRoot *astTreeRoot);
 
-bool codeGeneratorAstTreeFunction(char *label_begin,char *label_end,AstTree astTree, CodeGeneratorCodes *codes);
+bool codeGeneratorAstTreeFunction(char *label_begin, char *label_end,
+                                  AstTree astTree, CodeGeneratorCodes *codes);
 
 char *codeGeneratorToFlatASM(const CodeGeneratorCodes *codes);
 
-bool codeGeneratorFlatASMExec(const char *filePath,const char *fasm);
+bool codeGeneratorFlatASMExec(const char *filePath, const char *fasm);
