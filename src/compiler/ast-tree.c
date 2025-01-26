@@ -7,9 +7,10 @@
 #include <string.h>
 
 const char *AST_TREE_TOKEN_STRINGS[] = {
-    "AST_TREE_TOKEN_FUNCTION",  "AST_TREE_TOKEN_KEYWORD_PRINT",
-    "AST_TREE_TOKEN_NONE",      "AST_TREE_TOKEN_TYPE_FUNCTION",
-    "AST_TREE_TOKEN_TYPE_VOID",
+    "AST_TREE_TOKEN_FUNCTION",   "AST_TREE_TOKEN_KEYWORD_PRINT",
+    "AST_TREE_TOKEN_NONE",       "AST_TREE_TOKEN_TYPE_FUNCTION",
+    "AST_TREE_TOKEN_TYPE_VOID",  "AST_TREE_TOKEN_FUNCTION_CALL",
+    "AST_TREE_TOKEN_IDENTIFIER",
 };
 
 void astTreePrint(const AstTree *tree, int indent) {
@@ -116,7 +117,7 @@ void astTreeRootPrint(const AstTreeRoot *root) {
            (int)(variable->name_end - variable->name_begin),
            variable->name_begin);
     astTreePrint(variable->value, 1);
-    printf("\n},\n");
+    printf("\n}\n");
   }
 }
 
@@ -567,4 +568,27 @@ ERROR:
   exit(1);
 }
 
-bool typeIsEqual(AstTree *type0, AstTree *type1) { return true; }
+bool typeIsEqual(AstTree *type0, AstTree *type1) {
+  switch (type0->token) {
+  case AST_TREE_TOKEN_FUNCTION:
+  case AST_TREE_TOKEN_KEYWORD_PRINT:
+    return false;
+  case AST_TREE_TOKEN_TYPE_VOID:
+    return type1->token == AST_TREE_TOKEN_TYPE_VOID;
+  case AST_TREE_TOKEN_TYPE_FUNCTION:
+    if(type1->token != AST_TREE_TOKEN_TYPE_FUNCTION){
+        return false;
+      }
+    printLog("Not implemented yet");
+    exit(1);
+  case AST_TREE_TOKEN_FUNCTION_CALL:
+    printLog("Not implemented yet");
+    exit(1);
+  case AST_TREE_TOKEN_IDENTIFIER:
+    return type1->token == AST_TREE_TOKEN_IDENTIFIER &&
+           type0->metadata == type1->metadata;
+  case AST_TREE_TOKEN_NONE:
+  }
+  printLog("Bad token '%d'", type0->token);
+  exit(1);
+}
