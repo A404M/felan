@@ -2,14 +2,17 @@
 
 #include "compiler/parser.h"
 #include <stddef.h>
+#include <stdint.h>
 
 typedef enum AstTreeToken {
   AST_TREE_TOKEN_FUNCTION,
   AST_TREE_TOKEN_KEYWORD_PRINT,
+  AST_TREE_TOKEN_KEYWORD_PRINT_U64,
   AST_TREE_TOKEN_TYPE_FUNCTION,
   AST_TREE_TOKEN_TYPE_VOID,
   AST_TREE_TOKEN_FUNCTION_CALL,
   AST_TREE_TOKEN_IDENTIFIER,
+  AST_TREE_TOKEN_VALUE_U64,
   AST_TREE_TOKEN_NONE,
 } AstTreeToken;
 
@@ -62,6 +65,10 @@ typedef struct AstTreeFunctionCall {
 
 typedef AstTreeVariable AstTreeIdentifier;
 
+typedef uint64_t AstTreeU64;
+
+typedef AstTree AstTreeSingleChild;
+
 extern const char *AST_TREE_TOKEN_STRINGS[];
 
 void astTreePrint(const AstTree *tree, int indent);
@@ -97,6 +104,10 @@ AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
                                   size_t variables_size);
 
 AstTree *astTreeParseIdentifier(ParserNode *parserNode,
+                                AstTreeVariables *variables,
+                                size_t variables_size);
+
+AstTree *astTreeParsePrintU64(ParserNode *parserNode,
                                 AstTreeVariables *variables,
                                 size_t variables_size);
 

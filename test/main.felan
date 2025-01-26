@@ -1,10 +1,4 @@
-main : ()->void : () -> void {
-  a();
-  a();
-};
-
-a :: () -> void {
+main :: () -> void {
   print;
-  print;
-  print;
+  print_u64 158234;
 };

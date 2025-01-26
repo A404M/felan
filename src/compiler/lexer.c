@@ -12,6 +12,7 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_IDENTIFIER",
     "LEXER_TOKEN_KEYWORD_VOID",
     "LEXER_TOKEN_KEYWORD_PRINT",
+    "LEXER_TOKEN_KEYWORD_PRINT_U64",
 
     "LEXER_TOKEN_NUMBER",
 
@@ -47,10 +48,12 @@ const size_t LEXER_SYMBOL_SIZE =
 const char *LEXER_KEYWORD_STRINGS[] = {
     "void",
     "print",
+    "print_u64",
 };
 const LexerToken LEXER_KEYWORD_TOKENS[] = {
     LEXER_TOKEN_KEYWORD_VOID,
     LEXER_TOKEN_KEYWORD_PRINT,
+    LEXER_TOKEN_KEYWORD_PRINT_U64,
 };
 const size_t LEXER_KEYWORD_SIZE =
     sizeof(LEXER_KEYWORD_TOKENS) / sizeof(*LEXER_KEYWORD_TOKENS);
@@ -169,6 +172,7 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   PUSH:
   case LEXER_TOKEN_KEYWORD_VOID:
   case LEXER_TOKEN_KEYWORD_PRINT:
+  case LEXER_TOKEN_KEYWORD_PRINT_U64:
   case LEXER_TOKEN_NUMBER:
   case LEXER_TOKEN_SYMBOL_EOL:
   case LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS:
