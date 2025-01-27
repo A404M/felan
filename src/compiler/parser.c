@@ -45,12 +45,13 @@ static constexpr ParserOrder PARSER_ORDER[] = {
     },
     {
         .ltr = true,
-        .size = 4,
+        .size = 5,
         .data =
             {
                 LEXER_TOKEN_SYMBOL_CLOSE_PARENTHESIS,
                 LEXER_TOKEN_IDENTIFIER,
                 LEXER_TOKEN_KEYWORD_VOID,
+                LEXER_TOKEN_KEYWORD_U64,
                 LEXER_TOKEN_NUMBER,
             },
     },
@@ -113,6 +114,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_TYPE_VOID:
+  case PARSER_TOKEN_TYPE_U64:
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_VALUE_U64: {
     ParserNodeU64Metadata metadata = (ParserNodeU64Metadata)node->metadata;
@@ -241,6 +243,7 @@ void parserNodeDelete(ParserNode *node) {
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_TYPE_VOID:
+  case PARSER_TOKEN_TYPE_U64:
   case PARSER_TOKEN_VALUE_U64:
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_CONSTANT: {
@@ -392,6 +395,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserIdentifier(node, parent);
   case LEXER_TOKEN_KEYWORD_VOID:
     return parserVoid(node, parent);
+  case LEXER_TOKEN_KEYWORD_U64:
+    return parserU64(node, parent);
   case LEXER_TOKEN_KEYWORD_PRINT_U64:
     return parserPrintU64(node, end, parent);
   case LEXER_TOKEN_SYMBOL_EOL:
@@ -433,6 +438,12 @@ ParserNode *parserIdentifier(LexerNode *node, ParserNode *parent) {
 ParserNode *parserVoid(LexerNode *node, ParserNode *parent) {
   return node->parserNode =
              newParserNode(PARSER_TOKEN_TYPE_VOID, node->str_begin,
+                           node->str_end, NULL, parent);
+}
+
+ParserNode *parserU64(LexerNode *node, ParserNode *parent) {
+  return node->parserNode =
+             newParserNode(PARSER_TOKEN_TYPE_U64, node->str_begin,
                            node->str_end, NULL, parent);
 }
 
@@ -794,6 +805,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_ROOT:
   case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_TYPE_VOID:
+  case PARSER_TOKEN_TYPE_U64:
   case PARSER_TOKEN_SYMBOL_EOL:
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
   case PARSER_TOKEN_SYMBOL_COMMA:
@@ -808,6 +820,7 @@ bool isExpression(ParserNode *node) {
 bool isType(ParserNode *node) {
   switch (node->token) {
   case PARSER_TOKEN_TYPE_VOID:
+  case PARSER_TOKEN_TYPE_U64:
   case PARSER_TOKEN_TYPE_FUNCTION:
     return true;
   case PARSER_TOKEN_IDENTIFIER:
@@ -835,6 +848,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_VALUE_U64:
     return true;
   case PARSER_TOKEN_TYPE_VOID:
+  case PARSER_TOKEN_TYPE_U64:
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:

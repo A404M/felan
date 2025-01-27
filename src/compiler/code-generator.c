@@ -80,9 +80,11 @@ CodeGeneratorCodes *codeGenerator(AstTreeRoot *astTreeRoot) {
     case AST_TREE_TOKEN_TYPE_FUNCTION:
     case AST_TREE_TOKEN_TYPE_VOID:
     case AST_TREE_TOKEN_VALUE_U64:
-    case AST_TREE_TOKEN_IDENTIFIER:
+    case AST_TREE_TOKEN_VARIABLE:
     case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
     case AST_TREE_TOKEN_FUNCTION_CALL:
+    case AST_TREE_TOKEN_TYPE_U64:
+    case AST_TREE_TOKEN_VARIABLE_DEFINE:
     case AST_TREE_TOKEN_NONE:
       break;
     }
@@ -108,11 +110,11 @@ bool codeGeneratorAstTreeFunction(char *label_begin, char *label_end,
         printLog("Not implemented");
         exit(0);
       }
-      if (function->token != AST_TREE_TOKEN_IDENTIFIER) {
+      if (function->token != AST_TREE_TOKEN_VARIABLE) {
         printLog("Not implemented");
         exit(0);
       }
-      AstTreeIdentifier *function_metadata = function->metadata;
+      AstTreeVariable *function_metadata = function->metadata;
       CodeGeneratorCall *callMetadata = a404m_malloc(sizeof(*callMetadata));
       callMetadata->label_begin = function_metadata->name_begin;
       callMetadata->label_end = function_metadata->name_end;
@@ -130,6 +132,13 @@ bool codeGeneratorAstTreeFunction(char *label_begin, char *label_end,
             codes, createGenerateCode(label_begin, label_end,
                                       CODE_GENERATOR_INSTRUCTION_PRINT_U64,
                                       (void *)value));
+      } else if (metadata->token == AST_TREE_TOKEN_VARIABLE) {
+        AstTreeVariable *variable = metadata->metadata;
+        CodeGeneratorOperandU64 value = (AstTreeU64)variable->value->metadata;
+        generateCodePushCode(
+            codes, createGenerateCode(label_begin, label_end,
+                                      CODE_GENERATOR_INSTRUCTION_PRINT_U64,
+                                      (void *)value));
       } else {
         printLog("Not implemented yet");
         exit(1);
@@ -137,10 +146,12 @@ bool codeGeneratorAstTreeFunction(char *label_begin, char *label_end,
     }
       goto OK;
     case AST_TREE_TOKEN_VALUE_U64:
-    case AST_TREE_TOKEN_IDENTIFIER:
+    case AST_TREE_TOKEN_VARIABLE:
     case AST_TREE_TOKEN_FUNCTION:
     case AST_TREE_TOKEN_TYPE_FUNCTION:
     case AST_TREE_TOKEN_TYPE_VOID:
+    case AST_TREE_TOKEN_TYPE_U64:
+    case AST_TREE_TOKEN_VARIABLE_DEFINE:
     case AST_TREE_TOKEN_NONE:
     }
     printLog("Bad token %d", tree.token);
