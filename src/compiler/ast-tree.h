@@ -86,7 +86,7 @@ AstTree *newAstTree(AstTreeToken token, void *metadata);
 
 AstTreeRoot *makeAstTree(ParserNode *parsedRoot);
 
-void pushVariable(AstTreeVariables *variables, AstTreeVariable *variable);
+bool pushVariable(AstTreeVariables *variables, AstTreeVariable *variable);
 AstTreeVariable *getVariable(AstTreeVariables **variables,
                              size_t variables_size, char *name_begin,
                              char *name_end);

@@ -272,7 +272,10 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
     variable->name_begin = node_metadata->name->str_begin;
     variable->name_end = node_metadata->name->str_end;
 
-    pushVariable(&root->variables, variable);
+    if (!pushVariable(&root->variables, variable)) {
+      astTreeVariableDelete(variable);
+      goto RETURN_ERROR;
+    }
   }
 
   for (size_t i = 0; i < nodes->size; ++i) {
@@ -339,7 +342,19 @@ RETURN_ERROR:
   return NULL;
 }
 
-void pushVariable(AstTreeVariables *variables, AstTreeVariable *variable) {
+bool pushVariable(AstTreeVariables *variables, AstTreeVariable *variable) {
+  for (size_t j = 0; j < variables->size; ++j) {
+    char *var_begin = variables->data[j]->name_begin;
+    char *var_end = variables->data[j]->name_end;
+
+    if (variable->name_end - variable->name_begin == var_end - var_begin &&
+        strncmp(var_begin, variable->name_begin,
+                variable->name_end - variable->name_begin) == 0) {
+      printLog("Variable exists");
+      return false;
+    }
+  }
+
   size_t variables_size =
       a404m_malloc_usable_size(variables->data) / sizeof(*variables->data);
   if (variables_size == variables->size) {
@@ -349,6 +364,7 @@ void pushVariable(AstTreeVariables *variables, AstTreeVariable *variable) {
   }
   variables->data[variables->size] = variable;
   variables->size += 1;
+  return true;
 }
 
 AstTreeVariable *getVariable(AstTreeVariables **variables,
@@ -356,7 +372,7 @@ AstTreeVariable *getVariable(AstTreeVariables **variables,
                              char *name_end) {
   for (size_t i = 0; i < variables_size; ++i) {
     AstTreeVariables vars = *variables[i];
-    for (size_t j = vars.size - 1; j != (size_t)-1ULL; --j) {
+    for (size_t j = 0; j < vars.size; ++j) {
       char *var_begin = vars.data[j]->name_begin;
       char *var_end = vars.data[j]->name_end;
 
@@ -457,7 +473,10 @@ AstTree *astTreeParseFunction(ParserNode *parserNode,
     argument->name_begin = arg_metadata->name->str_begin;
     argument->name_end = arg_metadata->name->str_end;
 
-    pushVariable(&function->arguments, argument);
+    if (!pushVariable(&function->arguments, argument)) {
+      astTreeVariableDelete(argument);
+      goto RETURN_ERROR;
+    }
   }
 
   for (size_t i = 0; i < body->size; ++i) {
@@ -648,7 +667,10 @@ AstTree *astTreeParseConstant(ParserNode *parserNode,
   variable->name_begin = node_metadata->name->str_begin;
   variable->name_end = node_metadata->name->str_end;
 
-  pushVariable(variables[variables_size - 1], variable);
+  if (!pushVariable(variables[variables_size - 1], variable)) {
+    astTreeVariableDelete(variable);
+    goto RETURN_ERROR;
+  }
 
   return newAstTree(AST_TREE_TOKEN_VARIABLE_DEFINE, variable);
 RETURN_ERROR:
