@@ -6,8 +6,9 @@
 
 typedef enum AstTreeToken {
   AST_TREE_TOKEN_FUNCTION,
-  AST_TREE_TOKEN_KEYWORD_PRINT,
+
   AST_TREE_TOKEN_KEYWORD_PRINT_U64,
+
   AST_TREE_TOKEN_TYPE_FUNCTION,
   AST_TREE_TOKEN_TYPE_VOID,
   AST_TREE_TOKEN_FUNCTION_CALL,
@@ -108,8 +109,8 @@ AstTree *astTreeParseIdentifier(ParserNode *parserNode,
                                 size_t variables_size);
 
 AstTree *astTreeParsePrintU64(ParserNode *parserNode,
-                                AstTreeVariables *variables,
-                                size_t variables_size);
+                              AstTreeVariables *variables,
+                              size_t variables_size);
 
 bool hasTypeOf(AstTree *value, AstTree *type);
 bool typeIsEqual(AstTree *type0, AstTree *type1);

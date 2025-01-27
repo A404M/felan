@@ -12,7 +12,6 @@ void codeGeneratorDelete(CodeGeneratorCodes *code) {
   for (size_t i = 0; i < code->codes_size; ++i) {
     CodeGeneratorCode current = code->codes[i];
     switch (current.instruction) {
-    case CODE_GENERATOR_INSTRUCTION_PRINT:
     case CODE_GENERATOR_INSTRUCTION_PRINT_U64:
     case CODE_GENERATOR_INSTRUCTION_RET:
       continue;
@@ -78,10 +77,14 @@ CodeGeneratorCodes *codeGenerator(AstTreeRoot *astTreeRoot) {
         return NULL;
       }
       continue;
-    case AST_TREE_TOKEN_KEYWORD_PRINT:
     case AST_TREE_TOKEN_TYPE_FUNCTION:
     case AST_TREE_TOKEN_TYPE_VOID:
+    case AST_TREE_TOKEN_VALUE_U64:
+    case AST_TREE_TOKEN_IDENTIFIER:
+    case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+    case AST_TREE_TOKEN_FUNCTION_CALL:
     case AST_TREE_TOKEN_NONE:
+      break;
     }
     printLog("Bad token %d", variable->value->token);
     return NULL;
@@ -98,11 +101,6 @@ bool codeGeneratorAstTreeFunction(char *label_begin, char *label_end,
   for (size_t i = 0; i < scope.expressions_size; ++i) {
     AstTree tree = scope.expressions[i];
     switch (tree.token) {
-    case AST_TREE_TOKEN_KEYWORD_PRINT:
-      generateCodePushCode(
-          codes, createGenerateCode(label_begin, label_end,
-                                    CODE_GENERATOR_INSTRUCTION_PRINT, NULL));
-      goto OK;
     case AST_TREE_TOKEN_FUNCTION_CALL: {
       AstTreeFunctionCall *metadata = tree.metadata;
       AstTree *function = metadata->function;
@@ -161,15 +159,13 @@ bool codeGeneratorAstTreeFunction(char *label_begin, char *label_end,
 
 static const char TEMPLATE[] =
     "format ELF64 executable 3\n\nSYS_exit = 60\nSYS_write = 1\nSTDOUT = "
-    "1\n\nsegment readable writable\nhello: db \"Hello, "
-    "World!\",0xa\nhello_len = $-hello\n\nsegment readable executable\nentry "
-    "_start\n\nprint:\nmov rax, SYS_write\nmov rdi, STDOUT\nmov rsi, "
-    "hello\nmov rdx, hello_len\nsyscall\nret\n\n; rdi = the "
+    "1\n\nsegment readable executable\nentry _start\n\n; rdi = the "
     "number\nprint_u64:\nmov rcx, rsp\nmov rax, rdi\nmov rbx, 10\n\n.L:\nxor "
     "rdx, rdx\ndiv rbx\nadd dl, '0'\ndec rcx\nmov [rcx],dl\ncmp rax, 0\njnz "
     ".L\n\nmov rax, SYS_write\nmov rdi, STDOUT\nmov rsi, rcx\n\nmov rdx, "
     "rsp\nsub rdx, rcx\n\nsyscall\nret\n\n_start:\ncall main\nmov rax, "
     "SYS_exit\nxor rdi,rdi\nsyscall\n";
+
 static const size_t TEMPLATE_LEN =
     sizeof(TEMPLATE) / sizeof(*TEMPLATE) - sizeof(*TEMPLATE);
 
@@ -205,12 +201,6 @@ char *codeGeneratorToFlatASM(const CodeGeneratorCodes *codes) {
     }
 
     switch (code.instruction) {
-    case CODE_GENERATOR_INSTRUCTION_PRINT: {
-      constexpr char INST[] = "call print\n";
-      codeGeneratorAppendFlatASMCommand(&fasm, &fasm_size, &fasm_inserted, INST,
-                                        strlen(INST));
-    }
-      continue;
     case CODE_GENERATOR_INSTRUCTION_PRINT_U64: {
       CodeGeneratorOperandU64 metadata = (CodeGeneratorOperandU64)code.metadata;
       char *inst;

@@ -18,7 +18,6 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_TYPE_FUNCTION",
     "PARSER_TOKEN_TYPE_VOID",
 
-    "PARSER_TOKEN_KEYWORD_PRINT",
     "PARSER_TOKEN_KEYWORD_PRINT_U64",
 
     "PARSER_TOKEN_CONSTANT",
@@ -69,7 +68,6 @@ static constexpr ParserOrder PARSER_ORDER[] = {
         .data =
             {
                 LEXER_TOKEN_SYMBOL_COLON,
-                LEXER_TOKEN_KEYWORD_PRINT,
                 LEXER_TOKEN_KEYWORD_PRINT_U64,
             },
     },
@@ -115,7 +113,6 @@ void parserNodePrint(const ParserNode *node, int indent) {
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_TYPE_VOID:
-  case PARSER_TOKEN_KEYWORD_PRINT:
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_VALUE_U64: {
     ParserNodeU64Metadata metadata = (ParserNodeU64Metadata)node->metadata;
@@ -244,7 +241,6 @@ void parserNodeDelete(ParserNode *node) {
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_TYPE_VOID:
-  case PARSER_TOKEN_KEYWORD_PRINT:
   case PARSER_TOKEN_VALUE_U64:
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_CONSTANT: {
@@ -396,8 +392,6 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserIdentifier(node, parent);
   case LEXER_TOKEN_KEYWORD_VOID:
     return parserVoid(node, parent);
-  case LEXER_TOKEN_KEYWORD_PRINT:
-    return parserPrint(node, parent);
   case LEXER_TOKEN_KEYWORD_PRINT_U64:
     return parserPrintU64(node, end, parent);
   case LEXER_TOKEN_SYMBOL_EOL:
@@ -439,12 +433,6 @@ ParserNode *parserIdentifier(LexerNode *node, ParserNode *parent) {
 ParserNode *parserVoid(LexerNode *node, ParserNode *parent) {
   return node->parserNode =
              newParserNode(PARSER_TOKEN_TYPE_VOID, node->str_begin,
-                           node->str_end, NULL, parent);
-}
-
-ParserNode *parserPrint(LexerNode *node, ParserNode *parent) {
-  return node->parserNode =
-             newParserNode(PARSER_TOKEN_KEYWORD_PRINT, node->str_begin,
                            node->str_end, NULL, parent);
 }
 
@@ -800,7 +788,6 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
   case PARSER_TOKEN_FUNCTION_DEFINITION:
-  case PARSER_TOKEN_KEYWORD_PRINT:
   case PARSER_TOKEN_FUNCTION_CALL:
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
     return true;
@@ -827,7 +814,6 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
   case PARSER_TOKEN_FUNCTION_DEFINITION:
-  case PARSER_TOKEN_KEYWORD_PRINT:
   case PARSER_TOKEN_ROOT:
   case PARSER_TOKEN_SYMBOL_EOL:
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
@@ -852,7 +838,6 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
-  case PARSER_TOKEN_KEYWORD_PRINT:
   case PARSER_TOKEN_ROOT:
   case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_SYMBOL_EOL:

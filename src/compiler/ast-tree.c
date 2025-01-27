@@ -8,7 +8,7 @@
 
 const char *AST_TREE_TOKEN_STRINGS[] = {
     "AST_TREE_TOKEN_FUNCTION",
-    "AST_TREE_TOKEN_KEYWORD_PRINT",
+
     "AST_TREE_TOKEN_KEYWORD_PRINT_U64",
 
     "AST_TREE_TOKEN_NONE",
@@ -60,7 +60,6 @@ void astTreePrint(const AstTree *tree, int indent) {
     printf("]");
   }
     goto RETURN_SUCCESS;
-  case AST_TREE_TOKEN_KEYWORD_PRINT:
   case AST_TREE_TOKEN_TYPE_VOID:
     goto RETURN_SUCCESS;
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64: {
@@ -160,7 +159,6 @@ void astTreeDestroy(AstTree tree) {
     free(metadata);
   }
     return;
-  case AST_TREE_TOKEN_KEYWORD_PRINT:
   case AST_TREE_TOKEN_TYPE_VOID:
   case AST_TREE_TOKEN_VALUE_U64:
     return;
@@ -333,8 +331,6 @@ AstTreeVariable *getVariable(AstTreeVariables *variables, size_t variables_size,
 AstTree *astTreeParse(ParserNode *parserNode, AstTreeVariables *variables,
                       size_t variables_size) {
   switch (parserNode->token) {
-  case PARSER_TOKEN_KEYWORD_PRINT:
-    return newAstTree(AST_TREE_TOKEN_KEYWORD_PRINT, NULL);
   case PARSER_TOKEN_FUNCTION_DEFINITION:
     return astTreeParseFunction(parserNode, variables, variables_size);
   case PARSER_TOKEN_TYPE_FUNCTION:
@@ -594,7 +590,8 @@ bool hasTypeOf(AstTree *value, AstTree *type) {
       }
       return typeIsEqual(typeMetadata->returnType, valueMetadata->returnType);
     }
-    case AST_TREE_TOKEN_KEYWORD_PRINT:
+    case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+    case AST_TREE_TOKEN_VALUE_U64:
     case AST_TREE_TOKEN_TYPE_FUNCTION:
     case AST_TREE_TOKEN_TYPE_VOID:
     case AST_TREE_TOKEN_FUNCTION_CALL:
@@ -604,10 +601,11 @@ bool hasTypeOf(AstTree *value, AstTree *type) {
     }
     goto ERROR;
   case AST_TREE_TOKEN_FUNCTION:
-  case AST_TREE_TOKEN_KEYWORD_PRINT:
   case AST_TREE_TOKEN_TYPE_VOID:
   case AST_TREE_TOKEN_FUNCTION_CALL:
   case AST_TREE_TOKEN_IDENTIFIER:
+  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_VALUE_U64:
     return false;
   case AST_TREE_TOKEN_NONE:
   }
@@ -619,7 +617,8 @@ ERROR:
 bool typeIsEqual(AstTree *type0, AstTree *type1) {
   switch (type0->token) {
   case AST_TREE_TOKEN_FUNCTION:
-  case AST_TREE_TOKEN_KEYWORD_PRINT:
+  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_VALUE_U64:
     return false;
   case AST_TREE_TOKEN_TYPE_VOID:
     return type1->token == AST_TREE_TOKEN_TYPE_VOID;
@@ -636,6 +635,7 @@ bool typeIsEqual(AstTree *type0, AstTree *type1) {
     return type1->token == AST_TREE_TOKEN_IDENTIFIER &&
            type0->metadata == type1->metadata;
   case AST_TREE_TOKEN_NONE:
+    break;
   }
   printLog("Bad token '%d'", type0->token);
   exit(1);
