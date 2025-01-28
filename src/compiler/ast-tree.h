@@ -9,6 +9,7 @@ typedef enum AstTreeToken {
 
   AST_TREE_TOKEN_KEYWORD_PRINT_U64,
 
+  AST_TREE_TOKEN_TYPE_TYPE,
   AST_TREE_TOKEN_TYPE_FUNCTION,
   AST_TREE_TOKEN_TYPE_VOID,
   AST_TREE_TOKEN_TYPE_U64,
@@ -16,8 +17,6 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_FUNCTION_CALL,
   AST_TREE_TOKEN_VARIABLE,
   AST_TREE_TOKEN_VALUE_U64,
-
-  AST_TREE_TOKEN_VARIABLE_DEFINE,
 
   AST_TREE_TOKEN_NONE,
 } AstTreeToken;
@@ -83,6 +82,7 @@ void astTreeDelete(AstTree *tree);
 void astTreeRootDelete(AstTreeRoot *root);
 
 AstTree *newAstTree(AstTreeToken token, void *metadata);
+AstTree *copyAstTree(AstTree *tree);
 
 AstTreeRoot *makeAstTree(ParserNode *parsedRoot);
 
@@ -114,9 +114,10 @@ AstTree *astTreeParsePrintU64(ParserNode *parserNode,
                               AstTreeVariables **variables,
                               size_t variables_size);
 
-AstTree *astTreeParseConstant(ParserNode *parserNode,
+bool astTreeParseConstant(ParserNode *parserNode,
                               AstTreeVariables **variables,
                               size_t variables_size);
 
 bool hasTypeOf(AstTree *value, AstTree *type);
+AstTree *makeTypeOf(AstTree *value);
 bool typeIsEqual(AstTree *type0, AstTree *type1);

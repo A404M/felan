@@ -77,6 +77,7 @@ CodeGeneratorCodes *codeGenerator(AstTreeRoot *astTreeRoot) {
         return NULL;
       }
       continue;
+    case AST_TREE_TOKEN_TYPE_TYPE:
     case AST_TREE_TOKEN_TYPE_FUNCTION:
     case AST_TREE_TOKEN_TYPE_VOID:
     case AST_TREE_TOKEN_VALUE_U64:
@@ -84,7 +85,6 @@ CodeGeneratorCodes *codeGenerator(AstTreeRoot *astTreeRoot) {
     case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
     case AST_TREE_TOKEN_FUNCTION_CALL:
     case AST_TREE_TOKEN_TYPE_U64:
-    case AST_TREE_TOKEN_VARIABLE_DEFINE:
     case AST_TREE_TOKEN_NONE:
       break;
     }
@@ -148,10 +148,10 @@ bool codeGeneratorAstTreeFunction(char *label_begin, char *label_end,
     case AST_TREE_TOKEN_VALUE_U64:
     case AST_TREE_TOKEN_VARIABLE:
     case AST_TREE_TOKEN_FUNCTION:
+    case AST_TREE_TOKEN_TYPE_TYPE:
     case AST_TREE_TOKEN_TYPE_FUNCTION:
     case AST_TREE_TOKEN_TYPE_VOID:
     case AST_TREE_TOKEN_TYPE_U64:
-    case AST_TREE_TOKEN_VARIABLE_DEFINE:
     case AST_TREE_TOKEN_NONE:
     }
     printLog("Bad token %d", tree.token);

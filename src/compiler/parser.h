@@ -11,6 +11,7 @@ typedef enum ParserToken {
 
   PARSER_TOKEN_VALUE_U64,
 
+  PARSER_TOKEN_TYPE_TYPE,
   PARSER_TOKEN_TYPE_FUNCTION,
   PARSER_TOKEN_TYPE_VOID,
   PARSER_TOKEN_TYPE_U64,
@@ -93,6 +94,7 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
 ParserNode *getUntilCommonParent(ParserNode *node, ParserNode *parent);
 
 ParserNode *parserIdentifier(LexerNode *node, ParserNode *parent);
+ParserNode *parserType(LexerNode *node, ParserNode *parent);
 ParserNode *parserVoid(LexerNode *node, ParserNode *parent);
 ParserNode *parserU64(LexerNode *node, ParserNode *parent);
 ParserNode *parserPrintU64(LexerNode *node, LexerNode *end, ParserNode *parent);

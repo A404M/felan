@@ -15,8 +15,10 @@ const char *PARSER_TOKEN_STRINGS[] = {
 
     "PARSER_TOKEN_VALUE_U64",
 
+    "PARSER_TOKEN_TYPE_TYPE",
     "PARSER_TOKEN_TYPE_FUNCTION",
     "PARSER_TOKEN_TYPE_VOID",
+    "PARSER_TOKEN_TYPE_U64",
 
     "PARSER_TOKEN_KEYWORD_PRINT_U64",
 
@@ -34,52 +36,33 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_NONE",
 };
 
+#define ORDER_ARRAY(...)                                                       \
+  .size = sizeof((LexerToken[]){__VA_ARGS__}) / sizeof(LexerToken),            \
+  .data = {__VA_ARGS__}
+
 static constexpr ParserOrder PARSER_ORDER[] = {
     {
         .ltr = true,
-        .size = 1,
-        .data =
-            {
-                LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET,
-            },
+        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET, ),
     },
     {
         .ltr = true,
-        .size = 5,
-        .data =
-            {
-                LEXER_TOKEN_SYMBOL_CLOSE_PARENTHESIS,
-                LEXER_TOKEN_IDENTIFIER,
-                LEXER_TOKEN_KEYWORD_VOID,
-                LEXER_TOKEN_KEYWORD_U64,
-                LEXER_TOKEN_NUMBER,
-            },
+        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_CLOSE_PARENTHESIS,
+                    LEXER_TOKEN_IDENTIFIER, LEXER_TOKEN_KEYWORD_TYPE,
+                    LEXER_TOKEN_KEYWORD_VOID, LEXER_TOKEN_KEYWORD_U64,
+                    LEXER_TOKEN_NUMBER, ),
     },
     {
         .ltr = false,
-        .size = 1,
-        .data =
-            {
-                LEXER_TOKEN_SYMBOL_FUNCTION_ARROW,
-            },
+        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_FUNCTION_ARROW, ),
     },
     {
         .ltr = true,
-        .size = 3,
-        .data =
-            {
-                LEXER_TOKEN_SYMBOL_COLON,
-                LEXER_TOKEN_KEYWORD_PRINT_U64,
-            },
+        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_COLON, LEXER_TOKEN_KEYWORD_PRINT_U64, ),
     },
     {
         .ltr = true,
-        .size = 2,
-        .data =
-            {
-                LEXER_TOKEN_SYMBOL_EOL,
-                LEXER_TOKEN_SYMBOL_COMMA,
-            },
+        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_EOL, LEXER_TOKEN_SYMBOL_COMMA, ),
     },
 };
 
@@ -113,6 +96,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_IDENTIFIER:
+  case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_U64:
     goto RETURN_SUCCESS;
@@ -242,6 +226,7 @@ void parserNodeDelete(ParserNode *node) {
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_IDENTIFIER:
+  case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_U64:
   case PARSER_TOKEN_VALUE_U64:
@@ -393,6 +378,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
   switch (node->token) {
   case LEXER_TOKEN_IDENTIFIER:
     return parserIdentifier(node, parent);
+  case LEXER_TOKEN_KEYWORD_TYPE:
+    return parserType(node, parent);
   case LEXER_TOKEN_KEYWORD_VOID:
     return parserVoid(node, parent);
   case LEXER_TOKEN_KEYWORD_U64:
@@ -432,6 +419,12 @@ ParserNode *getUntilCommonParent(ParserNode *node, ParserNode *parent) {
 ParserNode *parserIdentifier(LexerNode *node, ParserNode *parent) {
   return node->parserNode =
              newParserNode(PARSER_TOKEN_IDENTIFIER, node->str_begin,
+                           node->str_end, NULL, parent);
+}
+
+ParserNode *parserType(LexerNode *node, ParserNode *parent) {
+  return node->parserNode =
+             newParserNode(PARSER_TOKEN_TYPE_TYPE, node->str_begin,
                            node->str_end, NULL, parent);
 }
 
@@ -751,7 +744,8 @@ ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
   if (node1 != NULL) {
     LexerNode *valueNode = node1 + 1;
     if (valueNode >= end || valueNode->parserNode == NULL) {
-      printLog("No value");
+      printLog("No value for '%.*s'", (int)(name->str_end - name->str_begin),
+               name->str_begin);
       return NULL;
     } else {
       value = getUntilCommonParent(valueNode->parserNode, parent);
@@ -803,6 +797,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
     return true;
   case PARSER_TOKEN_ROOT:
+  case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_U64:
@@ -819,9 +814,10 @@ bool isExpression(ParserNode *node) {
 
 bool isType(ParserNode *node) {
   switch (node->token) {
+  case PARSER_TOKEN_TYPE_TYPE:
+  case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_U64:
-  case PARSER_TOKEN_TYPE_FUNCTION:
     return true;
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_CONSTANT:
@@ -847,13 +843,14 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_FUNCTION_CALL:
   case PARSER_TOKEN_VALUE_U64:
     return true;
+  case PARSER_TOKEN_TYPE_FUNCTION:
+  case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_U64:
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
   case PARSER_TOKEN_ROOT:
-  case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_SYMBOL_EOL:
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
   case PARSER_TOKEN_SYMBOL_COMMA:
