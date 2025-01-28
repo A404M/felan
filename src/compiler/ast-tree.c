@@ -683,21 +683,26 @@ bool astTreeParseConstant(ParserNode *parserNode, AstTreeVariables **variables,
                           size_t variables_size) {
   ParserNodeVariableMetadata *node_metadata = parserNode->metadata;
 
-  if (node_metadata->value == NULL || node_metadata->type == NULL ||
+  if (node_metadata->value == NULL ||
       node_metadata->name->token != PARSER_TOKEN_IDENTIFIER) {
-    printLog("Not yet supported");
+    printLog("Not supported");
     return NULL;
-  }
-
-  AstTree *type = astTreeParse(node_metadata->type, variables, variables_size);
-  if (type == NULL) {
-    goto RETURN_ERROR;
   }
 
   AstTree *value =
       astTreeParse(node_metadata->value, variables, variables_size);
   if (value == NULL) {
     goto RETURN_ERROR;
+  }
+
+  AstTree *type;
+  if (node_metadata->type == NULL) {
+    type = makeTypeOf(value);
+  } else {
+    type = astTreeParse(node_metadata->type, variables, variables_size);
+    if (type == NULL) {
+      goto RETURN_ERROR;
+    }
   }
 
   AstTreeVariable *variable = a404m_malloc(sizeof(*variable));
