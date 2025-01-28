@@ -118,6 +118,6 @@ bool astTreeParseConstant(ParserNode *parserNode,
                               AstTreeVariables **variables,
                               size_t variables_size);
 
-bool hasTypeOf(AstTree *value, AstTree *type);
+bool hasTypeOf(AstTree *value,const AstTree *type);
 AstTree *makeTypeOf(AstTree *value);
-bool typeIsEqual(AstTree *type0, AstTree *type1);
+bool typeIsEqual(const AstTree *type0, const AstTree *type1);

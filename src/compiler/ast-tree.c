@@ -6,6 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+static const AstTree AST_TREE_U64_TYPE = {
+    .token = AST_TREE_TOKEN_TYPE_U64,
+    .metadata = NULL,
+};
+
 const char *AST_TREE_TOKEN_STRINGS[] = {
     "AST_TREE_TOKEN_FUNCTION",
 
@@ -673,7 +678,12 @@ AstTree *astTreeParsePrintU64(ParserNode *parserNode,
     return NULL;
   }
 
-  // TODO: check type to be u64
+  if (!hasTypeOf(operand, &AST_TREE_U64_TYPE)) {
+    printLog("operand = %s", AST_TREE_TOKEN_STRINGS[operand->token]);
+    printLog("Type mismatch");
+    astTreeDelete(operand);
+    return NULL;
+  }
 
   return newAstTree(AST_TREE_TOKEN_KEYWORD_PRINT_U64,
                     (AstTreeSingleChild *)operand);
@@ -721,7 +731,12 @@ RETURN_ERROR:
   return false;
 }
 
-bool hasTypeOf(AstTree *value, AstTree *type) {
+bool hasTypeOf(AstTree *value, const AstTree *type) {
+  if (value->token == AST_TREE_TOKEN_VARIABLE) {
+    AstTreeVariable *variable = value->metadata;
+    return typeIsEqual(variable->type, type);
+  }
+
   switch (type->token) {
   case AST_TREE_TOKEN_TYPE_TYPE:
     switch (value->token) {
@@ -821,7 +836,7 @@ AstTree *makeTypeOf(AstTree *value) {
   exit(1);
 }
 
-bool typeIsEqual(AstTree *type0, AstTree *type1) {
+bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
   switch (type0->token) {
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
