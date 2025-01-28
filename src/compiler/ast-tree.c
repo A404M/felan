@@ -123,7 +123,7 @@ void astTreePrint(const AstTree *tree, int indent) {
     printf("]");
   }
     goto RETURN_SUCCESS;
-  case AST_TREE_TOKEN_VARIABLE: {
+  case AST_TREE_TOKEN_CONSTANT: {
     AstTreeVariable *metadata = tree->metadata;
     printf(",variable.name=%.*s",
            (int)(metadata->name_end - metadata->name_begin),
@@ -201,7 +201,7 @@ void astTreeDestroy(AstTree tree) {
     free(metadata);
   }
     return;
-  case AST_TREE_TOKEN_VARIABLE: {
+  case AST_TREE_TOKEN_CONSTANT: {
     // AstTreeIdentifier *metadata = tree.metadata; // not needed
   }
     return;
@@ -255,8 +255,8 @@ AstTree *copyAstTree(AstTree *tree) {
   case AST_TREE_TOKEN_VALUE_U64:
     return newAstTree(AST_TREE_TOKEN_VALUE_U64,
                       (void *)(AstTreeU64)tree->metadata);
-  case AST_TREE_TOKEN_VARIABLE:
-    return newAstTree(AST_TREE_TOKEN_VARIABLE, tree->metadata);
+  case AST_TREE_TOKEN_CONSTANT:
+    return newAstTree(AST_TREE_TOKEN_CONSTANT, tree->metadata);
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
   case AST_TREE_TOKEN_TYPE_FUNCTION:
@@ -623,7 +623,7 @@ AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
   if (function == NULL) {
     return NULL;
   }
-  if (function->token != AST_TREE_TOKEN_VARIABLE) {
+  if (function->token != AST_TREE_TOKEN_CONSTANT) {
     printLog("Not yet supported");
     return NULL;
   }
@@ -665,7 +665,7 @@ AstTree *astTreeParseIdentifier(ParserNode *parserNode,
     printLog("Variable not found");
     return NULL;
   }
-  return newAstTree(AST_TREE_TOKEN_VARIABLE, var);
+  return newAstTree(AST_TREE_TOKEN_CONSTANT, var);
 }
 
 AstTree *astTreeParsePrintU64(ParserNode *parserNode,
@@ -732,7 +732,7 @@ RETURN_ERROR:
 }
 
 bool hasTypeOf(AstTree *value, const AstTree *type) {
-  if (value->token == AST_TREE_TOKEN_VARIABLE) {
+  if (value->token == AST_TREE_TOKEN_CONSTANT) {
     AstTreeVariable *variable = value->metadata;
     return typeIsEqual(variable->type, type);
   }
@@ -748,7 +748,7 @@ bool hasTypeOf(AstTree *value, const AstTree *type) {
     case AST_TREE_TOKEN_FUNCTION:
     case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
     case AST_TREE_TOKEN_FUNCTION_CALL:
-    case AST_TREE_TOKEN_VARIABLE:
+    case AST_TREE_TOKEN_CONSTANT:
     case AST_TREE_TOKEN_VALUE_U64:
     case AST_TREE_TOKEN_NONE:
       return false;
@@ -777,7 +777,7 @@ bool hasTypeOf(AstTree *value, const AstTree *type) {
     case AST_TREE_TOKEN_TYPE_VOID:
     case AST_TREE_TOKEN_TYPE_U64:
     case AST_TREE_TOKEN_FUNCTION_CALL:
-    case AST_TREE_TOKEN_VARIABLE:
+    case AST_TREE_TOKEN_CONSTANT:
       return false;
     case AST_TREE_TOKEN_NONE:
     }
@@ -787,7 +787,7 @@ bool hasTypeOf(AstTree *value, const AstTree *type) {
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_TYPE_VOID:
   case AST_TREE_TOKEN_FUNCTION_CALL:
-  case AST_TREE_TOKEN_VARIABLE:
+  case AST_TREE_TOKEN_CONSTANT:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
   case AST_TREE_TOKEN_VALUE_U64:
     return false;
@@ -828,7 +828,7 @@ AstTree *makeTypeOf(AstTree *value) {
   }
   case AST_TREE_TOKEN_VALUE_U64:
     return newAstTree(AST_TREE_TOKEN_TYPE_U64, NULL);
-  case AST_TREE_TOKEN_VARIABLE:
+  case AST_TREE_TOKEN_CONSTANT:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
   case AST_TREE_TOKEN_NONE:
   }
@@ -855,8 +855,8 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
   case AST_TREE_TOKEN_FUNCTION_CALL:
     printLog("Not implemented yet");
     exit(1);
-  case AST_TREE_TOKEN_VARIABLE:
-    return type1->token == AST_TREE_TOKEN_VARIABLE &&
+  case AST_TREE_TOKEN_CONSTANT:
+    return type1->token == AST_TREE_TOKEN_CONSTANT &&
            type0->metadata == type1->metadata;
   case AST_TREE_TOKEN_NONE:
     break;

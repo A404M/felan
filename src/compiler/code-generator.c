@@ -81,7 +81,7 @@ CodeGeneratorCodes *codeGenerator(AstTreeRoot *astTreeRoot) {
     case AST_TREE_TOKEN_TYPE_FUNCTION:
     case AST_TREE_TOKEN_TYPE_VOID:
     case AST_TREE_TOKEN_VALUE_U64:
-    case AST_TREE_TOKEN_VARIABLE:
+    case AST_TREE_TOKEN_CONSTANT:
     case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
     case AST_TREE_TOKEN_FUNCTION_CALL:
     case AST_TREE_TOKEN_TYPE_U64:
@@ -110,7 +110,7 @@ bool codeGeneratorAstTreeFunction(char *label_begin, char *label_end,
         printLog("Not implemented");
         exit(0);
       }
-      if (function->token != AST_TREE_TOKEN_VARIABLE) {
+      if (function->token != AST_TREE_TOKEN_CONSTANT) {
         printLog("Not implemented");
         exit(0);
       }
@@ -132,7 +132,7 @@ bool codeGeneratorAstTreeFunction(char *label_begin, char *label_end,
             codes, createGenerateCode(label_begin, label_end,
                                       CODE_GENERATOR_INSTRUCTION_PRINT_U64,
                                       (void *)value));
-      } else if (metadata->token == AST_TREE_TOKEN_VARIABLE) {
+      } else if (metadata->token == AST_TREE_TOKEN_CONSTANT) {
         AstTreeVariable *variable = metadata->metadata;
         CodeGeneratorOperandU64 value = (AstTreeU64)variable->value->metadata;
         generateCodePushCode(
@@ -146,7 +146,7 @@ bool codeGeneratorAstTreeFunction(char *label_begin, char *label_end,
     }
       goto OK;
     case AST_TREE_TOKEN_VALUE_U64:
-    case AST_TREE_TOKEN_VARIABLE:
+    case AST_TREE_TOKEN_CONSTANT:
     case AST_TREE_TOKEN_FUNCTION:
     case AST_TREE_TOKEN_TYPE_TYPE:
     case AST_TREE_TOKEN_TYPE_FUNCTION:
@@ -169,13 +169,7 @@ bool codeGeneratorAstTreeFunction(char *label_begin, char *label_end,
 }
 
 static const char TEMPLATE[] =
-    "format ELF64 executable 3\n\nSYS_exit = 60\nSYS_write = 1\nSTDOUT = "
-    "1\n\nsegment readable executable\nentry _start\n\n; rdi = the "
-    "number\nprint_u64:\nmov rcx, rsp\nmov rax, rdi\nmov rbx, 10\n\n.L:\nxor "
-    "rdx, rdx\ndiv rbx\nadd dl, '0'\ndec rcx\nmov [rcx],dl\ncmp rax, 0\njnz "
-    ".L\n\nmov rax, SYS_write\nmov rdi, STDOUT\nmov rsi, rcx\n\nmov rdx, "
-    "rsp\nsub rdx, rcx\n\nsyscall\nret\n\n_start:\ncall main\nmov rax, "
-    "SYS_exit\nxor rdi,rdi\nsyscall\n";
+    "include 'stdlib/main.asm'\n";
 
 static const size_t TEMPLATE_LEN =
     sizeof(TEMPLATE) / sizeof(*TEMPLATE) - sizeof(*TEMPLATE);
