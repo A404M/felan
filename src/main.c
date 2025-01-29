@@ -73,6 +73,7 @@ static int run(const char *filePath, const char *outFilePath) {
 
 int main(int argc, char *argv[]) {
   if (argc < 3) {
+    run("test/main.felan", "build/out");
     printLog("Too few args");
     return 1;
   }

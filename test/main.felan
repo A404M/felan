@@ -1,4 +1,9 @@
-main :: () -> void {
-  a :: 1423;
+main :()->void: () -> void {
+  a :: 3;
   print_u64 a;
+  c :: 4;
+  print_u64 b;
+  print_u64 c;
 };
+a :: 1;
+b :: 2;

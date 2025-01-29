@@ -15,7 +15,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_TYPE_U64,
 
   AST_TREE_TOKEN_FUNCTION_CALL,
-  AST_TREE_TOKEN_CONSTANT,
+  AST_TREE_TOKEN_VARIABLE,
   AST_TREE_TOKEN_VALUE_U64,
 
   AST_TREE_TOKEN_NONE,
@@ -24,6 +24,7 @@ typedef enum AstTreeToken {
 typedef struct AstTree {
   AstTreeToken token;
   void *metadata;
+  bool typeChecked;
 } AstTree;
 
 typedef struct AstTreeVariable {
@@ -114,10 +115,19 @@ AstTree *astTreeParsePrintU64(ParserNode *parserNode,
                               AstTreeVariables **variables,
                               size_t variables_size);
 
-bool astTreeParseConstant(ParserNode *parserNode,
-                              AstTreeVariables **variables,
-                              size_t variables_size);
+bool astTreeParseConstant(ParserNode *parserNode, AstTreeVariables **variables,
+                          size_t variables_size);
 
-bool hasTypeOf(AstTree *value,const AstTree *type);
+bool hasTypeOf(AstTree *value, const AstTree *type);
+bool isFunction(AstTree *value);
 AstTree *makeTypeOf(AstTree *value);
 bool typeIsEqual(const AstTree *type0, const AstTree *type1);
+
+bool setAllTypesRoot(AstTreeRoot *root);
+bool setAllTypes(AstTree *tree);
+bool setTypesFunction(AstTree *tree);
+bool setTypesPrintU64(AstTree *tree);
+bool setTypesTypeFunction(AstTree *tree);
+bool setTypesFunctionCall(AstTree *tree);
+bool setTypesVariable(AstTree *tree);
+bool setTypesAstVariable(AstTreeVariable *variable);
