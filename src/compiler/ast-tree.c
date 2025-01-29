@@ -297,6 +297,8 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
     variable->name_begin = node_metadata->name->str_begin;
     variable->name_end = node_metadata->name->str_end;
 
+    // TODO: set type some how
+
     if (!pushVariable(&root->variables, variable)) {
       astTreeVariableDelete(variable);
       goto RETURN_ERROR;
