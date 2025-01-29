@@ -1,9 +1,10 @@
 main :()->void: () -> void {
   a :: 3;
-  print_u64 a;
-  c :: 4;
-  print_u64 b;
+  c :: a;
   print_u64 c;
+  print_u64 b;
+  print_u64 a;
 };
+
 a :: 1;
 b :: 2;

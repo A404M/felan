@@ -131,3 +131,9 @@ bool setTypesTypeFunction(AstTree *tree);
 bool setTypesFunctionCall(AstTree *tree);
 bool setTypesVariable(AstTree *tree);
 bool setTypesAstVariable(AstTreeVariable *variable);
+
+bool astTreeCleanRoot(AstTreeRoot *root);
+bool astTreeClean(AstTree *tree);
+bool astTreeCleanFunction(AstTree *tree);
+bool astTreeCleanVariable(AstTree *tree);
+bool astTreeCleanAstVariable(AstTreeVariable *variable);

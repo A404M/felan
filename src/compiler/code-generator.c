@@ -77,13 +77,7 @@ CodeGeneratorCodes *codeGenerator(AstTreeRoot *astTreeRoot) {
         return NULL;
       }
       continue;
-    case AST_TREE_TOKEN_VALUE_U64: {
-      CodeGeneratorOperandU64 value = (AstTreeU64)variable->value->metadata;
-      generateCodePushCode(
-          codes, createGenerateCode(variable->name_begin, variable->name_end,
-                                    CODE_GENERATOR_INSTRUCTION_PRINT_U64,
-                                    (void *)value));
-    }
+    case AST_TREE_TOKEN_VALUE_U64:
       continue;
     case AST_TREE_TOKEN_TYPE_TYPE:
     case AST_TREE_TOKEN_TYPE_FUNCTION:

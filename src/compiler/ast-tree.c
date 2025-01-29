@@ -373,7 +373,7 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
     root->variables.data[i]->value = value;
   }
 
-  if (!setAllTypesRoot(root)) {
+  if (!setAllTypesRoot(root) || !astTreeCleanRoot(root)) {
     goto RETURN_ERROR;
   }
 
@@ -490,7 +490,6 @@ AstTree *astTreeParseFunction(ParserNode *parserNode,
   for (size_t i = 0; i < p_variables_size; ++i) {
     variables[i] = p_variables[i];
   }
-  printLog("%p", function->arguments);
   variables[variables_size - 2] = &function->arguments;
   variables[variables_size - 1] = &scope.variables;
 
@@ -851,7 +850,10 @@ AstTree *makeTypeOf(AstTree *value) {
   }
   case AST_TREE_TOKEN_VALUE_U64:
     return newAstTree(AST_TREE_TOKEN_TYPE_U64, NULL);
-  case AST_TREE_TOKEN_VARIABLE:
+  case AST_TREE_TOKEN_VARIABLE: {
+    AstTreeVariable *variable = value->metadata;
+    return copyAstTree(variable->type);
+  }
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
   case AST_TREE_TOKEN_NONE:
   }
@@ -945,6 +947,12 @@ bool setTypesFunction(AstTree *tree) {
     }
   }
 
+  for (size_t i = 0; i < metadata->scope.variables.size; ++i) {
+    if (!setTypesAstVariable(metadata->scope.variables.data[i])) {
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -1005,14 +1013,14 @@ bool setTypesVariable(AstTree *tree) {
 }
 
 bool setTypesAstVariable(AstTreeVariable *variable) {
+  if (!setAllTypes(variable->value)) {
+    return false;
+  }
+
   if (variable->type == NULL) {
     if ((variable->type = makeTypeOf(variable->value)) == NULL) {
       return false;
     }
-  }
-
-  if (!setAllTypes(variable->value)) {
-    return false;
   }
 
   if (!hasTypeOf(variable->value, variable->type)) {
@@ -1021,4 +1029,83 @@ bool setTypesAstVariable(AstTreeVariable *variable) {
   } else {
     return true;
   }
+}
+
+bool astTreeCleanRoot(AstTreeRoot *root) {
+  for (size_t i = 0; i < root->variables.size; ++i) {
+    astTreeClean(root->variables.data[i]->value);
+    astTreeClean(root->variables.data[i]->type);
+  }
+  return true;
+}
+
+bool astTreeClean(AstTree *tree) {
+  switch (tree->token) {
+  case AST_TREE_TOKEN_VARIABLE:
+    return astTreeCleanVariable(tree);
+  case AST_TREE_TOKEN_FUNCTION:
+    return astTreeCleanFunction(tree);
+  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_TYPE_TYPE:
+  case AST_TREE_TOKEN_TYPE_FUNCTION:
+  case AST_TREE_TOKEN_TYPE_VOID:
+  case AST_TREE_TOKEN_TYPE_U64:
+  case AST_TREE_TOKEN_FUNCTION_CALL:
+  case AST_TREE_TOKEN_VALUE_U64:
+    return true;
+  case AST_TREE_TOKEN_NONE:
+  }
+  printLog("Bad token '%d'", tree->token);
+  exit(1);
+}
+
+bool astTreeCleanFunction(AstTree *tree) {
+  AstTreeFunction *metadata = tree->metadata;
+
+  for (size_t i = 0; i < metadata->arguments.size; ++i) {
+    printLog("Not supported");
+    return false;
+  }
+
+  if (!astTreeClean(metadata->returnType)) {
+    return false;
+  }
+
+  for (size_t i = 0; i < metadata->scope.expressions_size; ++i) {
+    AstTree expression = metadata->scope.expressions[i];
+    if (!astTreeClean(&expression)) {
+      return false;
+    }
+  }
+
+  for (size_t i = 0; i < metadata->scope.variables.size; ++i) {
+    if (!astTreeCleanAstVariable(metadata->scope.variables.data[i])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool astTreeCleanVariable(AstTree *tree) {
+  return astTreeCleanAstVariable(tree->metadata);
+}
+
+bool astTreeCleanAstVariable(AstTreeVariable *variable) {
+  if (!astTreeClean(variable->value) || !astTreeClean(variable->type)) {
+    return false;
+  }
+  AstTree *value = variable->value;
+  if (value->token == AST_TREE_TOKEN_VARIABLE) {
+    do {
+      AstTreeVariable *value_metadata = value->metadata;
+      AstTree *newValue = value_metadata->value;
+      astTreeDelete(value);
+      value = newValue;
+    } while (value->token == AST_TREE_TOKEN_VARIABLE);
+
+    variable->value = copyAstTree(value);
+  }
+
+  return true;
 }
