@@ -26,6 +26,8 @@ typedef enum ParserToken {
   PARSER_TOKEN_SYMBOL_PARENTHESIS,
   PARSER_TOKEN_SYMBOL_COMMA,
 
+  PARSER_TOKEN_OPERATOR_ASSIGN,
+
   PARSER_TOKEN_FUNCTION_DEFINITION,
 
   PARSER_TOKEN_FUNCTION_CALL,
@@ -80,6 +82,11 @@ typedef ParserNode ParserNodeSingleChildMetadata;
 
 typedef uint64_t ParserNodeU64Metadata;
 
+typedef struct ParserNodeInfixMetadata {
+  ParserNode *left;
+  ParserNode *right;
+} ParserNodeInfixMetadata;
+
 void parserNodePrint(const ParserNode *node, int indent);
 void parserNodeDelete(ParserNode *node);
 
@@ -110,6 +117,8 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
                            ParserNode *parent);
 ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
                            ParserNode *parent);
+ParserNode *parserAssign(LexerNode *node, LexerNode *begin, LexerNode *end,
+                         ParserNode *parent);
 
 bool isAllArguments(const ParserNodeArray *nodes);
 

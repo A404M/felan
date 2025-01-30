@@ -1,7 +1,9 @@
 main :: () -> void {
-  print_u64 a;
+  print_u64 b;
+  b = 3;
+  print_u64 b;
+  b = 7;
   print_u64 b;
 };
 
-a := 123;
-b :: 124;
+b := 124;

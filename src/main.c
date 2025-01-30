@@ -8,67 +8,100 @@
 #include <stdlib.h>
 
 static int runWithPrint(const char *filePath, const char *outFilePath) {
-  int ret = 1;
   char *code = readWholeFile(filePath);
-  if (code != NULL) {
-    LexerNodeArray lexed = lexer(code);
-    if (!lexerNodeArrayIsError(lexed)) {
-      lexerNodeArrayPrint(lexed);
-      ParserNode *parsedRoot = parser(lexed);
-      if (parsedRoot != NULL) {
-        parserNodePrint(parsedRoot, 0);
-        AstTreeRoot *astTree = makeAstTree(parsedRoot);
-        if (astTree != NULL) {
-          astTreeRootPrint(astTree);
-          CodeGeneratorCodes *codes = codeGenerator(astTree);
-          if (codes != NULL) {
-            char *fasm = codeGeneratorToFlatASM(codes);
-            printf("%s", fasm);
-            if (codeGeneratorFlatASMExec(outFilePath, fasm)) {
-              ret = system(outFilePath);
-            }
-            free(fasm);
-            codeGeneratorDelete(codes);
-          }
-          astTreeRootDelete(astTree);
-        }
-        parserNodeDelete(parsedRoot);
-      }
-      lexerNodeArrayDestroy(lexed);
-    }
-    free(code);
+
+  if (code == NULL) {
+    return 1;
   }
-  return ret;
+
+  LexerNodeArray lexed = lexer(code);
+  if (lexerNodeArrayIsError(lexed)) {
+    goto RETURN_ERROR;
+  }
+  lexerNodeArrayPrint(lexed);
+
+  ParserNode *parsedRoot = parser(lexed);
+  lexerNodeArrayDestroy(lexed);
+  if (parsedRoot == NULL) {
+    goto RETURN_ERROR;
+  }
+  parserNodePrint(parsedRoot, 0);
+
+  AstTreeRoot *astTree = makeAstTree(parsedRoot);
+  parserNodeDelete(parsedRoot);
+  if (astTree == NULL) {
+    goto RETURN_ERROR;
+  }
+  astTreeRootPrint(astTree);
+
+  CodeGeneratorCodes *codes = codeGenerator(astTree);
+  astTreeRootDelete(astTree);
+  if (codes == NULL) {
+    goto RETURN_ERROR;
+  }
+
+  char *fasm = codeGeneratorToFlatASM(codes);
+  codeGeneratorDelete(codes);
+  free(code);
+
+  printf("%s", fasm);
+
+  if (codeGeneratorFlatASMExec(outFilePath, fasm)) {
+    free(fasm);
+    return system(outFilePath);
+  }
+
+  return 1;
+
+RETURN_ERROR:
+  free(code);
+  return 1;
 }
 
 static int run(const char *filePath, const char *outFilePath) {
-  int ret = 1;
   char *code = readWholeFile(filePath);
-  if (code != NULL) {
-    LexerNodeArray lexed = lexer(code);
-    if (!lexerNodeArrayIsError(lexed)) {
-      ParserNode *parsedRoot = parser(lexed);
-      if (parsedRoot != NULL) {
-        AstTreeRoot *astTree = makeAstTree(parsedRoot);
-        if (astTree != NULL) {
-          CodeGeneratorCodes *codes = codeGenerator(astTree);
-          if (codes != NULL) {
-            char *fasm = codeGeneratorToFlatASM(codes);
-            if (codeGeneratorFlatASMExec(outFilePath, fasm)) {
-              ret = system(outFilePath);
-            }
-            free(fasm);
-            codeGeneratorDelete(codes);
-          }
-          astTreeRootDelete(astTree);
-        }
-        parserNodeDelete(parsedRoot);
-      }
-      lexerNodeArrayDestroy(lexed);
-    }
-    free(code);
+
+  if (code == NULL) {
+    return 1;
   }
-  return ret;
+
+  LexerNodeArray lexed = lexer(code);
+  if (lexerNodeArrayIsError(lexed)) {
+    goto RETURN_ERROR;
+  }
+
+  ParserNode *parsedRoot = parser(lexed);
+  lexerNodeArrayDestroy(lexed);
+  if (parsedRoot == NULL) {
+    goto RETURN_ERROR;
+  }
+
+  AstTreeRoot *astTree = makeAstTree(parsedRoot);
+  parserNodeDelete(parsedRoot);
+  if (astTree == NULL) {
+    goto RETURN_ERROR;
+  }
+
+  CodeGeneratorCodes *codes = codeGenerator(astTree);
+  astTreeRootDelete(astTree);
+  if (codes == NULL) {
+    goto RETURN_ERROR;
+  }
+
+  char *fasm = codeGeneratorToFlatASM(codes);
+  codeGeneratorDelete(codes);
+  free(code);
+
+  if (codeGeneratorFlatASMExec(outFilePath, fasm)) {
+    free(fasm);
+    return system(outFilePath);
+  }
+
+  return 1;
+
+RETURN_ERROR:
+  free(code);
+  return 1;
 }
 
 int main(int argc, char *argv[]) {

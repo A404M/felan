@@ -19,14 +19,20 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_VARIABLE_DEFINE,
   AST_TREE_TOKEN_VALUE_U64,
 
+  AST_TREE_TOKEN_OPERATOR_ASSIGN,
+
   AST_TREE_TOKEN_NONE,
 } AstTreeToken;
 
+extern const char *AST_TREE_TOKEN_STRINGS[];
+
 typedef struct AstTree {
   AstTreeToken token;
-  void *metadata;
   bool typeChecked;
+  void *metadata;
 } AstTree;
+
+extern const AstTree AST_TREE_U64_TYPE;
 
 typedef struct AstTreeVariable {
   char *name_begin;
@@ -73,7 +79,12 @@ typedef uint64_t AstTreeU64;
 
 typedef AstTree AstTreeSingleChild;
 
-extern const char *AST_TREE_TOKEN_STRINGS[];
+typedef struct AstTreeInfix {
+  AstTree left;
+  AstTree right;
+  AstTree leftType;
+  AstTree rightType;
+} AstTreeInfix;
 
 void astTreePrint(const AstTree *tree, int indent);
 void astTreeRootPrint(const AstTreeRoot *root);
@@ -117,6 +128,10 @@ AstTree *astTreeParsePrintU64(ParserNode *parserNode,
                               AstTreeVariables **variables,
                               size_t variables_size);
 
+AstTree *astTreeParseAssign(ParserNode *parserNode,
+                            AstTreeVariables **variables,
+                            size_t variables_size);
+
 bool astTreeParseConstant(ParserNode *parserNode, AstTreeVariables **variables,
                           size_t variables_size);
 
@@ -137,7 +152,10 @@ bool setTypesPrintU64(AstTree *tree);
 bool setTypesTypeFunction(AstTree *tree);
 bool setTypesFunctionCall(AstTree *tree);
 bool setTypesVariable(AstTree *tree);
+bool setTypesOperatorAssign(AstTree *tree);
+
 bool setTypesAstVariable(AstTreeVariable *variable);
+bool setTypesAstInfix(AstTreeInfix *infix);
 
 bool astTreeCleanRoot(AstTreeRoot *root);
 bool astTreeClean(AstTree *tree);

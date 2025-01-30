@@ -37,3 +37,5 @@ call main
 mov rax, SYS_exit
 xor rdi,rdi
 syscall
+
+segment readable executable writable

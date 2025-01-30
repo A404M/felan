@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const AstTree AST_TREE_U64_TYPE = {
+const AstTree AST_TREE_U64_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_U64,
     .metadata = NULL,
 };
@@ -25,6 +25,8 @@ const char *AST_TREE_TOKEN_STRINGS[] = {
     "AST_TREE_TOKEN_VARIABLE",
     "AST_TREE_TOKEN_VARIABLE_DEFINE",
     "AST_TREE_TOKEN_VALUE_U64",
+
+    "AST_TREE_TOKEN_OPERATOR_ASSIGN",
 
     "AST_TREE_TOKEN_NONE",
 };
@@ -132,6 +134,34 @@ void astTreePrint(const AstTree *tree, int indent) {
            metadata->name_begin);
   }
     goto RETURN_SUCCESS;
+  case AST_TREE_TOKEN_OPERATOR_ASSIGN: {
+    AstTreeInfix *metadata = tree->metadata;
+    printf(",\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("left=\n");
+    astTreePrint(&metadata->left, indent + 1);
+    printf(",\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("right=\n");
+    astTreePrint(&metadata->right, indent + 1);
+    printf(",\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("leftType=\n");
+    astTreePrint(&metadata->leftType, indent + 1);
+    printf(",\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("rightType=\n");
+    astTreePrint(&metadata->rightType, indent + 1);
+    printf("\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+  }
+    goto RETURN_SUCCESS;
+
   case AST_TREE_TOKEN_NONE:
   }
 
@@ -206,6 +236,15 @@ void astTreeDestroy(AstTree tree) {
     return;
   case AST_TREE_TOKEN_VARIABLE: {
     // AstTreeIdentifier *metadata = tree.metadata; // not needed
+  }
+    return;
+  case AST_TREE_TOKEN_OPERATOR_ASSIGN: {
+    AstTreeInfix *metadata = tree.metadata;
+    astTreeDestroy(metadata->left);
+    astTreeDestroy(metadata->right);
+    astTreeDestroy(metadata->leftType);
+    astTreeDestroy(metadata->rightType);
+    free(metadata);
   }
     return;
   case AST_TREE_TOKEN_NONE:
@@ -347,6 +386,7 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
     case PARSER_TOKEN_SYMBOL_PARENTHESIS:
     case PARSER_TOKEN_SYMBOL_COMMA:
     case PARSER_TOKEN_FUNCTION_CALL:
+    case PARSER_TOKEN_OPERATOR_ASSIGN:
     case PARSER_TOKEN_NONE:
       printLog("Should not be here");
       goto RETURN_ERROR;
@@ -460,6 +500,8 @@ AstTree *astTreeParse(ParserNode *parserNode, AstTreeVariables **variables,
         (void *)(AstTreeU64)(ParserNodeU64Metadata)parserNode->metadata);
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
     return astTreeParsePrintU64(parserNode, variables, variables_size);
+  case PARSER_TOKEN_OPERATOR_ASSIGN:
+    return astTreeParseAssign(parserNode, variables, variables_size);
   case PARSER_TOKEN_VARIABLE:
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_SYMBOL_EOL:
@@ -694,6 +736,32 @@ AstTree *astTreeParsePrintU64(ParserNode *parserNode,
                     (AstTreeSingleChild *)operand);
 }
 
+AstTree *astTreeParseAssign(ParserNode *parserNode,
+                            AstTreeVariables **variables,
+                            size_t variables_size) {
+  ParserNodeInfixMetadata *node_metadata = parserNode->metadata;
+
+  AstTree *left = astTreeParse(node_metadata->left, variables, variables_size);
+  if (left == NULL) {
+    return NULL;
+  }
+  AstTree *right =
+      astTreeParse(node_metadata->right, variables, variables_size);
+  if (right == NULL) {
+    return NULL;
+  }
+
+  AstTreeInfix *metadata = a404m_malloc(sizeof(*metadata));
+
+  metadata->left = *left;
+  metadata->right = *right;
+
+  free(left);
+  free(right);
+
+  return newAstTree(AST_TREE_TOKEN_OPERATOR_ASSIGN, metadata);
+}
+
 bool astTreeParseConstant(ParserNode *parserNode, AstTreeVariables **variables,
                           size_t variables_size) {
   ParserNodeVariableMetadata *node_metadata = parserNode->metadata;
@@ -800,7 +868,7 @@ bool hasTypeOf(AstTree *value, const AstTree *type) {
     case AST_TREE_TOKEN_FUNCTION_CALL:
     case AST_TREE_TOKEN_VARIABLE:
     case AST_TREE_TOKEN_VALUE_U64:
-  case AST_TREE_TOKEN_VARIABLE_DEFINE:
+    case AST_TREE_TOKEN_VARIABLE_DEFINE:
       return false;
     case AST_TREE_TOKEN_NONE:
     }
@@ -829,7 +897,7 @@ bool hasTypeOf(AstTree *value, const AstTree *type) {
     case AST_TREE_TOKEN_TYPE_U64:
     case AST_TREE_TOKEN_FUNCTION_CALL:
     case AST_TREE_TOKEN_VARIABLE:
-  case AST_TREE_TOKEN_VARIABLE_DEFINE:
+    case AST_TREE_TOKEN_VARIABLE_DEFINE:
       return false;
     case AST_TREE_TOKEN_NONE:
     }
@@ -1006,6 +1074,8 @@ bool setAllTypes(AstTree *tree) {
     return setTypesFunctionCall(tree);
   case AST_TREE_TOKEN_VARIABLE:
     return setTypesVariable(tree);
+  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
+    return setTypesOperatorAssign(tree);
   case AST_TREE_TOKEN_NONE:
   }
   printLog("Bad token '%d'", tree->token);
@@ -1096,6 +1166,10 @@ bool setTypesVariable(AstTree *tree) {
   return setTypesAstVariable(metadata);
 }
 
+bool setTypesOperatorAssign(AstTree *tree) {
+  return setTypesAstInfix(tree->metadata);
+}
+
 bool setTypesAstVariable(AstTreeVariable *variable) {
   if (!setAllTypes(variable->value)) {
     return false;
@@ -1113,6 +1187,29 @@ bool setTypesAstVariable(AstTreeVariable *variable) {
   } else {
     return true;
   }
+}
+
+bool setTypesAstInfix(AstTreeInfix *infix) {
+  if (!setAllTypes(&infix->left) || !setAllTypes(&infix->right)) {
+    printLog("Type mismatch");
+    return false;
+  }
+
+  AstTree *lType = makeTypeOf(&infix->left);
+  AstTree *rType = makeTypeOf(&infix->right);
+
+  if (!typeIsEqual(lType, rType)) {
+    printLog("Type mismatch");
+    return false;
+  }
+
+  infix->leftType = *lType;
+  infix->rightType = *rType;
+
+  free(lType);
+  free(rType);
+
+  return true;
 }
 
 bool astTreeCleanRoot(AstTreeRoot *root) {
@@ -1137,6 +1234,7 @@ bool astTreeClean(AstTree *tree) {
   case AST_TREE_TOKEN_FUNCTION_CALL:
   case AST_TREE_TOKEN_VALUE_U64:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
+  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
     return true;
   case AST_TREE_TOKEN_NONE:
   }

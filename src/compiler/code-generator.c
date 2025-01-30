@@ -25,6 +25,13 @@ void codeGeneratorDelete(CodeGeneratorCodes *code) {
       free(metadata);
     }
       continue;
+    case CODE_GENERATOR_INSTRUCTION_MOV_U64: {
+      CodeGeneratorDoubleOperand *metadata = current.metadata;
+      free(metadata->op0.value);
+      free(metadata->op1.value);
+      free(metadata);
+    }
+      continue;
     }
     printLog("Bad instruction %d", current.instruction);
     exit(1);
@@ -40,6 +47,43 @@ CodeGeneratorOperand *newCodeGeneratorOperand(char *value, bool isReference) {
   result->isReference = isReference;
 
   return result;
+}
+
+CodeGeneratorOperand *makeCodeGeneratorOperand(AstTree tree) {
+  switch (tree.token) {
+  case AST_TREE_TOKEN_VALUE_U64:
+    return newCodeGeneratorOperand(u64ToString((AstTreeU64)tree.metadata),
+                                   false);
+  case AST_TREE_TOKEN_VARIABLE: {
+    AstTreeVariable *variable = tree.metadata;
+    if (!typeIsEqual(variable->type, &AST_TREE_U64_TYPE)) {
+      UNREACHABLE;
+    }
+    if (variable->isConst) {
+      return newCodeGeneratorOperand(
+          u64ToString((AstTreeU64)variable->value->metadata), false);
+    } else {
+      char *name = a404m_malloc(
+          (variable->name_end - variable->name_begin + 1) * sizeof(*name));
+      strncpy(name, variable->name_begin,
+              variable->name_end - variable->name_begin);
+      name[variable->name_end - variable->name_begin] = '\0';
+
+      return newCodeGeneratorOperand(name, true);
+    }
+  }
+  case AST_TREE_TOKEN_FUNCTION:
+  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_TYPE_TYPE:
+  case AST_TREE_TOKEN_TYPE_FUNCTION:
+  case AST_TREE_TOKEN_TYPE_VOID:
+  case AST_TREE_TOKEN_TYPE_U64:
+  case AST_TREE_TOKEN_FUNCTION_CALL:
+  case AST_TREE_TOKEN_VARIABLE_DEFINE:
+  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
+  case AST_TREE_TOKEN_NONE:
+  }
+  UNREACHABLE;
 }
 
 CodeGeneratorCode createGenerateCode(char *label_begin, char *label_end,
@@ -183,6 +227,31 @@ bool codeGeneratorAstTreeFunction(char *label_begin, char *label_end,
       }
     }
       goto OK;
+    case AST_TREE_TOKEN_OPERATOR_ASSIGN: {
+      AstTreeInfix *infix = tree.metadata;
+
+      if (infix->left.token != AST_TREE_TOKEN_VARIABLE) {
+        printLog("Not implemented yet");
+        exit(1);
+      } else if (infix->leftType.token != AST_TREE_TOKEN_TYPE_U64) {
+        printLog("Not implemented yet");
+        exit(1);
+      }
+
+      CodeGeneratorDoubleOperand *operands = a404m_malloc(sizeof(*operands));
+      CodeGeneratorOperand *op0 = makeCodeGeneratorOperand(infix->left);
+      CodeGeneratorOperand *op1 = makeCodeGeneratorOperand(infix->right);
+      operands->op0 = *op0;
+      operands->op1 = *op1;
+      free(op0);
+      free(op1);
+
+      generateCodePushCode(
+          codes,
+          createGenerateCode(label_begin, label_end,
+                             CODE_GENERATOR_INSTRUCTION_MOV_U64, operands));
+    }
+      goto OK;
     case AST_TREE_TOKEN_VARIABLE_DEFINE:
     case AST_TREE_TOKEN_VALUE_U64:
     case AST_TREE_TOKEN_VARIABLE:
@@ -282,6 +351,27 @@ char *codeGeneratorToFlatASM(const CodeGeneratorCodes *codes) {
         asprintf(&inst, "db [%s]\n", metadata->value);
       } else {
         asprintf(&inst, "db %s\n", metadata->value);
+      }
+      codeGeneratorAppendFlatASMCommand(&fasm, &fasm_size, &fasm_inserted, inst,
+                                        strlen(inst));
+      free(inst);
+    }
+      continue;
+    case CODE_GENERATOR_INSTRUCTION_MOV_U64: {
+      CodeGeneratorDoubleOperand *metadata = code.metadata;
+      char *inst;
+      if (metadata->op1.isReference) {
+        asprintf(&inst, "mov rax, [%s]\n", metadata->op1.value);
+      } else {
+        asprintf(&inst, "mov rax, %s\n", metadata->op1.value);
+      }
+      codeGeneratorAppendFlatASMCommand(&fasm, &fasm_size, &fasm_inserted, inst,
+                                        strlen(inst));
+      free(inst);
+      if (metadata->op0.isReference) {
+        asprintf(&inst, "mov [%s], rax\n", metadata->op0.value);
+      } else {
+        UNREACHABLE;
       }
       codeGeneratorAppendFlatASMCommand(&fasm, &fasm_size, &fasm_inserted, inst,
                                         strlen(inst));

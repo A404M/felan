@@ -30,6 +30,8 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_SYMBOL_PARENTHESIS",
     "PARSER_TOKEN_SYMBOL_COMMA",
 
+    "PARSER_TOKEN_OPERATOR_ASSIGN",
+
     "PARSER_TOKEN_FUNCTION_DEFINITION",
 
     "PARSER_TOKEN_FUNCTION_CALL",
@@ -60,6 +62,10 @@ static constexpr ParserOrder PARSER_ORDER[] = {
     {
         .ltr = true,
         ORDER_ARRAY(LEXER_TOKEN_SYMBOL_COLON, LEXER_TOKEN_KEYWORD_PRINT_U64, ),
+    },
+    {
+        .ltr = false,
+        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_ASSIGN, ),
     },
     {
         .ltr = true,
@@ -202,6 +208,23 @@ void parserNodePrint(const ParserNode *node, int indent) {
       printf(" ");
   }
     goto RETURN_SUCCESS;
+  case PARSER_TOKEN_OPERATOR_ASSIGN: {
+    const ParserNodeInfixMetadata *metadata = node->metadata;
+    printf(",\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("left=\n");
+    parserNodePrint(metadata->left, indent + 1);
+    printf(",\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("right=\n");
+    parserNodePrint(metadata->right, indent + 1);
+    printf("\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+  }
+    goto RETURN_SUCCESS;
   case PARSER_TOKEN_NONE:
   }
   printLog("Bad token '%d'", node->token);
@@ -273,6 +296,12 @@ void parserNodeDelete(ParserNode *node) {
     free(metadata->params->data);
     free(metadata->params);
     free(metadata);
+  }
+    goto RETURN_SUCCESS;
+  case PARSER_TOKEN_OPERATOR_ASSIGN: {
+    ParserNodeInfixMetadata *metadata = node->metadata;
+    parserNodeDelete(metadata->left);
+    parserNodeDelete(metadata->right);
   }
     goto RETURN_SUCCESS;
 
@@ -403,11 +432,12 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserComma(node, begin, parent);
   case LEXER_TOKEN_NUMBER:
     return parserNumber(node, parent);
-  case LEXER_TOKEN_NONE:
+  case LEXER_TOKEN_SYMBOL_ASSIGN:
+    return parserAssign(node, begin, end, parent);
   case LEXER_TOKEN_SYMBOL:
   case LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS:
   case LEXER_TOKEN_SYMBOL_OPEN_CURLY_BRACKET:
-  case LEXER_TOKEN_SYMBOL_ASSIGN:
+  case LEXER_TOKEN_NONE:
   }
   printLog("Bad token '%d'", node->token);
   return NULL;
@@ -790,6 +820,36 @@ RETURN_ERROR:
   return NULL;
 }
 
+ParserNode *parserAssign(LexerNode *node, LexerNode *begin, LexerNode *end,
+                         ParserNode *parent) {
+  LexerNode *leftNode = node - 1;
+  LexerNode *rightNode = node + 1;
+
+  if (leftNode < begin || rightNode >= end) {
+    printLog("Bad assign");
+    return NULL;
+  }
+
+  ParserNode *left = getUntilCommonParent(leftNode->parserNode, parent);
+  ParserNode *right = getUntilCommonParent(rightNode->parserNode, parent);
+
+  if (left == NULL || right == NULL) {
+    printLog("Bad assign");
+    return NULL;
+  }
+
+  ParserNodeInfixMetadata *metadata = a404m_malloc(sizeof(*metadata));
+  metadata->left = left;
+  metadata->right = right;
+
+  return left->parent = right->parent = node->parserNode =
+             newParserNode(PARSER_TOKEN_OPERATOR_ASSIGN, left->str_begin,
+                           right->str_end, metadata, parent);
+
+  printLog("Not implemented");
+  return NULL;
+}
+
 bool isAllArguments(const ParserNodeArray *nodes) {
   for (size_t i = 0; i < nodes->size; ++i) {
     const ParserNode *node = nodes->data[i];
@@ -809,6 +869,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_FUNCTION_DEFINITION:
   case PARSER_TOKEN_FUNCTION_CALL:
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
+  case PARSER_TOKEN_OPERATOR_ASSIGN:
     return true;
   case PARSER_TOKEN_ROOT:
   case PARSER_TOKEN_TYPE_TYPE:
@@ -845,6 +906,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_FUNCTION_CALL:
   case PARSER_TOKEN_VALUE_U64:
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
+  case PARSER_TOKEN_OPERATOR_ASSIGN:
     return false;
   case PARSER_TOKEN_NONE:
   }
@@ -858,6 +920,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_FUNCTION_CALL:
   case PARSER_TOKEN_VALUE_U64:
   case PARSER_TOKEN_IDENTIFIER:
+  case PARSER_TOKEN_OPERATOR_ASSIGN:
     return true;
   case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_TYPE_TYPE:
