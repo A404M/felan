@@ -919,18 +919,22 @@ ERROR:
   exit(1);
 }
 
-bool isFunction(AstTree *value) {
+AstTreeFunction *getFunction(AstTree *value) {
   switch (value->token) {
   case AST_TREE_TOKEN_FUNCTION:
-    return true;
+    return value->metadata;
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = value->metadata;
     AstTreeFunction *function = metadata->function->metadata;
-    return isFunction(function->returnType);
+    return getFunction(function->returnType);
   }
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *metadata = value->metadata;
-    return metadata->type->token == AST_TREE_TOKEN_TYPE_FUNCTION;
+    if (metadata->type->token == AST_TREE_TOKEN_TYPE_FUNCTION) {
+      return metadata->value->metadata;
+    } else {
+      return NULL;
+    }
   }
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
   case AST_TREE_TOKEN_TYPE_TYPE:
@@ -939,7 +943,7 @@ bool isFunction(AstTree *value) {
   case AST_TREE_TOKEN_TYPE_U64:
   case AST_TREE_TOKEN_VALUE_U64:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
-    return false;
+    return NULL;
   case AST_TREE_TOKEN_NONE:
   }
   printLog("Bad token '%d'", value->token);
@@ -1147,14 +1151,15 @@ bool setTypesFunctionCall(AstTree *tree) {
     return false;
   }
 
-  if (isFunction(metadata->function)) {
+  if (!setAllTypes(metadata->function)) {
     printLog("Type mismatch");
     return false;
   }
 
-  AstTreeFunction *function = metadata->function->metadata;
-  if (function->arguments.size != metadata->parameters_size) {
-    printLog("Not yet supported");
+  AstTreeFunction *function = getFunction(metadata->function);
+  if (function == NULL || function->arguments.size != metadata->parameters_size) {
+    printLog("Arguments doesn't match %ld != %ld", function->arguments.size,
+             metadata->parameters_size);
     return false;
   }
 

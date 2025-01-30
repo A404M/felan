@@ -348,9 +348,9 @@ char *codeGeneratorToFlatASM(const CodeGeneratorCodes *codes) {
       CodeGeneratorOperand *metadata = code.metadata;
       char *inst;
       if (metadata->isReference) {
-        asprintf(&inst, "db [%s]\n", metadata->value);
+        asprintf(&inst, "dq [%s]\n", metadata->value);
       } else {
-        asprintf(&inst, "db %s\n", metadata->value);
+        asprintf(&inst, "dq %s\n", metadata->value);
       }
       codeGeneratorAppendFlatASMCommand(&fasm, &fasm_size, &fasm_inserted, inst,
                                         strlen(inst));

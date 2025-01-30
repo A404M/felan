@@ -1,9 +1,15 @@
 main :: () -> void {
-  print_u64 b;
-  b = 3;
-  print_u64 b;
-  b = 7;
-  print_u64 b;
+  fun();
+  a = 2;
+  fun();
+  a = b;
+  fun();
 };
 
+a := 1;
 b := 124;
+
+fun :: ()->void {
+  print_u64 a;
+};
+

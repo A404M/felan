@@ -140,7 +140,7 @@ AstTree *astTreeParseVariable(ParserNode *parserNode,
                               size_t variables_size);
 
 bool hasTypeOf(AstTree *value, const AstTree *type);
-bool isFunction(AstTree *value);
+AstTreeFunction* getFunction(AstTree *value);
 bool isConst(AstTree *value);
 AstTree *makeTypeOf(AstTree *value);
 bool typeIsEqual(const AstTree *type0, const AstTree *type1);
