@@ -2,6 +2,7 @@
 #include "compiler/ast-tree.h"
 #include "utils/log.h"
 #include "utils/memory.h"
+#include "utils/string.h"
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -13,6 +14,10 @@ void codeGeneratorDelete(CodeGeneratorCodes *code) {
     CodeGeneratorCode current = code->codes[i];
     switch (current.instruction) {
     case CODE_GENERATOR_INSTRUCTION_PRINT_U64:
+    case CODE_GENERATOR_INSTRUCTION_DEF_VAR64: {
+      CodeGeneratorOperand *metadata = current.metadata;
+      free(metadata);
+    }
     case CODE_GENERATOR_INSTRUCTION_RET:
       continue;
     case CODE_GENERATOR_INSTRUCTION_CALL: {
@@ -78,6 +83,14 @@ CodeGeneratorCodes *codeGenerator(AstTreeRoot *astTreeRoot) {
       }
       continue;
     case AST_TREE_TOKEN_VALUE_U64:
+      if (!variable->isConst) {
+        CodeGeneratorOperand value =
+            u64ToString((AstTreeU64)variable->value->metadata);
+        generateCodePushCode(
+            codes,
+            createGenerateCode(variable->name_begin, variable->name_end,
+                               CODE_GENERATOR_INSTRUCTION_DEF_VAR64, value));
+      }
       continue;
     case AST_TREE_TOKEN_TYPE_TYPE:
     case AST_TREE_TOKEN_TYPE_FUNCTION:
@@ -86,6 +99,7 @@ CodeGeneratorCodes *codeGenerator(AstTreeRoot *astTreeRoot) {
     case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
     case AST_TREE_TOKEN_FUNCTION_CALL:
     case AST_TREE_TOKEN_TYPE_U64:
+    case AST_TREE_TOKEN_VARIABLE_DEFINE:
     case AST_TREE_TOKEN_NONE:
       break;
     }
@@ -128,24 +142,39 @@ bool codeGeneratorAstTreeFunction(char *label_begin, char *label_end,
     case AST_TREE_TOKEN_KEYWORD_PRINT_U64: {
       AstTreeSingleChild *metadata = tree.metadata;
       if (metadata->token == AST_TREE_TOKEN_VALUE_U64) {
-        CodeGeneratorOperandU64 value = (AstTreeU64)metadata->metadata;
+        CodeGeneratorOperand value =
+            u64ToString((AstTreeU64)metadata->metadata);
         generateCodePushCode(
-            codes, createGenerateCode(label_begin, label_end,
-                                      CODE_GENERATOR_INSTRUCTION_PRINT_U64,
-                                      (void *)value));
+            codes,
+            createGenerateCode(label_begin, label_end,
+                               CODE_GENERATOR_INSTRUCTION_PRINT_U64, value));
       } else if (metadata->token == AST_TREE_TOKEN_VARIABLE) {
         AstTreeVariable *variable = metadata->metadata;
-        CodeGeneratorOperandU64 value = (AstTreeU64)variable->value->metadata;
-        generateCodePushCode(
-            codes, createGenerateCode(label_begin, label_end,
-                                      CODE_GENERATOR_INSTRUCTION_PRINT_U64,
-                                      (void *)value));
+        if (variable->isConst) {
+          CodeGeneratorOperand value =
+              u64ToString((AstTreeU64)variable->value->metadata);
+          generateCodePushCode(
+              codes, createGenerateCode(label_begin, label_end,
+                                        CODE_GENERATOR_INSTRUCTION_PRINT_U64,
+                                        (void *)value));
+        } else {
+          char *name = a404m_malloc(
+              (variable->name_end - variable->name_begin + 1) * sizeof(*name));
+          strncpy(name, variable->name_begin,
+                  variable->name_end - variable->name_begin);
+          name[variable->name_end - variable->name_begin] = '\0';
+          generateCodePushCode(
+              codes,
+              createGenerateCode(label_begin, label_end,
+                                 CODE_GENERATOR_INSTRUCTION_PRINT_U64, name));
+        }
       } else {
         printLog("Not implemented yet");
         exit(1);
       }
     }
       goto OK;
+    case AST_TREE_TOKEN_VARIABLE_DEFINE:
     case AST_TREE_TOKEN_VALUE_U64:
     case AST_TREE_TOKEN_VARIABLE:
     case AST_TREE_TOKEN_FUNCTION:
@@ -207,9 +236,13 @@ char *codeGeneratorToFlatASM(const CodeGeneratorCodes *codes) {
 
     switch (code.instruction) {
     case CODE_GENERATOR_INSTRUCTION_PRINT_U64: {
-      CodeGeneratorOperandU64 metadata = (CodeGeneratorOperandU64)code.metadata;
+      CodeGeneratorOperand metadata = (CodeGeneratorOperand)code.metadata;
       char *inst;
-      asprintf(&inst, "mov rdi,%lu\ncall print_u64\n", (uint64_t)metadata);
+      if ('0' <= metadata[0] && metadata[0] <= '9') {
+        asprintf(&inst, "mov rdi,%s\ncall print_u64\n", metadata);
+      } else {
+        asprintf(&inst, "mov rdi,[%s]\ncall print_u64\n", metadata);
+      }
       codeGeneratorAppendFlatASMCommand(&fasm, &fasm_size, &fasm_inserted, inst,
                                         strlen(inst));
       free(inst);
@@ -231,6 +264,15 @@ char *codeGeneratorToFlatASM(const CodeGeneratorCodes *codes) {
       constexpr char INST[] = "ret\n";
       codeGeneratorAppendFlatASMCommand(&fasm, &fasm_size, &fasm_inserted, INST,
                                         strlen(INST));
+    }
+      continue;
+    case CODE_GENERATOR_INSTRUCTION_DEF_VAR64: {
+      CodeGeneratorOperand metadata = (CodeGeneratorOperand)code.metadata;
+      char *inst;
+      asprintf(&inst, "db %s\n", metadata);
+      codeGeneratorAppendFlatASMCommand(&fasm, &fasm_size, &fasm_inserted, inst,
+                                        strlen(inst));
+      free(inst);
     }
       continue;
     }

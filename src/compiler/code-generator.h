@@ -8,6 +8,7 @@ typedef enum CodeGeneratorInstruction : uint8_t {
   CODE_GENERATOR_INSTRUCTION_PRINT_U64,
   CODE_GENERATOR_INSTRUCTION_CALL,
   CODE_GENERATOR_INSTRUCTION_RET,
+  CODE_GENERATOR_INSTRUCTION_DEF_VAR64,
 } CodeGeneratorInstruction;
 
 typedef struct CodeGeneratorCode {
@@ -22,7 +23,7 @@ typedef struct CodeGeneratorCall {
   char *label_end;
 } CodeGeneratorCall;
 
-typedef uint64_t CodeGeneratorOperandU64;
+typedef char *CodeGeneratorOperand;
 
 typedef struct CodeGeneratorCodes {
   CodeGeneratorCode *codes;

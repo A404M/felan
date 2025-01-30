@@ -1,10 +1,7 @@
-main :()->void: () -> void {
-  a :: 3;
-  c :: a;
-  print_u64 c;
-  print_u64 b;
+main :: () -> void {
   print_u64 a;
+  print_u64 b;
 };
 
-a :: 1;
-b :: 2;
+a := 123;
+b :: 124;

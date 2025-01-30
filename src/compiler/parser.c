@@ -23,6 +23,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_KEYWORD_PRINT_U64",
 
     "PARSER_TOKEN_CONSTANT",
+    "PARSER_TOKEN_VARIABLE",
 
     "PARSER_TOKEN_SYMBOL_EOL",
     "PARSER_TOKEN_SYMBOL_CURLY_BRACKET",
@@ -105,7 +106,8 @@ void parserNodePrint(const ParserNode *node, int indent) {
     printf(",operand=%lu", metadata);
   }
     goto RETURN_SUCCESS;
-  case PARSER_TOKEN_CONSTANT: {
+  case PARSER_TOKEN_CONSTANT:
+  case PARSER_TOKEN_VARIABLE: {
     const ParserNodeVariableMetadata *metadata = node->metadata;
     printf(",\n");
     for (int i = 0; i < indent; ++i)
@@ -231,7 +233,8 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_TYPE_U64:
   case PARSER_TOKEN_VALUE_U64:
     goto RETURN_SUCCESS;
-  case PARSER_TOKEN_CONSTANT: {
+  case PARSER_TOKEN_CONSTANT:
+  case PARSER_TOKEN_VARIABLE: {
     ParserNodeVariableMetadata *metadata = node->metadata;
     parserNodeDelete(metadata->name);
     parserNodeDelete(metadata->type);
@@ -404,6 +407,7 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
   case LEXER_TOKEN_SYMBOL:
   case LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS:
   case LEXER_TOKEN_SYMBOL_OPEN_CURLY_BRACKET:
+  case LEXER_TOKEN_SYMBOL_ASSIGN:
   }
   printLog("Bad token '%d'", node->token);
   return NULL;
@@ -688,7 +692,6 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
 ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
                            ParserNode *parent) {
   ParserNode *variableNode = a404m_malloc(sizeof(*variableNode));
-  variableNode->token = PARSER_TOKEN_CONSTANT;
   variableNode->parent = parent;
 
   LexerNode *nameNode = node - 1;
@@ -712,10 +715,16 @@ ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
   ParserNode *type;
   ParserNode *value;
 
+  ParserToken token = PARSER_TOKEN_VARIABLE;
+
   if (node1 >= end) {
     printLog("Bad variable definition");
     return NULL;
   } else if (node1->token == LEXER_TOKEN_SYMBOL_COLON) {
+    type = NULL;
+    node1->parserNode = variableNode;
+    token = PARSER_TOKEN_CONSTANT;
+  } else if (node1->token == LEXER_TOKEN_SYMBOL_ASSIGN) {
     type = NULL;
     node1->parserNode = variableNode;
   } else if (node1->parserNode == NULL) {
@@ -734,6 +743,9 @@ ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
          ++node1) {
     }
     if (node1 < end && node1->token == LEXER_TOKEN_SYMBOL_COLON) {
+      node1->parserNode = variableNode;
+      token = PARSER_TOKEN_CONSTANT;
+    } else if (node1 < end && node1->token == LEXER_TOKEN_SYMBOL_COLON) {
       node1->parserNode = variableNode;
     } else {
       node1 = NULL;
@@ -770,6 +782,7 @@ ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
     variableNode->str_end = type->str_end;
   }
 
+  variableNode->token = token;
   return node->parserNode = variableNode;
 
 RETURN_ERROR:
@@ -791,6 +804,7 @@ bool isExpression(ParserNode *node) {
   switch (node->token) {
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_CONSTANT:
+  case PARSER_TOKEN_VARIABLE:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
   case PARSER_TOKEN_FUNCTION_DEFINITION:
   case PARSER_TOKEN_FUNCTION_CALL:
@@ -821,6 +835,7 @@ bool isType(ParserNode *node) {
     return true;
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_CONSTANT:
+  case PARSER_TOKEN_VARIABLE:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
   case PARSER_TOKEN_FUNCTION_DEFINITION:
   case PARSER_TOKEN_ROOT:
@@ -849,6 +864,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_U64:
   case PARSER_TOKEN_CONSTANT:
+  case PARSER_TOKEN_VARIABLE:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
   case PARSER_TOKEN_ROOT:
   case PARSER_TOKEN_SYMBOL_EOL:

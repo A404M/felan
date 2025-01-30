@@ -1,4 +1,5 @@
 #include "string.h"
+#include "memory.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -29,4 +30,24 @@ uint64_t decimalToU64(char *str_begin, char *str_end, bool *success) {
 
   *success = true;
   return result;
+}
+
+char *u64ToString(uint64_t value) {
+  char *str = a404m_malloc(21 * sizeof(*str));
+  size_t i = 0;
+
+  do {
+    str[i] = (value % 10) + '0';
+    value /= 10;
+    ++i;
+  } while (value != 0);
+
+  for (size_t j = 0; j < i / 2; ++j) {
+    char tmp = str[j];
+    str[j] = str[i - j - 1];
+    str[i - j - 1] = tmp;
+  }
+  str[i] = '\0';
+
+  return a404m_realloc(str, (i + 1) * sizeof(*str));
 }
