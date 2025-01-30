@@ -4,6 +4,16 @@ SYS_exit = 60
 SYS_write = 1
 STDOUT = 1
 
+macro mov64 dest, src {
+  mov rax, src
+  mov dest, rax
+}
+
+macro def64 name, value {
+name:
+  dq value
+}
+
 segment readable executable
 entry _start
 
@@ -38,4 +48,3 @@ mov rax, SYS_exit
 xor rdi,rdi
 syscall
 
-segment readable executable writable

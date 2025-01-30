@@ -9,8 +9,12 @@ typedef enum CodeGeneratorInstruction : uint8_t {
   CODE_GENERATOR_INSTRUCTION_CALL,
   CODE_GENERATOR_INSTRUCTION_RET,
   CODE_GENERATOR_INSTRUCTION_DEF_VAR64,
-  CODE_GENERATOR_INSTRUCTION_MOV_U64,
+  CODE_GENERATOR_INSTRUCTION_MOV_64,
 } CodeGeneratorInstruction;
+
+typedef enum CodeGeneratorType : uint8_t {
+  CODE_GENERATOR_TYPE_64,
+} CodeGeneratorType;
 
 typedef struct CodeGeneratorCode {
   char *label_begin;
@@ -25,7 +29,10 @@ typedef struct CodeGeneratorCall {
 } CodeGeneratorCall;
 
 typedef struct CodeGeneratorOperand {
-  char *value;
+  union {
+    uint64_t value;
+    char *reference;
+  } value;
   bool isReference;
 } CodeGeneratorOperand;
 
@@ -34,25 +41,42 @@ typedef struct CodeGeneratorDoubleOperand {
   CodeGeneratorOperand op1;
 } CodeGeneratorDoubleOperand;
 
+typedef struct CodeGeneratorDefine {
+  char *label_begin;
+  char *label_end;
+  CodeGeneratorOperand operand;
+  CodeGeneratorType type;
+} CodeGeneratorDefine;
+
 typedef struct CodeGeneratorCodes {
   CodeGeneratorCode *codes;
   size_t codes_size;
+  CodeGeneratorDefine *defines;
+  size_t defines_size;
 } CodeGeneratorCodes;
 
+void codeGeneratorOperandDestroy(CodeGeneratorOperand operand);
 void codeGeneratorDelete(CodeGeneratorCodes *code);
 
-CodeGeneratorOperand *newCodeGeneratorOperand(char *value, bool isReference);
+CodeGeneratorOperand *newCodeGeneratorOperand(void *value, bool isReference);
+CodeGeneratorOperand makeCodeGeneratorOperand(void *value, bool isReference);
 
-CodeGeneratorOperand *makeCodeGeneratorOperand(AstTree tree);
+CodeGeneratorOperand *newCodeGeneratorOperandFromAstTree(AstTree tree);
 
 CodeGeneratorCode createGenerateCode(char *label_begin, char *label_end,
                                      CodeGeneratorInstruction instruction,
                                      void *metadata);
 
+CodeGeneratorDefine createGenerateDefine(char *label_begin, char *label_end,
+                                       CodeGeneratorOperand operand,
+                                       CodeGeneratorType type);
+
 CodeGeneratorCode *newGenerateCode(char *label_begin, char *label_end,
                                    CodeGeneratorInstruction instruction);
 
 void generateCodePushCode(CodeGeneratorCodes *codes, CodeGeneratorCode code);
+void generateCodePushDefine(CodeGeneratorCodes *codes,
+                            CodeGeneratorDefine define);
 
 CodeGeneratorCodes *codeGenerator(AstTreeRoot *astTreeRoot);
 

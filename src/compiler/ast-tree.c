@@ -296,10 +296,10 @@ AstTree *copyAstTree(AstTree *tree) {
   case AST_TREE_TOKEN_TYPE_U64:
     return newAstTree(tree->token, NULL);
   case AST_TREE_TOKEN_VALUE_U64:
-    return newAstTree(AST_TREE_TOKEN_VALUE_U64,
-                      (void *)(AstTreeU64)tree->metadata);
+    return newAstTree(tree->token, (void *)(AstTreeU64)tree->metadata);
   case AST_TREE_TOKEN_VARIABLE:
-    return newAstTree(AST_TREE_TOKEN_VARIABLE, tree->metadata);
+    return newAstTree(tree->token, tree->metadata);
+  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
   case AST_TREE_TOKEN_TYPE_FUNCTION:
@@ -869,6 +869,7 @@ bool hasTypeOf(AstTree *value, const AstTree *type) {
     case AST_TREE_TOKEN_VARIABLE:
     case AST_TREE_TOKEN_VALUE_U64:
     case AST_TREE_TOKEN_VARIABLE_DEFINE:
+    case AST_TREE_TOKEN_OPERATOR_ASSIGN:
       return false;
     case AST_TREE_TOKEN_NONE:
     }
@@ -898,6 +899,7 @@ bool hasTypeOf(AstTree *value, const AstTree *type) {
     case AST_TREE_TOKEN_FUNCTION_CALL:
     case AST_TREE_TOKEN_VARIABLE:
     case AST_TREE_TOKEN_VARIABLE_DEFINE:
+    case AST_TREE_TOKEN_OPERATOR_ASSIGN:
       return false;
     case AST_TREE_TOKEN_NONE:
     }
@@ -911,6 +913,7 @@ bool hasTypeOf(AstTree *value, const AstTree *type) {
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
   case AST_TREE_TOKEN_VALUE_U64:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
+  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
     return false;
   case AST_TREE_TOKEN_NONE:
   }
@@ -943,6 +946,7 @@ AstTreeFunction *getFunction(AstTree *value) {
   case AST_TREE_TOKEN_TYPE_U64:
   case AST_TREE_TOKEN_VALUE_U64:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
+  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
     return NULL;
   case AST_TREE_TOKEN_NONE:
   }
@@ -962,6 +966,7 @@ bool isConst(AstTree *value) {
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
   case AST_TREE_TOKEN_FUNCTION_CALL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
+  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
     return false;
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *metadata = value->metadata;
@@ -1009,6 +1014,7 @@ AstTree *makeTypeOf(AstTree *value) {
   }
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_NONE:
   }
   printLog("Bad token '%d'", value->token);
@@ -1021,6 +1027,7 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
   case AST_TREE_TOKEN_VALUE_U64:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
+  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
     return false;
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_VOID:
@@ -1157,7 +1164,8 @@ bool setTypesFunctionCall(AstTree *tree) {
   }
 
   AstTreeFunction *function = getFunction(metadata->function);
-  if (function == NULL || function->arguments.size != metadata->parameters_size) {
+  if (function == NULL ||
+      function->arguments.size != metadata->parameters_size) {
     printLog("Arguments doesn't match %ld != %ld", function->arguments.size,
              metadata->parameters_size);
     return false;
