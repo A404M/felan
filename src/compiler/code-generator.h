@@ -23,7 +23,10 @@ typedef struct CodeGeneratorCall {
   char *label_end;
 } CodeGeneratorCall;
 
-typedef char *CodeGeneratorOperand;
+typedef struct CodeGeneratorOperand {
+  char *value;
+  bool isReference;
+} CodeGeneratorOperand;
 
 typedef struct CodeGeneratorCodes {
   CodeGeneratorCode *codes;
@@ -31,6 +34,8 @@ typedef struct CodeGeneratorCodes {
 } CodeGeneratorCodes;
 
 void codeGeneratorDelete(CodeGeneratorCodes *code);
+
+CodeGeneratorOperand *newCodeGeneratorOperand(char *value, bool isReference);
 
 CodeGeneratorCode createGenerateCode(char *label_begin, char *label_end,
                                      CodeGeneratorInstruction instruction,
