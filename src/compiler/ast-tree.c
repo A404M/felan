@@ -1180,7 +1180,15 @@ bool setTypesVariable(AstTree *tree) {
 }
 
 bool setTypesOperatorAssign(AstTree *tree) {
-  return setTypesAstInfix(tree->metadata);
+  AstTreeInfix *infix = tree->metadata;
+  if (!setTypesAstInfix(infix)) {
+    return true;
+  } else if (!typeIsEqual(&infix->leftType, &infix->rightType)) {
+    printLog("Type mismatch");
+    return false;
+  } else {
+    return true;
+  }
 }
 
 bool setTypesAstVariable(AstTreeVariable *variable) {
@@ -1210,11 +1218,6 @@ bool setTypesAstInfix(AstTreeInfix *infix) {
 
   AstTree *lType = makeTypeOf(&infix->left);
   AstTree *rType = makeTypeOf(&infix->right);
-
-  if (!typeIsEqual(lType, rType)) {
-    printLog("Type mismatch");
-    return false;
-  }
 
   infix->leftType = *lType;
   infix->rightType = *rType;
@@ -1312,4 +1315,23 @@ bool astTreeCleanAstVariable(AstTreeVariable *variable) {
   }
 
   return true;
+}
+
+size_t astTreeTypeSize(AstTree tree) {
+  switch (tree.token) {
+  case AST_TREE_TOKEN_TYPE_U64:
+    return 8;
+  case AST_TREE_TOKEN_FUNCTION:
+  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_TYPE_TYPE:
+  case AST_TREE_TOKEN_TYPE_FUNCTION:
+  case AST_TREE_TOKEN_TYPE_VOID:
+  case AST_TREE_TOKEN_FUNCTION_CALL:
+  case AST_TREE_TOKEN_VARIABLE:
+  case AST_TREE_TOKEN_VARIABLE_DEFINE:
+  case AST_TREE_TOKEN_VALUE_U64:
+  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
+  case AST_TREE_TOKEN_NONE:
+  }
+  UNREACHABLE;
 }

@@ -9,12 +9,8 @@ typedef enum CodeGeneratorInstruction : uint8_t {
   CODE_GENERATOR_INSTRUCTION_CALL,
   CODE_GENERATOR_INSTRUCTION_RET,
   CODE_GENERATOR_INSTRUCTION_DEF_VAR64,
-  CODE_GENERATOR_INSTRUCTION_MOV_64,
+  CODE_GENERATOR_INSTRUCTION_MOV,
 } CodeGeneratorInstruction;
-
-typedef enum CodeGeneratorType : uint8_t {
-  CODE_GENERATOR_TYPE_64,
-} CodeGeneratorType;
 
 typedef struct CodeGeneratorCode {
   char *label_begin;
@@ -41,11 +37,17 @@ typedef struct CodeGeneratorDoubleOperand {
   CodeGeneratorOperand op1;
 } CodeGeneratorDoubleOperand;
 
+typedef struct CodeGeneratorMov {
+  CodeGeneratorOperand op0;
+  CodeGeneratorOperand op1;
+  size_t bytes;
+} CodeGeneratorMov;
+
 typedef struct CodeGeneratorDefine {
   char *label_begin;
   char *label_end;
   CodeGeneratorOperand operand;
-  CodeGeneratorType type;
+  size_t bytes;
 } CodeGeneratorDefine;
 
 typedef struct CodeGeneratorCodes {
@@ -68,8 +70,8 @@ CodeGeneratorCode createGenerateCode(char *label_begin, char *label_end,
                                      void *metadata);
 
 CodeGeneratorDefine createGenerateDefine(char *label_begin, char *label_end,
-                                       CodeGeneratorOperand operand,
-                                       CodeGeneratorType type);
+                                         CodeGeneratorOperand operand,
+                                         size_t bytes);
 
 CodeGeneratorCode *newGenerateCode(char *label_begin, char *label_end,
                                    CodeGeneratorInstruction instruction);

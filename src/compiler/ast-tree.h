@@ -162,3 +162,5 @@ bool astTreeClean(AstTree *tree);
 bool astTreeCleanFunction(AstTree *tree);
 bool astTreeCleanVariable(AstTree *tree);
 bool astTreeCleanAstVariable(AstTreeVariable *variable);
+
+size_t astTreeTypeSize(AstTree tree);

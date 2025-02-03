@@ -31,8 +31,8 @@ void codeGeneratorDelete(CodeGeneratorCodes *code) {
       free(metadata);
     }
       continue;
-    case CODE_GENERATOR_INSTRUCTION_MOV_64: {
-      CodeGeneratorDoubleOperand *metadata = current.metadata;
+    case CODE_GENERATOR_INSTRUCTION_MOV: {
+      CodeGeneratorMov *metadata = current.metadata;
       codeGeneratorOperandDestroy(metadata->op0);
       codeGeneratorOperandDestroy(metadata->op1);
       free(metadata);
@@ -42,13 +42,7 @@ void codeGeneratorDelete(CodeGeneratorCodes *code) {
     UNREACHABLE;
   }
   for (size_t i = 0; i < code->defines_size; ++i) {
-    CodeGeneratorDefine current = code->defines[i];
-    switch (current.type) {
-    case CODE_GENERATOR_TYPE_64:
-      codeGeneratorOperandDestroy(current.operand);
-      continue;
-    }
-    UNREACHABLE;
+    codeGeneratorOperandDestroy(code->defines[i].operand);
   }
   free(code->codes);
   free(code);
@@ -132,12 +126,12 @@ CodeGeneratorCode createGenerateCode(char *label_begin, char *label_end,
 
 CodeGeneratorDefine createGenerateDefine(char *label_begin, char *label_end,
                                          CodeGeneratorOperand operand,
-                                         CodeGeneratorType type) {
+                                         size_t bytes) {
   CodeGeneratorDefine define = {
       .label_begin = label_begin,
       .label_end = label_end,
       .operand = operand,
-      .type = type,
+      .bytes = bytes,
   };
   return define;
 }
@@ -198,10 +192,10 @@ CodeGeneratorCodes *codeGenerator(AstTreeRoot *astTreeRoot) {
       if (!variable->isConst) {
         CodeGeneratorOperand value = makeCodeGeneratorOperand(
             (void *)(uint64_t)(AstTreeU64)variable->value->metadata, false);
-        generateCodePushDefine(codes,
-                               createGenerateDefine(variable->name_begin,
-                                                    variable->name_end, value,
-                                                    CODE_GENERATOR_TYPE_64));
+        generateCodePushDefine(
+            codes,
+            createGenerateDefine(variable->name_begin, variable->name_end,
+                                 value, astTreeTypeSize(*variable->type)));
       }
       continue;
     case AST_TREE_TOKEN_TYPE_TYPE:
@@ -293,25 +287,22 @@ bool codeGeneratorAstTreeFunction(char *label_begin, char *label_end,
       if (infix->left.token != AST_TREE_TOKEN_VARIABLE) {
         printLog("Not implemented yet");
         exit(1);
-      } else if (infix->leftType.token != AST_TREE_TOKEN_TYPE_U64) {
-        printLog("Not implemented yet");
-        exit(1);
       }
 
-      CodeGeneratorDoubleOperand *operands = a404m_malloc(sizeof(*operands));
+      CodeGeneratorMov *operands = a404m_malloc(sizeof(*operands));
       CodeGeneratorOperand *op0 =
           newCodeGeneratorOperandFromAstTree(infix->left);
       CodeGeneratorOperand *op1 =
           newCodeGeneratorOperandFromAstTree(infix->right);
       operands->op0 = *op0;
       operands->op1 = *op1;
+      operands->bytes = astTreeTypeSize(infix->leftType);
       free(op0);
       free(op1);
 
-      generateCodePushCode(codes,
-                           createGenerateCode(label_begin, label_end,
-                                              CODE_GENERATOR_INSTRUCTION_MOV_64,
-                                              operands));
+      generateCodePushCode(
+          codes, createGenerateCode(label_begin, label_end,
+                                    CODE_GENERATOR_INSTRUCTION_MOV, operands));
     }
       goto OK;
     case AST_TREE_TOKEN_VARIABLE_DEFINE:
@@ -430,11 +421,12 @@ char *codeGeneratorToFlatASM(const CodeGeneratorCodes *codes) {
       free(inst);
     }
       continue;
-    case CODE_GENERATOR_INSTRUCTION_MOV_64: {
-      CodeGeneratorDoubleOperand *metadata = code.metadata;
+    case CODE_GENERATOR_INSTRUCTION_MOV: {
+      CodeGeneratorMov *metadata = code.metadata;
       char *inst;
       if (metadata->op0.isReference) {
-        asprintf(&inst, "mov64 [%s],", metadata->op0.value.reference);
+        asprintf(&inst, "mov%ld [%s],", metadata->bytes * 8,
+                 metadata->op0.value.reference);
       } else {
         UNREACHABLE;
       }
@@ -461,26 +453,20 @@ char *codeGeneratorToFlatASM(const CodeGeneratorCodes *codes) {
   for (size_t i = 0; i < codes->defines_size; ++i) {
     const CodeGeneratorDefine define = codes->defines[i];
 
-    switch (define.type) {
-    case CODE_GENERATOR_TYPE_64:
-      CodeGeneratorOperand operand = define.operand;
-      char *inst;
-      if (operand.isReference) {
-        asprintf(&inst, "def64 %.*s, [%s]\n",
-                 (int)(define.label_end - define.label_begin),
-                 define.label_begin, operand.value.reference);
-      } else {
-        asprintf(&inst, "def64 %.*s, %lu\n",
-                 (int)(define.label_end - define.label_begin),
-                 define.label_begin, operand.value.value);
-      }
-      codeGeneratorAppendFlatASMCommand(&fasm, &fasm_size, &fasm_inserted, inst,
-                                        strlen(inst));
-      free(inst);
-
-      continue;
+    CodeGeneratorOperand operand = define.operand;
+    char *inst;
+    if (operand.isReference) {
+      asprintf(&inst, "def%ld %.*s, [%s]\n", define.bytes * 8,
+               (int)(define.label_end - define.label_begin), define.label_begin,
+               operand.value.reference);
+    } else {
+      asprintf(&inst, "def%ld %.*s, %lu\n", define.bytes * 8,
+               (int)(define.label_end - define.label_begin), define.label_begin,
+               operand.value.value);
     }
-    UNREACHABLE;
+    codeGeneratorAppendFlatASMCommand(&fasm, &fasm_size, &fasm_inserted, inst,
+                                      strlen(inst));
+    free(inst);
   }
 
   fasm[fasm_inserted] = '\0';
