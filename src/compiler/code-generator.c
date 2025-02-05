@@ -18,8 +18,7 @@ void codeGeneratorDelete(CodeGeneratorCodes *code) {
   for (size_t i = 0; i < code->codes_size; ++i) {
     CodeGeneratorCode current = code->codes[i];
     switch (current.instruction) {
-    case CODE_GENERATOR_INSTRUCTION_PRINT_U64:
-    case CODE_GENERATOR_INSTRUCTION_DEF_VAR64: {
+    case CODE_GENERATOR_INSTRUCTION_PRINT_U64: {
       CodeGeneratorOperand *metadata = current.metadata;
       codeGeneratorOperandDestroy(*metadata);
       free(metadata);
@@ -406,19 +405,6 @@ char *codeGeneratorToFlatASM(const CodeGeneratorCodes *codes) {
       constexpr char INST[] = "ret\n";
       codeGeneratorAppendFlatASMCommand(&fasm, &fasm_size, &fasm_inserted, INST,
                                         strlen(INST));
-    }
-      continue;
-    case CODE_GENERATOR_INSTRUCTION_DEF_VAR64: {
-      CodeGeneratorOperand *metadata = code.metadata;
-      char *inst;
-      if (metadata->isReference) {
-        asprintf(&inst, "dq [%s]\n", metadata->value.reference);
-      } else {
-        asprintf(&inst, "dq %lu\n", metadata->value.value);
-      }
-      codeGeneratorAppendFlatASMCommand(&fasm, &fasm_size, &fasm_inserted, inst,
-                                        strlen(inst));
-      free(inst);
     }
       continue;
     case CODE_GENERATOR_INSTRUCTION_MOV: {

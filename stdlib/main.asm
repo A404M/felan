@@ -79,16 +79,15 @@ macro funCall id, name {
 segment readable executable
 entry _start
 
-; rdi = the number
+; rax = the number
 print_u64:
   mov rcx, rsp
-  mov rax, rdi
   mov rbx, 10
 
 .L:
   xor rdx, rdx
   div rbx
-  add dl, '0'
+  add edx, '0'
   dec rcx
   mov [rcx],dl
   cmp rax, 0
