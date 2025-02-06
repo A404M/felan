@@ -9,6 +9,8 @@ typedef enum CodeGeneratorInstruction : uint8_t {
   CODE_GENERATOR_INSTRUCTION_CALL,
   CODE_GENERATOR_INSTRUCTION_RET,
   CODE_GENERATOR_INSTRUCTION_MOV,
+  CODE_GENERATOR_INSTRUCTION_FUNCTION_BEGIN,
+  CODE_GENERATOR_INSTRUCTION_FUNCTION_END,
 } CodeGeneratorInstruction;
 
 typedef struct CodeGeneratorCode {
@@ -42,6 +44,16 @@ typedef struct CodeGeneratorMov {
   size_t bytes;
 } CodeGeneratorMov;
 
+typedef struct CodeGeneratorFunctionBegin {
+  char *name_begin;
+  char *name_end;
+} CodeGeneratorFunctionBegin;
+
+typedef struct CodeGeneratorFunctionEnd {
+  char *name_begin;
+  char *name_end;
+} CodeGeneratorFunctionEnd;
+
 typedef struct CodeGeneratorDefine {
   char *label_begin;
   char *label_end;
@@ -61,6 +73,9 @@ void codeGeneratorDelete(CodeGeneratorCodes *code);
 
 CodeGeneratorOperand *newCodeGeneratorOperand(void *value, bool isReference);
 CodeGeneratorOperand makeCodeGeneratorOperand(void *value, bool isReference);
+
+CodeGeneratorFunctionBegin *newCodeGeneratorFunctionBegin(char *name_begin,char *name_end);
+CodeGeneratorFunctionEnd *newCodeGeneratorFunctionEnd(char *name_begin,char *name_end);
 
 CodeGeneratorOperand *newCodeGeneratorOperandFromAstTree(AstTree tree);
 

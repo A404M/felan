@@ -44,7 +44,7 @@ static int runWithPrint(const char *filePath, const char *outFilePath) {
   codeGeneratorDelete(codes);
   free(code);
 
-  printf("%s", fasm);
+  puts(fasm);
 
   if (codeGeneratorFlatASMExec(outFilePath, fasm)) {
     free(fasm);

@@ -79,8 +79,9 @@ macro funCall id, name {
 segment readable executable
 entry _start
 
-; rax = the number
+; rdi = the number
 print_u64:
+  mov rax,rdi
   mov rcx, rsp
   mov rbx, 10
 

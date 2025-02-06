@@ -7,7 +7,7 @@ main :: () -> void {
 };
 
 a := 1;
-b := 124;
+b := 3;
 
 fun :: ()->void {
   print_u64 a;
