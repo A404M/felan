@@ -340,10 +340,12 @@ AstTree *copyAstTree(AstTree *tree) {
     AstTreeTypeFunction *metadata = tree->metadata;
     AstTreeTypeFunction *new_metadata = a404m_malloc(sizeof(*new_metadata));
     new_metadata->returnType = copyAstTree(metadata->returnType);
+    new_metadata->arguments = NULL;
+    new_metadata->arguments_size = 0;
     if (metadata->arguments_size != 0) {
       UNREACHABLE;
     }
-    return newAstTree(tree->token, new_metadata, copyAstTree(tree->type));
+    return newAstTree(tree->token, new_metadata, &AST_TREE_TYPE_TYPE);
   }
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_SUM:
@@ -633,6 +635,10 @@ AstTree *astTreeParseFunction(ParserNode *parserNode,
     ParserNode *node = (ParserNodeSingleChildMetadata *)eol->metadata;
 
     if (node->token == PARSER_TOKEN_CONSTANT) {
+      if (!astTreeParseConstant(node, variables, variables_size)) {
+        goto RETURN_ERROR;
+      }
+    } else if (node->token == PARSER_TOKEN_VARIABLE) {
       if (!astTreeParseConstant(node, variables, variables_size)) {
         goto RETURN_ERROR;
       }
@@ -1030,14 +1036,14 @@ AstTree *makeTypeOf(AstTree *value) {
   }
   case AST_TREE_TOKEN_OPERATOR_ASSIGN: {
     AstTreeInfix *metadata = value->metadata;
-    return makeTypeOf(&metadata->left);
+    return copyAstTree(metadata->left.type);
   }
   case AST_TREE_TOKEN_OPERATOR_SUM: {
     AstTreeInfix *metadata = value->metadata;
 
     // TODO: find a better way
 
-    return makeTypeOf(&metadata->left);
+    return copyAstTree(metadata->left.type);
   }
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
@@ -1149,6 +1155,8 @@ bool setTypesFunction(AstTree *tree) {
     return false;
   }
 
+  tree->type = makeTypeOf(tree);
+
   for (size_t i = 0; i < metadata->scope.expressions_size; ++i) {
     AstTree *expression = &metadata->scope.expressions[i];
     if (!setAllTypes(expression, metadata)) {
@@ -1162,8 +1170,7 @@ bool setTypesFunction(AstTree *tree) {
     }
   }
 
-  tree->type = makeTypeOf(tree);
-  return tree->type != NULL;
+  return true;
 }
 
 bool setTypesPrintU64(AstTree *tree) {
@@ -1278,15 +1285,20 @@ bool setTypesOperatorSum(AstTree *tree) {
 bool setTypesAstVariable(AstTreeVariable *variable) {
   if (!setAllTypes(variable->value, NULL)) {
     return false;
-  } else if (variable->type == NULL &&
-             (variable->type = makeTypeOf(variable->value)) == NULL) {
+  }
+
+  if (variable->type == NULL) {
+    variable->type = copyAstTree(variable->value->type);
+  }
+
+  if (variable->type == NULL) {
     return false;
   } else if (!typeIsEqual(variable->value->type, variable->type)) {
     printLog("Type mismatch");
     return false;
-  } else {
-    return true;
   }
+
+  return true;
 }
 
 bool setTypesAstInfix(AstTreeInfix *infix) {

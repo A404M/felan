@@ -1,8 +1,10 @@
 main :: () -> void {
-  print_u64 fun() + 4 + 5;
+  a := fun();
+  a = a + 3;
+  print_u64 a + 5;
 };
 
 fun :: ()->u64 {
-  return 123;
+  return 1;
 };
 
