@@ -1,5 +1,5 @@
 main :: () -> void {
-  a := fun();
+  a : u64 = fun();
   a = a + 3;
   print_u64 a + 5;
 };

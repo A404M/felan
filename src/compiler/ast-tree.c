@@ -554,6 +554,7 @@ AstTree *astTreeParse(ParserNode *parserNode, AstTreeVariables **variables,
   case PARSER_TOKEN_OPERATOR_SUM:
     return astTreeParseSum(parserNode, variables, variables_size);
   case PARSER_TOKEN_VARIABLE:
+    return astTreeParseVariable(parserNode, variables, variables_size);
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_SYMBOL_EOL:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
@@ -635,10 +636,6 @@ AstTree *astTreeParseFunction(ParserNode *parserNode,
     ParserNode *node = (ParserNodeSingleChildMetadata *)eol->metadata;
 
     if (node->token == PARSER_TOKEN_CONSTANT) {
-      if (!astTreeParseConstant(node, variables, variables_size)) {
-        goto RETURN_ERROR;
-      }
-    } else if (node->token == PARSER_TOKEN_VARIABLE) {
       if (!astTreeParseConstant(node, variables, variables_size)) {
         goto RETURN_ERROR;
       }
@@ -1262,6 +1259,9 @@ bool setTypesOperatorAssign(AstTree *tree) {
     return false;
   } else if (!typeIsEqual(infix->left.type, infix->right.type)) {
     printLog("Type mismatch");
+    return false;
+  } else if(isConst(&infix->left)){
+    printLog("Constants can't be assigned");
     return false;
   } else {
     tree->type = copyAstTree(infix->left.type);

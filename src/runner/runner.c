@@ -63,6 +63,11 @@ AstTree *runAstTreeFunction(AstTreeFunction *function) {
       }
     }
       continue;
+    case AST_TREE_TOKEN_VARIABLE_DEFINE: {
+      AstTreeVariable *variable = expr.metadata;
+      variable->value = calcAstTreeValue(variable->value);
+    }
+      continue;
     case AST_TREE_TOKEN_OPERATOR_SUM:
     case AST_TREE_TOKEN_FUNCTION:
     case AST_TREE_TOKEN_TYPE_TYPE:
@@ -70,7 +75,6 @@ AstTree *runAstTreeFunction(AstTreeFunction *function) {
     case AST_TREE_TOKEN_TYPE_VOID:
     case AST_TREE_TOKEN_TYPE_U64:
     case AST_TREE_TOKEN_VARIABLE:
-    case AST_TREE_TOKEN_VARIABLE_DEFINE:
     case AST_TREE_TOKEN_VALUE_U64:
     case AST_TREE_TOKEN_NONE:
     }

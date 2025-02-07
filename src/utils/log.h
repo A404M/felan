@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdlib.h>
-
 #define printLog(format,...) _printLogBack(format, __FILE_NAME__, __LINE__, ## __VA_ARGS__)
 
 #define UNREACHABLE printLog("Unreachable");exit(1)

@@ -837,7 +837,7 @@ ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
     if (node1 < end && node1->token == LEXER_TOKEN_SYMBOL_COLON) {
       node1->parserNode = variableNode;
       token = PARSER_TOKEN_CONSTANT;
-    } else if (node1 < end && node1->token == LEXER_TOKEN_SYMBOL_COLON) {
+    } else if (node1 < end && node1->token == LEXER_TOKEN_SYMBOL_ASSIGN) {
       node1->parserNode = variableNode;
     } else {
       node1 = NULL;
