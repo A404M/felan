@@ -54,6 +54,15 @@ AstTree *runAstTreeFunction(AstTreeFunction *function) {
       }
     }
       continue;
+    case AST_TREE_TOKEN_KEYWORD_RETURN: {
+      AstTreeReturn *metadata = expr.metadata;
+      if (metadata->value != NULL) {
+        return calcAstTreeValue(metadata->value);
+      } else {
+        return &AST_TREE_VOID_VALUE;
+      }
+    }
+      continue;
     case AST_TREE_TOKEN_OPERATOR_SUM:
     case AST_TREE_TOKEN_FUNCTION:
     case AST_TREE_TOKEN_TYPE_TYPE:

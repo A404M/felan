@@ -1,8 +1,8 @@
 main :: () -> void {
-  print_u64;
+  print_u64 fun() + 4 + 5;
 };
 
 fun :: ()->u64 {
-  return 23;
-}
+  return 123;
+};
 

@@ -21,6 +21,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_TYPE_U64",
 
     "PARSER_TOKEN_KEYWORD_PRINT_U64",
+    "PARSER_TOKEN_KEYWORD_RETURN",
 
     "PARSER_TOKEN_CONSTANT",
     "PARSER_TOKEN_VARIABLE",
@@ -66,11 +67,16 @@ static constexpr ParserOrder PARSER_ORDER[] = {
     },
     {
         .ltr = true,
-        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_COLON, LEXER_TOKEN_KEYWORD_PRINT_U64, ),
+        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_COLON, ),
     },
     {
         .ltr = false,
         ORDER_ARRAY(LEXER_TOKEN_SYMBOL_ASSIGN, ),
+    },
+    {
+        .ltr = true,
+        ORDER_ARRAY(LEXER_TOKEN_KEYWORD_RETURN,
+                    LEXER_TOKEN_KEYWORD_PRINT_U64, ),
     },
     {
         .ltr = true,
@@ -149,6 +155,18 @@ void parserNodePrint(const ParserNode *node, int indent) {
       printf(" ");
     printf("child=\n");
     parserNodePrint(metadata, indent + 1);
+    printf("\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+  }
+    goto RETURN_SUCCESS;
+  case PARSER_TOKEN_KEYWORD_RETURN: {
+    const ParserNodeReturnMetadata *metadata = node->metadata;
+    printf(",\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("value=\n");
+    parserNodePrint(metadata->value, indent + 1);
     printf("\n");
     for (int i = 0; i < indent; ++i)
       printf(" ");
@@ -276,6 +294,14 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_SYMBOL_EOL: {
     ParserNodeSingleChildMetadata *metadata = node->metadata;
     parserNodeDelete(metadata);
+  }
+    goto RETURN_SUCCESS;
+  case PARSER_TOKEN_KEYWORD_RETURN: {
+    ParserNodeReturnMetadata *metadata = node->metadata;
+    if (metadata->value != NULL) {
+      parserNodeDelete(metadata->value);
+    }
+    free(metadata);
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_FUNCTION_DEFINITION: {
@@ -425,6 +451,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserU64(node, parent);
   case LEXER_TOKEN_KEYWORD_PRINT_U64:
     return parserPrintU64(node, end, parent);
+  case LEXER_TOKEN_KEYWORD_RETURN:
+    return parserReturn(node, end, parent);
   case LEXER_TOKEN_SYMBOL_EOL:
     return parserEol(node, begin, parent);
   case LEXER_TOKEN_SYMBOL_CLOSE_PARENTHESIS:
@@ -503,6 +531,27 @@ ParserNode *parserPrintU64(LexerNode *node, LexerNode *end,
   return operand->parent = node->parserNode = newParserNode(
              PARSER_TOKEN_KEYWORD_PRINT_U64, node->str_begin, node->str_end,
              (ParserNodeSingleChildMetadata *)operand, parent);
+}
+
+ParserNode *parserReturn(LexerNode *node, LexerNode *end, ParserNode *parent) {
+  LexerNode *afterNode = node + 1;
+  ParserNode *operand;
+  if (afterNode >= end || afterNode->parserNode == NULL) {
+    operand = NULL;
+  } else {
+    operand = getUntilCommonParent(afterNode->parserNode, parent);
+    if (operand == NULL) {
+      printLog("No param");
+      return NULL;
+    }
+  }
+
+  ParserNodeReturnMetadata *metadata = a404m_malloc(sizeof(*metadata));
+  metadata->value = operand;
+
+  return operand->parent = node->parserNode =
+             newParserNode(PARSER_TOKEN_KEYWORD_RETURN, node->str_begin,
+                           node->str_end, metadata, parent);
 }
 
 ParserNode *parserNumber(LexerNode *node, ParserNode *parent) {
@@ -902,6 +951,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_FUNCTION_DEFINITION:
   case PARSER_TOKEN_FUNCTION_CALL:
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
+  case PARSER_TOKEN_KEYWORD_RETURN:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM:
     return true;
@@ -940,6 +990,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_FUNCTION_CALL:
   case PARSER_TOKEN_VALUE_U64:
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
+  case PARSER_TOKEN_KEYWORD_RETURN:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM:
     return false;
@@ -970,6 +1021,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
   case PARSER_TOKEN_SYMBOL_COMMA:
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
+  case PARSER_TOKEN_KEYWORD_RETURN:
     return false;
   case PARSER_TOKEN_NONE:
   }

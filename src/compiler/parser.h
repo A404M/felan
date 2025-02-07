@@ -17,6 +17,7 @@ typedef enum ParserToken {
   PARSER_TOKEN_TYPE_U64,
 
   PARSER_TOKEN_KEYWORD_PRINT_U64,
+  PARSER_TOKEN_KEYWORD_RETURN,
 
   PARSER_TOKEN_CONSTANT,
   PARSER_TOKEN_VARIABLE,
@@ -88,6 +89,10 @@ typedef struct ParserNodeInfixMetadata {
   ParserNode *right;
 } ParserNodeInfixMetadata;
 
+typedef struct ParserNodeReturnMetadata {
+  ParserNode *value;
+} ParserNodeReturnMetadata;
+
 void parserNodePrint(const ParserNode *node, int indent);
 void parserNodeDelete(ParserNode *node);
 
@@ -107,6 +112,7 @@ ParserNode *parserType(LexerNode *node, ParserNode *parent);
 ParserNode *parserVoid(LexerNode *node, ParserNode *parent);
 ParserNode *parserU64(LexerNode *node, ParserNode *parent);
 ParserNode *parserPrintU64(LexerNode *node, LexerNode *end, ParserNode *parent);
+ParserNode *parserReturn(LexerNode *node, LexerNode *end, ParserNode *parent);
 ParserNode *parserNumber(LexerNode *node, ParserNode *parent);
 ParserNode *parserEol(LexerNode *node, LexerNode *begin, ParserNode *parent);
 ParserNode *parserComma(LexerNode *node, LexerNode *begin, ParserNode *parent);

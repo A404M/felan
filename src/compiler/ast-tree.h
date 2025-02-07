@@ -8,6 +8,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_FUNCTION,
 
   AST_TREE_TOKEN_KEYWORD_PRINT_U64,
+  AST_TREE_TOKEN_KEYWORD_RETURN,
 
   AST_TREE_TOKEN_TYPE_TYPE,
   AST_TREE_TOKEN_TYPE_FUNCTION,
@@ -88,6 +89,10 @@ typedef struct AstTreeInfix {
   AstTree right;
 } AstTreeInfix;
 
+typedef struct AstTreeReturn {
+  AstTree *value;
+} AstTreeReturn;
+
 void astTreePrint(const AstTree *tree, int indent);
 void astTreeRootPrint(const AstTreeRoot *root);
 
@@ -129,6 +134,9 @@ AstTree *astTreeParseIdentifier(ParserNode *parserNode,
 AstTree *astTreeParsePrintU64(ParserNode *parserNode,
                               AstTreeVariables **variables,
                               size_t variables_size);
+AstTree *astTreeParseReturn(ParserNode *parserNode,
+                              AstTreeVariables **variables,
+                              size_t variables_size);
 
 AstTree *astTreeParseAssign(ParserNode *parserNode,
                             AstTreeVariables **variables,
@@ -150,9 +158,10 @@ AstTree *makeTypeOf(AstTree *value);
 bool typeIsEqual(const AstTree *type0, const AstTree *type1);
 
 bool setAllTypesRoot(AstTreeRoot *root);
-bool setAllTypes(AstTree *tree);
+bool setAllTypes(AstTree *tree,AstTreeFunction *function);
 bool setTypesFunction(AstTree *tree);
 bool setTypesPrintU64(AstTree *tree);
+bool setTypesReturn(AstTree *tree,AstTreeFunction *function);
 bool setTypesTypeFunction(AstTree *tree);
 bool setTypesFunctionCall(AstTree *tree);
 bool setTypesVariable(AstTree *tree);
