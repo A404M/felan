@@ -549,9 +549,13 @@ ParserNode *parserReturn(LexerNode *node, LexerNode *end, ParserNode *parent) {
   ParserNodeReturnMetadata *metadata = a404m_malloc(sizeof(*metadata));
   metadata->value = operand;
 
-  return operand->parent = node->parserNode =
-             newParserNode(PARSER_TOKEN_KEYWORD_RETURN, node->str_begin,
-                           node->str_end, metadata, parent);
+  node->parserNode = newParserNode(PARSER_TOKEN_KEYWORD_RETURN, node->str_begin,
+                                   node->str_end, metadata, parent);
+  if (operand != NULL) {
+    operand->parent = node->parserNode;
+  }
+
+  return node->parserNode;
 }
 
 ParserNode *parserNumber(LexerNode *node, ParserNode *parent) {

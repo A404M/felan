@@ -780,7 +780,7 @@ AstTree *astTreeParseReturn(ParserNode *parserNode,
   ParserNodeReturnMetadata *node_metadata = parserNode->metadata;
 
   AstTree *value;
-  if (node_metadata == NULL) {
+  if (node_metadata->value == NULL) {
     value = NULL;
   } else {
     value = astTreeParse(node_metadata->value, variables, variables_size);
