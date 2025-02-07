@@ -1031,15 +1031,9 @@ AstTree *makeTypeOf(AstTree *value) {
     AstTreeVariable *variable = value->metadata;
     return copyAstTree(variable->type);
   }
-  case AST_TREE_TOKEN_OPERATOR_ASSIGN: {
-    AstTreeInfix *metadata = value->metadata;
-    return copyAstTree(metadata->left.type);
-  }
+  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_SUM: {
     AstTreeInfix *metadata = value->metadata;
-
-    // TODO: find a better way
-
     return copyAstTree(metadata->left.type);
   }
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
@@ -1260,7 +1254,7 @@ bool setTypesOperatorAssign(AstTree *tree) {
   } else if (!typeIsEqual(infix->left.type, infix->right.type)) {
     printLog("Type mismatch");
     return false;
-  } else if(isConst(&infix->left)){
+  } else if (isConst(&infix->left)) {
     printLog("Constants can't be assigned");
     return false;
   } else {
