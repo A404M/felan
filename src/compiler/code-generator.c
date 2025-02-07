@@ -132,6 +132,7 @@ CodeGeneratorOperand *newCodeGeneratorOperandFromAstTree(AstTree tree) {
   case AST_TREE_TOKEN_FUNCTION_CALL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
+  case AST_TREE_TOKEN_OPERATOR_SUM:
   case AST_TREE_TOKEN_NONE:
   }
   UNREACHABLE;
@@ -232,6 +233,7 @@ CodeGeneratorCodes *codeGenerator(AstTreeRoot *astTreeRoot) {
     case AST_TREE_TOKEN_TYPE_U64:
     case AST_TREE_TOKEN_VARIABLE_DEFINE:
     case AST_TREE_TOKEN_OPERATOR_ASSIGN:
+    case AST_TREE_TOKEN_OPERATOR_SUM:
     case AST_TREE_TOKEN_NONE:
       break;
     }
@@ -325,12 +327,36 @@ bool codeGeneratorAstTreeFunction(char *name_begin, char *name_end,
           newCodeGeneratorOperandFromAstTree(infix->right);
       operands->op0 = *op0;
       operands->op1 = *op1;
-      operands->bytes = astTreeTypeSize(infix->leftType);
+      operands->bytes = astTreeTypeSize(*infix->left.type);
       free(op0);
       free(op1);
 
       generateCodePushCode(
           codes, createGenerateCode(NULL, NULL, CODE_GENERATOR_INSTRUCTION_MOV,
+                                    operands));
+    }
+      goto OK;
+    case AST_TREE_TOKEN_OPERATOR_SUM: {
+      AstTreeInfix *infix = tree.metadata;
+
+      if (infix->left.token != AST_TREE_TOKEN_VARIABLE) {
+        printLog("Not implemented yet");
+        exit(1);
+      }
+
+      CodeGeneratorMov *operands = a404m_malloc(sizeof(*operands));
+      CodeGeneratorOperand *op0 =
+          newCodeGeneratorOperandFromAstTree(infix->left);
+      CodeGeneratorOperand *op1 =
+          newCodeGeneratorOperandFromAstTree(infix->right);
+      operands->op0 = *op0;
+      operands->op1 = *op1;
+      operands->bytes = astTreeTypeSize(*infix->left.type);
+      free(op0);
+      free(op1);
+
+      generateCodePushCode(
+          codes, createGenerateCode(NULL, NULL, CODE_GENERATOR_INSTRUCTION_ADD,
                                     operands));
     }
       goto OK;
@@ -488,6 +514,8 @@ char *codeGeneratorToFlatASM(const CodeGeneratorCodes *codes) {
       free(inst);
     }
       continue;
+    case CODE_GENERATOR_INSTRUCTION_ADD: {
+    }
     }
     UNREACHABLE;
   }

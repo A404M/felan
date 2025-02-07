@@ -20,6 +20,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_VALUE_U64,
 
   AST_TREE_TOKEN_OPERATOR_ASSIGN,
+  AST_TREE_TOKEN_OPERATOR_SUM,
 
   AST_TREE_TOKEN_NONE,
 } AstTreeToken;
@@ -28,11 +29,14 @@ extern const char *AST_TREE_TOKEN_STRINGS[];
 
 typedef struct AstTree {
   AstTreeToken token;
-  bool typeChecked;
   void *metadata;
+  struct AstTree *type;
 } AstTree;
 
-extern const AstTree AST_TREE_U64_TYPE;
+extern AstTree AST_TREE_TYPE_TYPE;
+extern AstTree AST_TREE_VOID_TYPE;
+extern AstTree AST_TREE_U64_TYPE;
+extern AstTree AST_TREE_VOID_VALUE;
 
 typedef struct AstTreeVariable {
   char *name_begin;
@@ -82,8 +86,6 @@ typedef AstTree AstTreeSingleChild;
 typedef struct AstTreeInfix {
   AstTree left;
   AstTree right;
-  AstTree leftType;
-  AstTree rightType;
 } AstTreeInfix;
 
 void astTreePrint(const AstTree *tree, int indent);
@@ -95,7 +97,7 @@ void astTreeVariableDelete(AstTreeVariable *variable);
 void astTreeDelete(AstTree *tree);
 void astTreeRootDelete(AstTreeRoot *root);
 
-AstTree *newAstTree(AstTreeToken token, void *metadata);
+AstTree *newAstTree(AstTreeToken token, void *metadata, AstTree *type);
 AstTree *copyAstTree(AstTree *tree);
 
 AstTreeRoot *makeAstTree(ParserNode *parsedRoot);
@@ -132,6 +134,9 @@ AstTree *astTreeParseAssign(ParserNode *parserNode,
                             AstTreeVariables **variables,
                             size_t variables_size);
 
+AstTree *astTreeParseSum(ParserNode *parserNode, AstTreeVariables **variables,
+                         size_t variables_size);
+
 bool astTreeParseConstant(ParserNode *parserNode, AstTreeVariables **variables,
                           size_t variables_size);
 
@@ -139,8 +144,7 @@ AstTree *astTreeParseVariable(ParserNode *parserNode,
                               AstTreeVariables **variables,
                               size_t variables_size);
 
-bool hasTypeOf(AstTree *value, const AstTree *type);
-AstTreeFunction* getFunction(AstTree *value);
+AstTreeFunction *getFunction(AstTree *value);
 bool isConst(AstTree *value);
 AstTree *makeTypeOf(AstTree *value);
 bool typeIsEqual(const AstTree *type0, const AstTree *type1);
@@ -153,6 +157,7 @@ bool setTypesTypeFunction(AstTree *tree);
 bool setTypesFunctionCall(AstTree *tree);
 bool setTypesVariable(AstTree *tree);
 bool setTypesOperatorAssign(AstTree *tree);
+bool setTypesOperatorSum(AstTree *tree);
 
 bool setTypesAstVariable(AstTreeVariable *variable);
 bool setTypesAstInfix(AstTreeInfix *infix);

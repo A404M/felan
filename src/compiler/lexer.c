@@ -15,6 +15,7 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_KEYWORD_VOID",
     "LEXER_TOKEN_KEYWORD_U64",
     "LEXER_TOKEN_KEYWORD_PRINT_U64",
+    "LEXER_TOKEN_KEYWORD_RETURN",
 
     "LEXER_TOKEN_NUMBER",
 
@@ -28,12 +29,13 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_COLON",
     "LEXER_TOKEN_SYMBOL_ASSIGN",
     "LEXER_TOKEN_SYMBOL_COMMA",
+    "LEXER_TOKEN_SYMBOL_PLUS",
 
     "LEXER_TOKEN_NONE",
 };
 
 const char *LEXER_SYMBOL_STRINGS[] = {
-    ";", "(", ")", "{", "}", "->", ":", "=", ",",
+    ";", "(", ")", "{", "}", "->", ":", "=", ",", "+",
 };
 const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_EOL,
@@ -45,6 +47,7 @@ const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_COLON,
     LEXER_TOKEN_SYMBOL_ASSIGN,
     LEXER_TOKEN_SYMBOL_COMMA,
+    LEXER_TOKEN_SYMBOL_PLUS,
 };
 const size_t LEXER_SYMBOL_SIZE =
     sizeof(LEXER_SYMBOL_TOKENS) / sizeof(*LEXER_SYMBOL_TOKENS);
@@ -54,12 +57,14 @@ const char *LEXER_KEYWORD_STRINGS[] = {
     "void",
     "u64",
     "print_u64",
+    "return",
 };
 const LexerToken LEXER_KEYWORD_TOKENS[] = {
     LEXER_TOKEN_KEYWORD_TYPE,
     LEXER_TOKEN_KEYWORD_VOID,
     LEXER_TOKEN_KEYWORD_U64,
     LEXER_TOKEN_KEYWORD_PRINT_U64,
+    LEXER_TOKEN_KEYWORD_RETURN,
 };
 const size_t LEXER_KEYWORD_SIZE =
     sizeof(LEXER_KEYWORD_TOKENS) / sizeof(*LEXER_KEYWORD_TOKENS);

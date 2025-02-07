@@ -2,12 +2,14 @@
 #include "compiler/code-generator.h"
 #include "compiler/lexer.h"
 #include "compiler/parser.h"
+#include "runner/runner.h"
 #include "utils/file.h"
 #include "utils/log.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-static int runWithPrint(const char *filePath, const char *outFilePath) {
+static int compileRun(const char *filePath, const char *outFilePath,
+                      bool print) {
   char *code = readWholeFile(filePath);
 
   if (code == NULL) {
@@ -18,21 +20,24 @@ static int runWithPrint(const char *filePath, const char *outFilePath) {
   if (lexerNodeArrayIsError(lexed)) {
     goto RETURN_ERROR;
   }
-  lexerNodeArrayPrint(lexed);
+  if (print)
+    lexerNodeArrayPrint(lexed);
 
   ParserNode *parsedRoot = parser(lexed);
   lexerNodeArrayDestroy(lexed);
   if (parsedRoot == NULL) {
     goto RETURN_ERROR;
   }
-  parserNodePrint(parsedRoot, 0);
+  if (print)
+    parserNodePrint(parsedRoot, 0);
 
   AstTreeRoot *astTree = makeAstTree(parsedRoot);
   parserNodeDelete(parsedRoot);
   if (astTree == NULL) {
     goto RETURN_ERROR;
   }
-  astTreeRootPrint(astTree);
+  if (print)
+    astTreeRootPrint(astTree);
 
   CodeGeneratorCodes *codes = codeGenerator(astTree);
   astTreeRootDelete(astTree);
@@ -44,7 +49,8 @@ static int runWithPrint(const char *filePath, const char *outFilePath) {
   codeGeneratorDelete(codes);
   free(code);
 
-  puts(fasm);
+  if (print)
+    puts(fasm);
 
   if (codeGeneratorFlatASMExec(outFilePath, fasm)) {
     free(fasm);
@@ -58,7 +64,7 @@ RETURN_ERROR:
   return 1;
 }
 
-static int run(const char *filePath, const char *outFilePath) {
+static int run(const char *filePath, bool print) {
   char *code = readWholeFile(filePath);
 
   if (code == NULL) {
@@ -69,35 +75,32 @@ static int run(const char *filePath, const char *outFilePath) {
   if (lexerNodeArrayIsError(lexed)) {
     goto RETURN_ERROR;
   }
+  if (print)
+    lexerNodeArrayPrint(lexed);
 
   ParserNode *parsedRoot = parser(lexed);
   lexerNodeArrayDestroy(lexed);
   if (parsedRoot == NULL) {
     goto RETURN_ERROR;
   }
+  if (print)
+    parserNodePrint(parsedRoot, 0);
 
   AstTreeRoot *astTree = makeAstTree(parsedRoot);
   parserNodeDelete(parsedRoot);
   if (astTree == NULL) {
     goto RETURN_ERROR;
   }
+  if (print)
+    astTreeRootPrint(astTree);
 
-  CodeGeneratorCodes *codes = codeGenerator(astTree);
-  astTreeRootDelete(astTree);
-  if (codes == NULL) {
-    goto RETURN_ERROR;
+  if (runAstTree(astTree)) {
+    astTreeRootDelete(astTree);
+    return 0;
+  } else {
+    astTreeRootDelete(astTree);
+    return 1;
   }
-
-  char *fasm = codeGeneratorToFlatASM(codes);
-  codeGeneratorDelete(codes);
-  free(code);
-
-  if (codeGeneratorFlatASMExec(outFilePath, fasm)) {
-    free(fasm);
-    return system(outFilePath);
-  }
-
-  return 1;
 
 RETURN_ERROR:
   free(code);
@@ -105,11 +108,12 @@ RETURN_ERROR:
 }
 
 int main(int argc, char *argv[]) {
-  if (argc < 3) {
-    run("test/main.felan", "build/out");
+  if (argc < 2) {
+    // compileRun("test/main.felan", "build/out", false);
+    run("test/main.felan", false);
     printLog("Too few args");
     return 1;
   }
 
-  return runWithPrint(argv[1], argv[2]);
+  return run(argv[1], true);
 }

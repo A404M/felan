@@ -27,6 +27,7 @@ typedef enum ParserToken {
   PARSER_TOKEN_SYMBOL_COMMA,
 
   PARSER_TOKEN_OPERATOR_ASSIGN,
+  PARSER_TOKEN_OPERATOR_SUM,
 
   PARSER_TOKEN_FUNCTION_DEFINITION,
 
@@ -119,6 +120,8 @@ ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
                            ParserNode *parent);
 ParserNode *parserAssign(LexerNode *node, LexerNode *begin, LexerNode *end,
                          ParserNode *parent);
+ParserNode *parserPlus(LexerNode *node, LexerNode *begin, LexerNode *end,
+                       ParserNode *parent);
 
 bool isAllArguments(const ParserNodeArray *nodes);
 

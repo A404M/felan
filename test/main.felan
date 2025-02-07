@@ -1,15 +1,8 @@
 main :: () -> void {
-  fun();
-  a = 2;
-  fun();
-  a = b;
-  fun();
+  print_u64;
 };
 
-a := 1;
-b := 3;
-
-fun :: ()->void {
-  print_u64 a;
-};
+fun :: ()->u64 {
+  return 23;
+}
 
