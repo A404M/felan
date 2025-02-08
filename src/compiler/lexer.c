@@ -53,17 +53,11 @@ const size_t LEXER_SYMBOL_SIZE =
     sizeof(LEXER_SYMBOL_TOKENS) / sizeof(*LEXER_SYMBOL_TOKENS);
 
 const char *LEXER_KEYWORD_STRINGS[] = {
-    "type",
-    "void",
-    "u64",
-    "print_u64",
-    "return",
+    "type", "void", "u64", "print_u64", "return",
 };
 const LexerToken LEXER_KEYWORD_TOKENS[] = {
-    LEXER_TOKEN_KEYWORD_TYPE,
-    LEXER_TOKEN_KEYWORD_VOID,
-    LEXER_TOKEN_KEYWORD_U64,
-    LEXER_TOKEN_KEYWORD_PRINT_U64,
+    LEXER_TOKEN_KEYWORD_TYPE,   LEXER_TOKEN_KEYWORD_VOID,
+    LEXER_TOKEN_KEYWORD_U64,    LEXER_TOKEN_KEYWORD_PRINT_U64,
     LEXER_TOKEN_KEYWORD_RETURN,
 };
 const size_t LEXER_KEYWORD_SIZE =
