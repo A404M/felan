@@ -1,5 +1,6 @@
 #include "log.h"
 
+#include "utils/file.h"
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -15,10 +16,6 @@ void _printLogBack(const char *format, const char *file, int line, ...) {
   printf("\e[0;31mError: %s at compiler %s:%d\e[0m\n", errorStr, file, line);
   free(errorStr);
 }
-
-extern char **fileCodes;
-extern const char **fileCodes_names;
-extern size_t fileCodes_length;
 
 void _printErrorBack(const char *format, const char *file, int line,
                      char *begin, char *end, ...) {

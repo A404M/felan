@@ -59,6 +59,10 @@ val-test: $(EXEC_FILE)
 gdb-test: $(EXEC_FILE)
 	gdb $(EXEC_FILE) test/main.felan build/out
 
+test-all: $(EXEC_FILE)
+	$(EXEC_FILE) test/main.felan
+	$(EXEC_FILE) test/one_million.felan
+
 # $@ = left hand of :
 # $< = right hand of : first one of them
 # $^ = right hand of : all

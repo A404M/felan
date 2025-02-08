@@ -94,13 +94,15 @@ static int run(const char *filePath, bool print) {
   if (print)
     astTreeRootPrint(astTree);
 
+  int ret;
   if (runAstTree(astTree)) {
-    astTreeRootDelete(astTree);
-    return 0;
+    ret = 0;
   } else {
-    astTreeRootDelete(astTree);
-    return 1;
+    ret = 1;
   }
+  astTreeRootDelete(astTree);
+
+  return ret;
 
 RETURN_ERROR:
   free(code);
@@ -108,12 +110,14 @@ RETURN_ERROR:
 }
 
 int main(int argc, char *argv[]) {
+  fileInit();
   if (argc < 2) {
     // compileRun("test/main.felan", "build/out", false);
-    run("test/main.felan", false);
+    // run("test/main.felan", false);
     printLog("Too few args");
     return 1;
   }
 
-  return run(argv[1], false);
+  const int ret = run(argv[1], false);
+  fileDelete();
 }

@@ -346,6 +346,7 @@ void parserNodeDelete(ParserNode *node) {
     ParserNodeInfixMetadata *metadata = node->metadata;
     parserNodeDelete(metadata->left);
     parserNodeDelete(metadata->right);
+    free(metadata);
   }
     goto RETURN_SUCCESS;
 

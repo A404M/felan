@@ -41,16 +41,19 @@ const char *AST_TREE_TOKEN_STRINGS[] = {
     "AST_TREE_TOKEN_FUNCTION",
 
     "AST_TREE_TOKEN_KEYWORD_PRINT_U64",
+    "AST_TREE_TOKEN_KEYWORD_RETURN",
 
     "AST_TREE_TOKEN_TYPE_TYPE",
     "AST_TREE_TOKEN_TYPE_FUNCTION",
     "AST_TREE_TOKEN_TYPE_VOID",
     "AST_TREE_TOKEN_TYPE_U64",
+    "AST_TREE_TOKEN_TYPE_BOOL",
 
     "AST_TREE_TOKEN_FUNCTION_CALL",
     "AST_TREE_TOKEN_VARIABLE",
     "AST_TREE_TOKEN_VARIABLE_DEFINE",
     "AST_TREE_TOKEN_VALUE_U64",
+    "AST_TREE_TOKEN_VALUE_BOOL",
 
     "AST_TREE_TOKEN_OPERATOR_ASSIGN",
     "AST_TREE_TOKEN_OPERATOR_SUM",
@@ -219,6 +222,7 @@ void astTreeRootPrint(const AstTreeRoot *root) {
 }
 
 void astTreeDestroy(AstTree tree) {
+  astTreeDelete(tree.type);
   switch (tree.token) {
   case AST_TREE_TOKEN_FUNCTION: {
     AstTreeFunction *metadata = tree.metadata;
@@ -232,8 +236,8 @@ void astTreeDestroy(AstTree tree) {
       astTreeVariableDelete(metadata->arguments.data[i]);
     }
     astTreeDelete(metadata->returnType);
-    free(metadata->scope.variables.data);
     free(metadata->scope.expressions);
+    free(metadata->scope.variables.data);
     free(metadata->arguments.data);
     free(metadata);
   }
@@ -313,17 +317,16 @@ void astTreeVariableDelete(AstTreeVariable *variable) {
 
 void astTreeDelete(AstTree *tree) {
   if (tree != &AST_TREE_TYPE_TYPE && tree != &AST_TREE_VOID_TYPE &&
-      tree != &AST_TREE_U64_TYPE) {
-    return;
+      tree != &AST_TREE_U64_TYPE && tree != &AST_TREE_BOOL_TYPE &&
+      tree != &AST_TREE_VOID_VALUE) {
+    astTreeDestroy(*tree);
+    free(tree);
   }
-  astTreeDestroy(*tree);
-  free(tree);
 }
 
 void astTreeRootDelete(AstTreeRoot *root) {
   for (size_t i = 0; i < root->variables.size; ++i) {
-    astTreeVariableDestroy(*root->variables.data[i]);
-    free(root->variables.data[i]);
+    astTreeVariableDelete(root->variables.data[i]);
   }
   free(root->variables.data);
   free(root);
@@ -1163,7 +1166,6 @@ bool setAllTypes(AstTree *tree, AstTreeFunction *function) {
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_U64:
   case AST_TREE_TOKEN_VALUE_BOOL:
-  case AST_TREE_TOKEN_VARIABLE_DEFINE:
     return true;
   case AST_TREE_TOKEN_FUNCTION:
     return setTypesFunction(tree);
@@ -1181,6 +1183,8 @@ bool setAllTypes(AstTree *tree, AstTreeFunction *function) {
     return setTypesOperatorAssign(tree);
   case AST_TREE_TOKEN_OPERATOR_SUM:
     return setTypesOperatorSum(tree);
+  case AST_TREE_TOKEN_VARIABLE_DEFINE:
+    return setTypesVariableDefine(tree);
   case AST_TREE_TOKEN_NONE:
   }
   printLog("Bad token '%d'", tree->token);
@@ -1330,6 +1334,12 @@ bool setTypesOperatorSum(AstTree *tree) {
     tree->type = copyAstTree(infix->left.type);
     return true;
   }
+}
+
+bool setTypesVariableDefine(AstTree *tree) {
+  AstTreeVariable *metadata = tree->metadata;
+  tree->type = &AST_TREE_VOID_TYPE;
+  return setTypesAstVariable(metadata);
 }
 
 bool setTypesAstVariable(AstTreeVariable *variable) {

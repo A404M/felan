@@ -4,11 +4,31 @@
 #include "utils/memory.h"
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 size_t fileCodes_capacity = 0;
 char **fileCodes = NULL;
-const char **fileCodes_names = 0;
+char **fileCodes_names = NULL;
 size_t fileCodes_length = 0;
+
+void fileInit() {
+  fileCodes_capacity = 0;
+  fileCodes = a404m_malloc(fileCodes_capacity * sizeof(*fileCodes));
+  fileCodes_names = a404m_malloc(fileCodes_capacity * sizeof(*fileCodes_names));
+  fileCodes_length = 0;
+}
+
+void fileDelete() {
+  fileCodes_capacity = 0;
+  for (size_t i = 0; i < fileCodes_length; ++i) {
+    free(fileCodes[i]);
+    free(fileCodes_names[i]);
+  }
+  free(fileCodes);
+  free(fileCodes_names);
+  fileCodes_length = 0;
+}
 
 char *readWholeFile(const char *filePath) {
   FILE *file = fopen(filePath, "r");
@@ -36,7 +56,9 @@ char *readWholeFile(const char *filePath) {
         fileCodes_names, fileCodes_capacity * sizeof(*fileCodes_names));
   }
   fileCodes[fileCodes_length] = str;
-  fileCodes_names[fileCodes_length] = filePath;
+  fileCodes_names[fileCodes_length] =
+      a404m_malloc((strlen(filePath) + 1) * sizeof(**fileCodes_names));
+  strcpy(fileCodes_names[fileCodes_length], filePath);
   fileCodes_length += 1;
 
   return str;

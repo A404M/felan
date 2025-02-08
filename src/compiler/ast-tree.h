@@ -171,6 +171,7 @@ bool setTypesFunctionCall(AstTree *tree);
 bool setTypesVariable(AstTree *tree);
 bool setTypesOperatorAssign(AstTree *tree);
 bool setTypesOperatorSum(AstTree *tree);
+bool setTypesVariableDefine(AstTree *tree);
 
 bool setTypesAstVariable(AstTreeVariable *variable);
 bool setTypesAstInfix(AstTreeInfix *infix);
