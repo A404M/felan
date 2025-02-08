@@ -977,6 +977,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_KEYWORD_RETURN:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM:
+  case PARSER_TOKEN_VALUE_U64:
     return true;
   case PARSER_TOKEN_ROOT:
   case PARSER_TOKEN_TYPE_TYPE:
@@ -986,7 +987,6 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_SYMBOL_EOL:
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
   case PARSER_TOKEN_SYMBOL_COMMA:
-  case PARSER_TOKEN_VALUE_U64:
     return false;
   case PARSER_TOKEN_NONE:
   }

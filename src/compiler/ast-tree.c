@@ -605,6 +605,10 @@ AstTree *astTreeParseFunction(ParserNode *parserNode,
 
   for (size_t i = 0; i < node_arguments->size; ++i) {
     ParserNode *arg = node_arguments->data[i];
+    if (arg->token == PARSER_TOKEN_SYMBOL_COMMA) {
+      arg = (ParserNodeSingleChildMetadata *)arg->metadata;
+    }
+
     ParserNodeVariableMetadata *arg_metadata = arg->metadata;
     if (arg_metadata->value != NULL) {
       printLog("arguments can't have default values (for now)");
@@ -689,8 +693,13 @@ AstTree *astTreeParseTypeFunction(ParserNode *parserNode,
   typeFunction->arguments_size = 0;
 
   for (size_t i = 0; i < node_arguments->size; ++i) {
-    ParserNodeVariableMetadata *arg_metadata =
-        node_arguments->data[i]->metadata;
+    ParserNode *argument = node_arguments->data[i];
+
+    if (argument->token == PARSER_TOKEN_SYMBOL_COMMA) {
+      argument = (ParserNodeSingleChildMetadata *)argument->metadata;
+    }
+
+    ParserNodeVariableMetadata *arg_metadata = argument->metadata;
     if (arg_metadata->value != NULL) {
       printLog("arguments can't have default values (for now)");
       goto RETURN_ERROR;
@@ -746,8 +755,12 @@ AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
   metadata->parameters_size = node_metadata->params->size;
 
   for (size_t i = 0; i < metadata->parameters_size; ++i) {
+    ParserNode *param = node_metadata->params->data[i];
+    if (param->token == PARSER_TOKEN_SYMBOL_COMMA) {
+      param = (ParserNodeSingleChildMetadata *)param->metadata;
+    }
     metadata->parameters[i] =
-        astTreeParse(node_metadata->params->data[i], variables, variables_size);
+        astTreeParse(param, variables, variables_size);
   }
 
   return newAstTree(AST_TREE_TOKEN_FUNCTION_CALL, metadata, NULL);
@@ -1342,7 +1355,10 @@ bool astTreeCleanFunction(AstTree *tree) {
   AstTreeFunction *metadata = tree->metadata;
 
   for (size_t i = 0; i < metadata->arguments.size; ++i) {
-    // TODO: do it
+    if (metadata->arguments.data[i]->value != NULL &&
+        !astTreeClean(metadata->arguments.data[i]->value)) {
+      return false;
+    }
   }
 
   if (!astTreeClean(metadata->returnType)) {
