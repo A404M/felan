@@ -5,7 +5,8 @@
 
 bool runAstTree(AstTreeRoot *root);
 
-AstTree *runAstTreeFunction(AstTreeFunction *function);
+AstTree *runAstTreeFunction(AstTreeFunction *function, AstTree **arguments,
+                            size_t arguments_size);
 
 AstTree *calcAstTreeValue(AstTree *tree);
 AstTree *deepCopyAstTree(AstTree *tree);

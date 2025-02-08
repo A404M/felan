@@ -341,10 +341,11 @@ AstTree *copyAstTree(AstTree *tree) {
     AstTreeTypeFunction *metadata = tree->metadata;
     AstTreeTypeFunction *new_metadata = a404m_malloc(sizeof(*new_metadata));
     new_metadata->returnType = copyAstTree(metadata->returnType);
-    new_metadata->arguments = NULL;
-    new_metadata->arguments_size = 0;
-    if (metadata->arguments_size != 0) {
-      UNREACHABLE;
+    new_metadata->arguments_size = metadata->arguments_size;
+    new_metadata->arguments =
+        a404m_malloc(sizeof(*new_metadata) * new_metadata->arguments_size);
+    for (size_t i = 0; i < metadata->arguments_size; ++i) {
+      new_metadata->arguments[i] = copyAstTree(metadata->arguments[i]);
     }
     return newAstTree(tree->token, new_metadata, &AST_TREE_TYPE_TYPE);
   }
@@ -745,8 +746,8 @@ AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
   metadata->parameters_size = node_metadata->params->size;
 
   for (size_t i = 0; i < metadata->parameters_size; ++i) {
-    printLog("Not impelemented yet");
-    exit(1);
+    metadata->parameters[i] =
+        astTreeParse(node_metadata->params->data[i], variables, variables_size);
   }
 
   return newAstTree(AST_TREE_TOKEN_FUNCTION_CALL, metadata, NULL);
@@ -1074,8 +1075,9 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
       return false;
     }
     for (size_t i = 0; i < type0_metadata->arguments_size; ++i) {
-      printLog("Not implemented yet");
-      exit(1);
+      if (!setAllTypes(type0_metadata->arguments[i], NULL)) {
+        return false;
+      }
     }
     return true;
   case AST_TREE_TOKEN_FUNCTION_CALL:
@@ -1139,8 +1141,10 @@ bool setTypesFunction(AstTree *tree) {
   AstTreeFunction *metadata = tree->metadata;
 
   for (size_t i = 0; i < metadata->arguments.size; ++i) {
-    printLog("Type mismatch");
-    return false;
+    AstTreeVariable *variable = metadata->arguments.data[i];
+    if (!setTypesAstVariable(variable)) {
+      return false;
+    }
   }
 
   if (!setAllTypes(metadata->returnType, NULL)) {
@@ -1215,8 +1219,9 @@ bool setTypesFunctionCall(AstTree *tree) {
   AstTreeFunctionCall *metadata = tree->metadata;
 
   for (size_t i = 0; i < metadata->parameters_size; ++i) {
-    printLog("Not yet supported");
-    return false;
+    if (!setAllTypes(metadata->parameters[i], NULL)) {
+      return false;
+    }
   }
 
   if (metadata->function->token != AST_TREE_TOKEN_VARIABLE) {
@@ -1278,7 +1283,7 @@ bool setTypesOperatorSum(AstTree *tree) {
 }
 
 bool setTypesAstVariable(AstTreeVariable *variable) {
-  if (!setAllTypes(variable->value, NULL)) {
+  if (variable->value != NULL && !setAllTypes(variable->value, NULL)) {
     return false;
   }
 
@@ -1288,7 +1293,8 @@ bool setTypesAstVariable(AstTreeVariable *variable) {
 
   if (variable->type == NULL) {
     return false;
-  } else if (!typeIsEqual(variable->value->type, variable->type)) {
+  } else if (variable->value != NULL &&
+             !typeIsEqual(variable->value->type, variable->type)) {
     printLog("Type mismatch");
     return false;
   }
@@ -1336,8 +1342,7 @@ bool astTreeCleanFunction(AstTree *tree) {
   AstTreeFunction *metadata = tree->metadata;
 
   for (size_t i = 0; i < metadata->arguments.size; ++i) {
-    printLog("Not supported");
-    return false;
+    // TODO: do it
   }
 
   if (!astTreeClean(metadata->returnType)) {

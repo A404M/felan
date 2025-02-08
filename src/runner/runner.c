@@ -18,14 +18,18 @@ bool runAstTree(AstTreeRoot *root) {
 
       AstTree *main = variable->value;
       AstTreeFunction *mainFunction = main->metadata;
-      return runAstTreeFunction(mainFunction) == &AST_TREE_VOID_VALUE;
+      return runAstTreeFunction(mainFunction, NULL, 0) == &AST_TREE_VOID_VALUE;
     }
   }
   printLog("main function is not found");
   return false;
 }
 
-AstTree *runAstTreeFunction(AstTreeFunction *function) {
+AstTree *runAstTreeFunction(AstTreeFunction *function, AstTree **arguments,
+                            size_t arguments_size) {
+  for (size_t i = 0; i < arguments_size; ++i) {
+    function->arguments.data[i]->value = calcAstTreeValue(arguments[i]);
+  }
   for (size_t i = 0; i < function->scope.expressions_size; ++i) {
     AstTree expr = function->scope.expressions[i];
     switch (expr.token) {
@@ -96,11 +100,10 @@ AstTree *calcAstTreeValue(AstTree *tree) {
   }
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = tree->metadata;
-    if (metadata->parameters_size != 0) {
-      UNREACHABLE;
-    } else if (metadata->function->token == AST_TREE_TOKEN_VARIABLE) {
+    if (metadata->function->token == AST_TREE_TOKEN_VARIABLE) {
       AstTreeVariable *variable = metadata->function->metadata;
-      return runAstTreeFunction(variable->value->metadata);
+      return runAstTreeFunction(variable->value->metadata, metadata->parameters,
+                                metadata->parameters_size);
     } else {
       UNREACHABLE;
     }
