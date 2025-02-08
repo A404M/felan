@@ -5,6 +5,11 @@
 #include <stddef.h>
 #include <stdio.h>
 
+size_t fileCodes_capacity = 0;
+char **fileCodes = NULL;
+const char **fileCodes_names = 0;
+size_t fileCodes_length = 0;
+
 char *readWholeFile(const char *filePath) {
   FILE *file = fopen(filePath, "r");
 
@@ -22,6 +27,17 @@ char *readWholeFile(const char *filePath) {
   str[file_size] = '\0';
 
   fclose(file);
+
+  if (fileCodes_capacity == fileCodes_length) {
+    fileCodes_capacity += fileCodes_capacity / 2 + 1;
+    fileCodes =
+        a404m_realloc(fileCodes, fileCodes_capacity * sizeof(*fileCodes));
+    fileCodes_names = a404m_realloc(
+        fileCodes_names, fileCodes_capacity * sizeof(*fileCodes_names));
+  }
+  fileCodes[fileCodes_length] = str;
+  fileCodes_names[fileCodes_length] = filePath;
+  fileCodes_length += 1;
 
   return str;
 }

@@ -139,7 +139,7 @@ LexerNodeArray lexer(char *str) {
     } else {
     RETURN_ERROR:
       free(result.data);
-      printLog("Unexpected character '%c' at position %ld", c, iter - str);
+      printError("Unexpected character '%c'", iter, iter+1, c);
       return LEXER_NODE_ARRAY_ERROR;
     }
   }
@@ -179,6 +179,7 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_KEYWORD_VOID:
   case LEXER_TOKEN_KEYWORD_U64:
   case LEXER_TOKEN_KEYWORD_PRINT_U64:
+  case LEXER_TOKEN_KEYWORD_RETURN:
   case LEXER_TOKEN_NUMBER:
   case LEXER_TOKEN_SYMBOL_EOL:
   case LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS:
@@ -189,6 +190,7 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_SYMBOL_COLON:
   case LEXER_TOKEN_SYMBOL_ASSIGN:
   case LEXER_TOKEN_SYMBOL_COMMA:
+  case LEXER_TOKEN_SYMBOL_PLUS:
     if (*array_size == array->size) {
       *array_size += 1 + *array_size / 2;
       array->data =

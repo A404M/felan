@@ -252,8 +252,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_NONE:
   }
-  printLog("Bad token '%d'", node->token);
-  exit(1);
+  UNREACHABLE;
 
 RETURN_SUCCESS:
   printf("}");
@@ -341,8 +340,7 @@ void parserNodeDelete(ParserNode *node) {
 
   case PARSER_TOKEN_NONE:
   }
-  printLog("Bad token '%d'", node->token);
-  exit(1);
+  UNREACHABLE;
 
 RETURN_SUCCESS:
   free(node);
@@ -405,7 +403,7 @@ bool parserNodeArray(LexerNode *begin, LexerNode *end, ParserNode *parent) {
     if (pNode->parent != parent) {
       continue;
     } else if (pNode == NULL) {
-      printLog("Bad child");
+      printError("Bad child", pNode->str_begin, pNode->str_end);
       goto RETURN_ERROR;
     }
     for (size_t i = 0; i < parsedNodes->size; ++i) {
@@ -477,8 +475,7 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
   case LEXER_TOKEN_SYMBOL_OPEN_CURLY_BRACKET:
   case LEXER_TOKEN_NONE:
   }
-  printLog("Bad token '%d'", node->token);
-  return NULL;
+  UNREACHABLE;
 }
 
 ParserNode *getUntilCommonParent(ParserNode *node, ParserNode *parent) {
@@ -516,16 +513,16 @@ ParserNode *parserPrintU64(LexerNode *node, LexerNode *end,
                            ParserNode *parent) {
   LexerNode *afterNode = node + 1;
   if (afterNode >= end) {
-    printLog("No param");
+    printError("No param", node->str_begin, node->str_end);
     return NULL;
   } else if (afterNode->parserNode == NULL) {
-    printLog("Bad param");
+    printError("Bad param", node->str_begin, node->str_end);
     return NULL;
   }
 
   ParserNode *operand = getUntilCommonParent(afterNode->parserNode, parent);
   if (operand == NULL) {
-    printLog("No param");
+    printError("Bad param", node->str_begin, node->str_end);
     return NULL;
   }
 
@@ -542,7 +539,7 @@ ParserNode *parserReturn(LexerNode *node, LexerNode *end, ParserNode *parent) {
   } else {
     operand = getUntilCommonParent(afterNode->parserNode, parent);
     if (operand == NULL) {
-      printLog("No param");
+      printError("No param", node->str_begin, node->str_end);
       return NULL;
     }
   }
@@ -563,13 +560,15 @@ ParserNode *parserNumber(LexerNode *node, ParserNode *parent) {
   ParserNode *parserNode;
   switch (*node->str_begin) {
   case '0':
-    printLog("Not implemented");
-    return NULL;
+    if (node->str_end - node->str_begin > 1) {
+      printError("Not implemented", node->str_begin, node->str_end);
+      return NULL;
+    }
   default: {
     bool success;
     uint64_t value = decimalToU64(node->str_begin, node->str_end, &success);
     if (!success) {
-      printLog("Error in parsing number");
+      printError("Error in parsing number", node->str_begin, node->str_end);
       return NULL;
     }
     parserNode =
@@ -581,17 +580,19 @@ ParserNode *parserNumber(LexerNode *node, ParserNode *parent) {
 }
 
 ParserNode *parserEol(LexerNode *node, LexerNode *begin, ParserNode *parent) {
-  LexerNode *nodeBeore = node - 1;
+  LexerNode *nodeBefore = node - 1;
   ParserNode *parserNodeBefore;
-  if (nodeBeore < begin) {
+  if (nodeBefore < begin) {
     parserNodeBefore = NULL;
-  } else if (nodeBeore->parserNode == NULL) {
-    printLog("Bad EOL after %s", LEXER_TOKEN_STRINGS[nodeBeore->token]);
+  } else if (nodeBefore->parserNode == NULL) {
+    printError("Bad EOL after %s", node->str_begin, node->str_end,
+               LEXER_TOKEN_STRINGS[nodeBefore->token]);
     return NULL;
   } else {
-    parserNodeBefore = getUntilCommonParent(nodeBeore->parserNode, parent);
+    parserNodeBefore = getUntilCommonParent(nodeBefore->parserNode, parent);
     if (parserNodeBefore == NULL || !isExpression(parserNodeBefore)) {
-      printLog("Bad EOL");
+      printError("Bad EOL after %s", node->str_begin, node->str_end,
+                 LEXER_TOKEN_STRINGS[nodeBefore->token]);
       return NULL;
     }
   }
@@ -609,12 +610,14 @@ ParserNode *parserComma(LexerNode *node, LexerNode *begin, ParserNode *parent) {
   LexerNode *nodeBefore = node - 1;
   ParserNode *parserNodeBefore;
   if (nodeBefore < begin || nodeBefore->parserNode == NULL) {
-    printLog("Bad Comma after %s", LEXER_TOKEN_STRINGS[nodeBefore->token]);
+    printError("Bad Comma after %s", node->str_begin, node->str_end,
+               LEXER_TOKEN_STRINGS[nodeBefore->token]);
     return NULL;
   } else {
     parserNodeBefore = getUntilCommonParent(nodeBefore->parserNode, parent);
     if (parserNodeBefore == NULL || !isExpression(parserNodeBefore)) {
-      printLog("Bad Comma");
+      printError("Bad Comma after %s", node->str_begin, node->str_end,
+                 LEXER_TOKEN_STRINGS[nodeBefore->token]);
       return NULL;
     }
   }
@@ -636,7 +639,8 @@ ParserNode *parserParenthesis(LexerNode *closing, LexerNode *begin,
   }
 
   if (opening == NULL) {
-    printLog("No opening for parenthesis");
+    printError("No opening for parenthesis", closing->str_begin,
+               closing->str_end);
     return NULL;
   }
 
@@ -695,7 +699,8 @@ ParserNode *parserCurlyBrackets(LexerNode *closing, LexerNode *begin,
   }
 
   if (opening == NULL) {
-    printLog("No opening for curly brackets");
+    printError("No opening for curly brackets", closing->str_begin,
+               closing->str_end);
     return NULL;
   }
 
@@ -720,11 +725,11 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
   LexerNode *bodyNode = node + 2;
   if (paramsNode < begin || paramsNode->parserNode == NULL) {
   NO_PARAMS:
-    printLog("No params");
+    printError("No params", node->str_begin, node->str_end);
     return NULL;
   } else if (retTypeNode >= end || retTypeNode->parserNode == NULL) {
   NO_RETURN_TYPE:
-    printLog("No return type");
+    printError("No return type", node->str_begin, node->str_end);
     return NULL;
   }
   ParserNode *params = getUntilCommonParent(paramsNode->parserNode, parent);
@@ -736,14 +741,14 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
   } else {
     body = getUntilCommonParent(bodyNode->parserNode, parent);
     if (body == NULL || body->token != PARSER_TOKEN_SYMBOL_CURLY_BRACKET) {
-      printLog("Bad body");
+      printError("Bad body", node->str_begin, node->str_end);
       return NULL;
     }
     ParserNodeArray *bodyArray = body->metadata;
     for (size_t i = 0; i < bodyArray->size; ++i) {
       if (bodyArray->data[i]->token != PARSER_TOKEN_SYMBOL_EOL) {
-        printLog("Bad body %s",
-                 PARSER_TOKEN_STRINGS[bodyArray->data[i]->token]);
+        printError("Maybe forgot a ; with %s", node->str_begin, node->str_end,
+                   PARSER_TOKEN_STRINGS[bodyArray->data[i]->token]);
         return NULL;
       }
     }
@@ -754,7 +759,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
   } else if (!isType(retType)) {
     goto NO_RETURN_TYPE;
   } else if (!isAllArguments(params->metadata)) {
-    printLog("Bad arguments");
+    printError("Bad arguments", params->str_begin, params->str_end);
     return NULL;
   }
 
@@ -789,15 +794,18 @@ ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
 
   LexerNode *nameNode = node - 1;
   if (nameNode < begin || nameNode->parserNode == NULL) {
-    printLog("No name");
+    printError("No name", node->str_begin, node->str_end);
     goto RETURN_ERROR;
   }
 
   ParserNode *name = getUntilCommonParent(nameNode->parserNode, parent);
 
-  if (name->token != PARSER_TOKEN_IDENTIFIER) {
-    printLog("Name should be identifier but got '%s'",
-             PARSER_TOKEN_STRINGS[name->token]);
+  if (name == NULL) {
+    printError("Name should be identifier but got nothing", node->str_begin, node->str_end);
+    return NULL;
+  } else if (name->token != PARSER_TOKEN_IDENTIFIER) {
+    printError("Name should be identifier but got '%s'", name->str_begin,
+               name->str_end, PARSER_TOKEN_STRINGS[name->token]);
     return NULL;
   } else {
     name->parent = variableNode;
@@ -811,7 +819,7 @@ ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
   ParserToken token = PARSER_TOKEN_VARIABLE;
 
   if (node1 >= end) {
-    printLog("Bad variable definition");
+    printError("Bad variable definition", node->str_begin, node->str_end);
     return NULL;
   } else if (node1->token == LEXER_TOKEN_SYMBOL_COLON) {
     type = NULL;
@@ -821,13 +829,13 @@ ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
     type = NULL;
     node1->parserNode = variableNode;
   } else if (node1->parserNode == NULL) {
-    printLog("Bad variable type with token '%s' %d",
-             LEXER_TOKEN_STRINGS[node1->token], node1->token);
+    printError("Bad variable type with token '%s' %d", node1->str_begin,
+               node1->str_end, LEXER_TOKEN_STRINGS[node1->token], node1->token);
     return NULL;
   } else {
     type = getUntilCommonParent(node1->parserNode, parent);
     if (type == NULL || !isType(type)) {
-      printLog("Bad variable type");
+      printError("Bad variable type", node1->str_begin, node1->str_end);
       return NULL;
     }
     type->parent = variableNode;
@@ -849,13 +857,12 @@ ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
   if (node1 != NULL) {
     LexerNode *valueNode = node1 + 1;
     if (valueNode >= end || valueNode->parserNode == NULL) {
-      printLog("No value for '%.*s'", (int)(name->str_end - name->str_begin),
-               name->str_begin);
+      printError("No value ", name->str_begin, name->str_end);
       return NULL;
     } else {
       value = getUntilCommonParent(valueNode->parserNode, parent);
       if (!isValue(value)) {
-        printLog("No value");
+        printError("No value ", name->str_begin, name->str_end);
         return NULL;
       }
       value->parent = variableNode;
@@ -889,7 +896,7 @@ ParserNode *parserAssign(LexerNode *node, LexerNode *begin, LexerNode *end,
   LexerNode *rightNode = node + 1;
 
   if (leftNode < begin || rightNode >= end) {
-    printLog("Bad assign");
+    printError("Bad assign", node->str_begin, node->str_end);
     return NULL;
   }
 
@@ -897,7 +904,7 @@ ParserNode *parserAssign(LexerNode *node, LexerNode *begin, LexerNode *end,
   ParserNode *right = getUntilCommonParent(rightNode->parserNode, parent);
 
   if (left == NULL || right == NULL) {
-    printLog("Bad assign");
+    printError("Bad assign", node->str_begin, node->str_end);
     return NULL;
   }
 
@@ -916,7 +923,7 @@ ParserNode *parserPlus(LexerNode *node, LexerNode *begin, LexerNode *end,
   LexerNode *rightNode = node + 1;
 
   if (leftNode < begin || rightNode >= end) {
-    printLog("Bad plus");
+    printError("Bad plus", node->str_begin, node->str_end);
     return NULL;
   }
 
@@ -924,7 +931,7 @@ ParserNode *parserPlus(LexerNode *node, LexerNode *begin, LexerNode *end,
   ParserNode *right = getUntilCommonParent(rightNode->parserNode, parent);
 
   if (left == NULL || right == NULL) {
-    printLog("Bad plus");
+    printError("Bad plus", node->str_begin, node->str_end);
     return NULL;
   }
 
@@ -972,8 +979,7 @@ bool isExpression(ParserNode *node) {
     return false;
   case PARSER_TOKEN_NONE:
   }
-  printLog("Bad token '%d'", node->token);
-  exit(1);
+  UNREACHABLE;
 }
 
 bool isType(ParserNode *node) {
@@ -1001,8 +1007,7 @@ bool isType(ParserNode *node) {
     return false;
   case PARSER_TOKEN_NONE:
   }
-  printLog("Bad token '%d'", node->token);
-  exit(1);
+  UNREACHABLE;
 }
 
 bool isValue(ParserNode *node) {
@@ -1030,6 +1035,5 @@ bool isValue(ParserNode *node) {
     return false;
   case PARSER_TOKEN_NONE:
   }
-  printLog("Bad token '%d'", node->token);
-  exit(1);
+  UNREACHABLE;
 }
