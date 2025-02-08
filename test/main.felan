@@ -1,9 +1,15 @@
 main :: () -> void {
-  a : u64 = fun(2,3);
-  print_u64 a;
+  b := false;
+  b = true;
+  a := fun(2, 3);
+  print(a+5);
 };
 
-fun :: (a:u64,b:u64)->u64 {
+fun :: (a:u64, b:u64)->u64 {
   return a+b+1;
+};
+
+print :: (a:u64)->void {
+  print_u64 a;
 };
 

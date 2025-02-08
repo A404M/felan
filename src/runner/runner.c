@@ -78,8 +78,10 @@ AstTree *runAstTreeFunction(AstTreeFunction *function, AstTree **arguments,
     case AST_TREE_TOKEN_TYPE_FUNCTION:
     case AST_TREE_TOKEN_TYPE_VOID:
     case AST_TREE_TOKEN_TYPE_U64:
+    case AST_TREE_TOKEN_TYPE_BOOL:
     case AST_TREE_TOKEN_VARIABLE:
     case AST_TREE_TOKEN_VALUE_U64:
+    case AST_TREE_TOKEN_VALUE_BOOL:
     case AST_TREE_TOKEN_NONE:
     }
     printLog("%d", expr.token);
@@ -92,6 +94,9 @@ AstTree *runAstTreeFunction(AstTreeFunction *function, AstTree **arguments,
 AstTree *calcAstTreeValue(AstTree *tree) {
   switch (tree->token) {
   case AST_TREE_TOKEN_VALUE_U64: {
+    return deepCopyAstTree(tree);
+  }
+  case AST_TREE_TOKEN_VALUE_BOOL: {
     return deepCopyAstTree(tree);
   }
   case AST_TREE_TOKEN_VARIABLE: {
@@ -132,6 +137,7 @@ AstTree *calcAstTreeValue(AstTree *tree) {
   case AST_TREE_TOKEN_TYPE_FUNCTION:
   case AST_TREE_TOKEN_TYPE_VOID:
   case AST_TREE_TOKEN_TYPE_U64:
+  case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_NONE:
@@ -142,6 +148,7 @@ AstTree *calcAstTreeValue(AstTree *tree) {
 AstTree *deepCopyAstTree(AstTree *tree) {
   switch (tree->token) {
   case AST_TREE_TOKEN_VALUE_U64:
+  case AST_TREE_TOKEN_VALUE_BOOL:
     return newAstTree(tree->token, tree->metadata, copyAstTree(tree->type));
   case AST_TREE_TOKEN_VARIABLE:
   case AST_TREE_TOKEN_FUNCTION:
@@ -151,6 +158,7 @@ AstTree *deepCopyAstTree(AstTree *tree) {
   case AST_TREE_TOKEN_TYPE_FUNCTION:
   case AST_TREE_TOKEN_TYPE_VOID:
   case AST_TREE_TOKEN_TYPE_U64:
+  case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_FUNCTION_CALL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:

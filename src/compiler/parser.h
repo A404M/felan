@@ -10,11 +10,13 @@ typedef enum ParserToken {
   PARSER_TOKEN_IDENTIFIER,
 
   PARSER_TOKEN_VALUE_U64,
+  PARSER_TOKEN_VALUE_BOOL,
 
   PARSER_TOKEN_TYPE_TYPE,
   PARSER_TOKEN_TYPE_FUNCTION,
   PARSER_TOKEN_TYPE_VOID,
   PARSER_TOKEN_TYPE_U64,
+  PARSER_TOKEN_TYPE_BOOL,
 
   PARSER_TOKEN_KEYWORD_PRINT_U64,
   PARSER_TOKEN_KEYWORD_RETURN,
@@ -42,7 +44,7 @@ extern const char *PARSER_TOKEN_STRINGS[];
 typedef struct ParserOrder {
   bool ltr;
   size_t size;
-  LexerToken data[8];
+  LexerToken data[15];
 } ParserOrder;
 
 typedef struct ParserNode {
@@ -93,6 +95,8 @@ typedef struct ParserNodeReturnMetadata {
   ParserNode *value;
 } ParserNodeReturnMetadata;
 
+typedef bool ParserNodeBoolMetadata;
+
 void parserNodePrint(const ParserNode *node, int indent);
 void parserNodeDelete(ParserNode *node);
 
@@ -111,9 +115,11 @@ ParserNode *parserIdentifier(LexerNode *node, ParserNode *parent);
 ParserNode *parserType(LexerNode *node, ParserNode *parent);
 ParserNode *parserVoid(LexerNode *node, ParserNode *parent);
 ParserNode *parserU64(LexerNode *node, ParserNode *parent);
+ParserNode *parserBool(LexerNode *node, ParserNode *parent);
 ParserNode *parserPrintU64(LexerNode *node, LexerNode *end, ParserNode *parent);
 ParserNode *parserReturn(LexerNode *node, LexerNode *end, ParserNode *parent);
 ParserNode *parserNumber(LexerNode *node, ParserNode *parent);
+ParserNode *parserBoolValue(LexerNode *node, ParserNode *parent);
 ParserNode *parserEol(LexerNode *node, LexerNode *begin, ParserNode *parent);
 ParserNode *parserComma(LexerNode *node, LexerNode *begin, ParserNode *parent);
 ParserNode *parserParenthesis(LexerNode *closing, LexerNode *begin,

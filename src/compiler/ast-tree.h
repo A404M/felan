@@ -14,11 +14,13 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_TYPE_FUNCTION,
   AST_TREE_TOKEN_TYPE_VOID,
   AST_TREE_TOKEN_TYPE_U64,
+  AST_TREE_TOKEN_TYPE_BOOL,
 
   AST_TREE_TOKEN_FUNCTION_CALL,
   AST_TREE_TOKEN_VARIABLE,
   AST_TREE_TOKEN_VARIABLE_DEFINE,
   AST_TREE_TOKEN_VALUE_U64,
+  AST_TREE_TOKEN_VALUE_BOOL,
 
   AST_TREE_TOKEN_OPERATOR_ASSIGN,
   AST_TREE_TOKEN_OPERATOR_SUM,
@@ -81,6 +83,8 @@ typedef struct AstTreeFunctionCall {
 } AstTreeFunctionCall;
 
 typedef uint64_t AstTreeU64;
+
+typedef bool AstTreeBool;
 
 typedef AstTree AstTreeSingleChild;
 

@@ -115,5 +115,5 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  return run(argv[1], true);
+  return run(argv[1], false);
 }
