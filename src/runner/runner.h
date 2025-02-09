@@ -18,6 +18,8 @@ typedef struct RunnerVariablePages {
   size_t size;
 } RunnerVariablePages;
 
+void runnerVariablesDelete(RunnerVariables *variables);
+
 void runnerVariablePush(RunnerVariables *variables,AstTreeVariable *variable);
 void runnerVariableSetValue(RunnerVariablePages *pages,AstTreeVariable *variable,AstTree *value);
 AstTree* runnerVariableGetValue(RunnerVariablePages *pages,AstTreeVariable *variable);

@@ -6,6 +6,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+void runnerVariablesDelete(RunnerVariables *variables) {
+  for (size_t i = 0; i < variables->size; ++i) {
+    if (variables->data[i]->value != NULL) {
+      astTreeDelete(variables->data[i]->value);
+    }
+    free(variables->data[i]);
+  }
+  free(variables->data);
+  free(variables);
+}
+
 void runnerVariablePush(RunnerVariables *variables, AstTreeVariable *variable) {
   size_t variables_size =
       a404m_malloc_usable_size(variables->data) / sizeof(*variables->data);
@@ -98,9 +109,16 @@ bool runAstTree(AstTreeRoot *root) {
         variable_value->token == AST_TREE_TOKEN_FUNCTION) {
 
       AstTree *main = variable_value;
-      return runAstTreeFunction(main, NULL, 0, &pages) == &AST_TREE_VOID_VALUE;
+
+      const bool ret =
+          runAstTreeFunction(main, NULL, 0, &pages) == &AST_TREE_VOID_VALUE;
+      runnerVariablesDelete(pages.data[pages.size - 1]);
+      free(pages.data);
+      return ret;
     }
   }
+  runnerVariablesDelete(pages.data[pages.size - 1]);
+  free(pages.data);
   printLog("main function is not found");
   return false;
 }
@@ -183,7 +201,7 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
       continue;
     case AST_TREE_TOKEN_VARIABLE_DEFINE: {
       AstTreeVariable *variable = expr->metadata;
-      runnerVariableSetValue(&pages, variable, variable->value);
+      runnerVariableSetValue(&pages, variable, copyAstTree(variable->value));
     }
       continue;
     case AST_TREE_TOKEN_OPERATOR_SUM:
@@ -204,6 +222,9 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
   }
 
 RETURN:
+  runnerVariablesDelete(pages.data[pages.size - 1]);
+  free(pages.data);
+
   return ret;
 }
 
