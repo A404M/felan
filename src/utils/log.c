@@ -17,8 +17,8 @@ void _printLogBack(const char *format, const char *file, int line, ...) {
   free(errorStr);
 }
 
-void _printErrorBack(const char *format, const char *file, int line,
-                     char *begin, char *end, ...) {
+void _printErrorBack(const char *file, int line, char *begin, char *end,
+                     const char *format, ...) {
   va_list args;
   va_start(args, end);
   char *errorStr;
@@ -51,7 +51,8 @@ void _printErrorBack(const char *format, const char *file, int line,
     if (*iter == '\n') {
       if (iter <= begin) {
         file_line_begin = iter + 1;
-      } else if (iter >= end) {
+      }
+      if (iter >= end && file_line_end == fileCodes[file_index]) {
         file_line_end = iter;
       }
       if (iter <= end) {
@@ -71,5 +72,5 @@ void _printErrorBack(const char *format, const char *file, int line,
     }
     fprintf(stderr, "%c", *iter);
   }
-  fprintf(stderr, "\e[0m");
+  fprintf(stderr, "\e[0m\n");
 }

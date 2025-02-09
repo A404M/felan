@@ -343,19 +343,13 @@ AstTree *newAstTree(AstTreeToken token, void *metadata, AstTree *type) {
 AstTree *copyAstTree(AstTree *tree) {
   switch (tree->token) {
   case AST_TREE_TOKEN_TYPE_TYPE:
-    return &AST_TREE_TYPE_TYPE;
   case AST_TREE_TOKEN_TYPE_VOID:
-    return &AST_TREE_VOID_TYPE;
   case AST_TREE_TOKEN_TYPE_U64:
-    return &AST_TREE_U64_TYPE;
   case AST_TREE_TOKEN_TYPE_BOOL:
-    return &AST_TREE_BOOL_TYPE;
+    return tree;
   case AST_TREE_TOKEN_VALUE_U64:
-    return newAstTree(tree->token, (void *)(AstTreeU64)tree->metadata,
-                      &AST_TREE_U64_TYPE);
   case AST_TREE_TOKEN_VALUE_BOOL:
-    return newAstTree(tree->token, (void *)(AstTreeBool)tree->metadata,
-                      &AST_TREE_BOOL_TYPE);
+    return newAstTree(tree->token, tree->metadata, tree->type);
   case AST_TREE_TOKEN_VARIABLE:
     return newAstTree(tree->token, tree->metadata, copyAstTree(tree->type));
   case AST_TREE_TOKEN_TYPE_FUNCTION: {

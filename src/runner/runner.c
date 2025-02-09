@@ -69,7 +69,9 @@ AstTree *runAstTreeFunction(AstTreeFunction *function, AstTree **arguments,
       continue;
     case AST_TREE_TOKEN_VARIABLE_DEFINE: {
       AstTreeVariable *variable = expr.metadata;
-      variable->value = calcAstTreeValue(variable->value);
+      AstTree *value = calcAstTreeValue(variable->value);
+      astTreeDelete(variable->value);
+      variable->value = value;
     }
       continue;
     case AST_TREE_TOKEN_OPERATOR_SUM:
