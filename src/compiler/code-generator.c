@@ -255,10 +255,10 @@ bool codeGeneratorAstTreeFunction(char *name_begin, char *name_end,
                          newCodeGeneratorFunctionBegin(name_begin, name_end)));
 
   for (size_t i = 0; i < scope.expressions_size; ++i) {
-    AstTree tree = scope.expressions[i];
-    switch (tree.token) {
+    AstTree *tree = scope.expressions[i];
+    switch (tree->token) {
     case AST_TREE_TOKEN_FUNCTION_CALL: {
-      AstTreeFunctionCall *metadata = tree.metadata;
+      AstTreeFunctionCall *metadata = tree->metadata;
       AstTree *function = metadata->function;
       if (metadata->parameters_size != 0) {
         printLog("Not implemented");
@@ -278,7 +278,7 @@ bool codeGeneratorAstTreeFunction(char *name_begin, char *name_end,
     }
       goto OK;
     case AST_TREE_TOKEN_KEYWORD_PRINT_U64: {
-      AstTreeSingleChild *metadata = tree.metadata;
+      AstTreeSingleChild *metadata = tree->metadata;
       if (metadata->token == AST_TREE_TOKEN_VALUE_U64) {
         CodeGeneratorOperand *value = newCodeGeneratorOperand(
             (void *)(uint64_t)(AstTreeU64)metadata->metadata, false);
@@ -313,7 +313,7 @@ bool codeGeneratorAstTreeFunction(char *name_begin, char *name_end,
     }
       goto OK;
     case AST_TREE_TOKEN_OPERATOR_ASSIGN: {
-      AstTreeInfix *infix = tree.metadata;
+      AstTreeInfix *infix = tree->metadata;
 
       if (infix->left.token != AST_TREE_TOKEN_VARIABLE) {
         printLog("Not implemented yet");
@@ -337,7 +337,7 @@ bool codeGeneratorAstTreeFunction(char *name_begin, char *name_end,
     }
       goto OK;
     case AST_TREE_TOKEN_OPERATOR_SUM: {
-      AstTreeInfix *infix = tree.metadata;
+      AstTreeInfix *infix = tree->metadata;
 
       if (infix->left.token != AST_TREE_TOKEN_VARIABLE) {
         printLog("Not implemented yet");
@@ -370,7 +370,7 @@ bool codeGeneratorAstTreeFunction(char *name_begin, char *name_end,
     case AST_TREE_TOKEN_TYPE_U64:
     case AST_TREE_TOKEN_NONE:
     }
-    printLog("Bad token %d", tree.token);
+    printLog("Bad token %d", tree->token);
     return false;
   OK:
   }

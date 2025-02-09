@@ -1,6 +1,4 @@
 main :: () -> void {
-  b := false;
-  b = true;
   a := fun(2, 3);
   print(a+5);
 };

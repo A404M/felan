@@ -19,6 +19,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_FUNCTION_CALL,
   AST_TREE_TOKEN_VARIABLE,
   AST_TREE_TOKEN_VARIABLE_DEFINE,
+  AST_TREE_TOKEN_VALUE_VOID,
   AST_TREE_TOKEN_VALUE_U64,
   AST_TREE_TOKEN_VALUE_BOOL,
 
@@ -34,6 +35,8 @@ typedef struct AstTree {
   AstTreeToken token;
   void *metadata;
   struct AstTree *type;
+  char *str_begin;
+  char *str_end;
 } AstTree;
 
 extern AstTree AST_TREE_TYPE_TYPE;
@@ -60,7 +63,7 @@ typedef struct AstTreeRoot {
 
 typedef struct AstTreeScope {
   AstTreeVariables variables;
-  AstTree *expressions;
+  AstTree **expressions;
   size_t expressions_size;
 } AstTreeScope;
 
@@ -106,8 +109,9 @@ void astTreeVariableDelete(AstTreeVariable *variable);
 void astTreeDelete(AstTree *tree);
 void astTreeRootDelete(AstTreeRoot *root);
 
-AstTree *newAstTree(AstTreeToken token, void *metadata, AstTree *type);
+AstTree *newAstTree(AstTreeToken token, void *metadata, AstTree *type,char *str_begin,char *str_end);
 AstTree *copyAstTree(AstTree *tree);
+AstTreeVariables copyAstTreeVariables(AstTreeVariables variables);
 
 AstTreeRoot *makeAstTree(ParserNode *parsedRoot);
 
