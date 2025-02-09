@@ -33,12 +33,16 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_ASSIGN",
     "LEXER_TOKEN_SYMBOL_COMMA",
     "LEXER_TOKEN_SYMBOL_PLUS",
+    "LEXER_TOKEN_SYMBOL_MINUS",
+    "LEXER_TOKEN_SYMBOL_MULTIPLY",
+    "LEXER_TOKEN_SYMBOL_DIVIDE",
+    "LEXER_TOKEN_SYMBOL_MODULO",
 
     "LEXER_TOKEN_NONE",
 };
 
 const char *LEXER_SYMBOL_STRINGS[] = {
-    ";", "(", ")", "{", "}", "->", ":", "=", ",", "+",
+    ";", "(", ")", "{", "}", "->", ":", "=", ",", "+", "-", "*", "/", "%",
 };
 const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_EOL,
@@ -51,6 +55,10 @@ const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_ASSIGN,
     LEXER_TOKEN_SYMBOL_COMMA,
     LEXER_TOKEN_SYMBOL_PLUS,
+    LEXER_TOKEN_SYMBOL_MINUS,
+    LEXER_TOKEN_SYMBOL_MULTIPLY,
+    LEXER_TOKEN_SYMBOL_DIVIDE,
+    LEXER_TOKEN_SYMBOL_MODULO,
 };
 const size_t LEXER_SYMBOL_SIZE =
     sizeof(LEXER_SYMBOL_TOKENS) / sizeof(*LEXER_SYMBOL_TOKENS);
@@ -119,6 +127,9 @@ LexerNodeArray lexer(char *str) {
             goto RETURN_ERROR;
           }
         }
+      } else {
+        --iter;
+        c = *iter;
       }
     }
     if (isSpace(c)) {
@@ -198,6 +209,10 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_SYMBOL_ASSIGN:
   case LEXER_TOKEN_SYMBOL_COMMA:
   case LEXER_TOKEN_SYMBOL_PLUS:
+  case LEXER_TOKEN_SYMBOL_MINUS:
+  case LEXER_TOKEN_SYMBOL_MULTIPLY:
+  case LEXER_TOKEN_SYMBOL_DIVIDE:
+  case LEXER_TOKEN_SYMBOL_MODULO:
     if (*array_size == array->size) {
       *array_size += 1 + *array_size / 2;
       array->data =

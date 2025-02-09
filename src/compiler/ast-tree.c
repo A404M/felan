@@ -58,6 +58,10 @@ const char *AST_TREE_TOKEN_STRINGS[] = {
 
     "AST_TREE_TOKEN_OPERATOR_ASSIGN",
     "AST_TREE_TOKEN_OPERATOR_SUM",
+    "AST_TREE_TOKEN_OPERATOR_SUB",
+    "AST_TREE_TOKEN_OPERATOR_MULTIPLY",
+    "AST_TREE_TOKEN_OPERATOR_DIVIDE",
+    "AST_TREE_TOKEN_OPERATOR_MODULO",
 
     "AST_TREE_TOKEN_NONE",
 };
@@ -184,6 +188,10 @@ void astTreePrint(const AstTree *tree, int indent) {
   }
     goto RETURN_SUCCESS;
   case AST_TREE_TOKEN_OPERATOR_SUM:
+  case AST_TREE_TOKEN_OPERATOR_SUB:
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
+  case AST_TREE_TOKEN_OPERATOR_MODULO:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN: {
     AstTreeInfix *metadata = tree->metadata;
     printf(",\n");
@@ -290,6 +298,10 @@ void astTreeDestroy(AstTree tree) {
   }
     return;
   case AST_TREE_TOKEN_OPERATOR_SUM:
+  case AST_TREE_TOKEN_OPERATOR_SUB:
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
+  case AST_TREE_TOKEN_OPERATOR_MODULO:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN: {
     AstTreeInfix *metadata = tree.metadata;
     astTreeDestroy(metadata->left);
@@ -374,7 +386,11 @@ AstTree *copyAstTree(AstTree *tree) {
                       tree->str_begin, tree->str_end);
   }
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
-  case AST_TREE_TOKEN_OPERATOR_SUM: {
+  case AST_TREE_TOKEN_OPERATOR_SUM:
+  case AST_TREE_TOKEN_OPERATOR_SUB:
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
+  case AST_TREE_TOKEN_OPERATOR_MODULO: {
     AstTreeInfix *metadata = tree->metadata;
     AstTreeInfix *new_metadata = a404m_malloc(sizeof(*new_metadata));
     AstTree *left = copyAstTree(&metadata->left);
@@ -487,7 +503,7 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
   for (size_t i = 0; i < nodes->size; ++i) {
     ParserNode *eol = nodes->data[i];
     if (eol->token != PARSER_TOKEN_SYMBOL_EOL) {
-      printError(eol->str_begin, eol->str_end, "Unexpected %s",
+      printError(eol->str_begin, eol->str_end, "Did you forgot semicolon?",
                  PARSER_TOKEN_STRINGS[eol->token]);
       goto RETURN_ERROR;
     }
@@ -536,6 +552,7 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
     case PARSER_TOKEN_VALUE_BOOL:
     case PARSER_TOKEN_VALUE_U64:
     case PARSER_TOKEN_FUNCTION_DEFINITION:
+    case PARSER_TOKEN_FUNCTION_CALL:
       goto AFTER_SWITCH;
     case PARSER_TOKEN_ROOT:
     case PARSER_TOKEN_IDENTIFIER:
@@ -552,9 +569,12 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
     case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
     case PARSER_TOKEN_SYMBOL_PARENTHESIS:
     case PARSER_TOKEN_SYMBOL_COMMA:
-    case PARSER_TOKEN_FUNCTION_CALL:
     case PARSER_TOKEN_OPERATOR_ASSIGN:
     case PARSER_TOKEN_OPERATOR_SUM:
+    case PARSER_TOKEN_OPERATOR_SUB:
+    case PARSER_TOKEN_OPERATOR_MULTIPLY:
+    case PARSER_TOKEN_OPERATOR_DIVIDE:
+    case PARSER_TOKEN_OPERATOR_MODULO:
       printError(node->str_begin, node->str_end, "Should not be here");
       goto RETURN_ERROR;
     case PARSER_TOKEN_NONE:
@@ -675,9 +695,23 @@ AstTree *astTreeParse(ParserNode *parserNode, AstTreeVariables **variables,
   case PARSER_TOKEN_KEYWORD_RETURN:
     return astTreeParseReturn(parserNode, variables, variables_size);
   case PARSER_TOKEN_OPERATOR_ASSIGN:
-    return astTreeParseAssign(parserNode, variables, variables_size);
+    return astTreeParseBinaryOperator(parserNode, variables, variables_size,
+                                      AST_TREE_TOKEN_OPERATOR_ASSIGN);
   case PARSER_TOKEN_OPERATOR_SUM:
-    return astTreeParseSum(parserNode, variables, variables_size);
+    return astTreeParseBinaryOperator(parserNode, variables, variables_size,
+                                      AST_TREE_TOKEN_OPERATOR_SUM);
+  case PARSER_TOKEN_OPERATOR_SUB:
+    return astTreeParseBinaryOperator(parserNode, variables, variables_size,
+                                      AST_TREE_TOKEN_OPERATOR_SUB);
+  case PARSER_TOKEN_OPERATOR_MULTIPLY:
+    return astTreeParseBinaryOperator(parserNode, variables, variables_size,
+                                      AST_TREE_TOKEN_OPERATOR_MULTIPLY);
+  case PARSER_TOKEN_OPERATOR_DIVIDE:
+    return astTreeParseBinaryOperator(parserNode, variables, variables_size,
+                                      AST_TREE_TOKEN_OPERATOR_DIVIDE);
+  case PARSER_TOKEN_OPERATOR_MODULO:
+    return astTreeParseBinaryOperator(parserNode, variables, variables_size,
+                                      AST_TREE_TOKEN_OPERATOR_MODULO);
   case PARSER_TOKEN_VARIABLE:
     return astTreeParseVariable(parserNode, variables, variables_size);
   case PARSER_TOKEN_CONSTANT:
@@ -944,9 +978,9 @@ AstTree *astTreeParseReturn(ParserNode *parserNode,
                     parserNode->str_begin, parserNode->str_end);
 }
 
-AstTree *astTreeParseAssign(ParserNode *parserNode,
-                            AstTreeVariables **variables,
-                            size_t variables_size) {
+AstTree *astTreeParseBinaryOperator(ParserNode *parserNode,
+                                    AstTreeVariables **variables,
+                                    size_t variables_size, AstTreeToken token) {
   ParserNodeInfixMetadata *node_metadata = parserNode->metadata;
 
   AstTree *left = astTreeParse(node_metadata->left, variables, variables_size);
@@ -967,34 +1001,8 @@ AstTree *astTreeParseAssign(ParserNode *parserNode,
   free(left);
   free(right);
 
-  return newAstTree(AST_TREE_TOKEN_OPERATOR_ASSIGN, metadata, NULL,
-                    parserNode->str_begin, parserNode->str_end);
-}
-
-AstTree *astTreeParseSum(ParserNode *parserNode, AstTreeVariables **variables,
-                         size_t variables_size) {
-  ParserNodeInfixMetadata *node_metadata = parserNode->metadata;
-
-  AstTree *left = astTreeParse(node_metadata->left, variables, variables_size);
-  if (left == NULL) {
-    return NULL;
-  }
-  AstTree *right =
-      astTreeParse(node_metadata->right, variables, variables_size);
-  if (right == NULL) {
-    return NULL;
-  }
-
-  AstTreeInfix *metadata = a404m_malloc(sizeof(*metadata));
-
-  metadata->left = *left;
-  metadata->right = *right;
-
-  free(left);
-  free(right);
-
-  return newAstTree(AST_TREE_TOKEN_OPERATOR_SUM, metadata, NULL,
-                    parserNode->str_begin, parserNode->str_end);
+  return newAstTree(token, metadata, NULL, parserNode->str_begin,
+                    parserNode->str_end);
 }
 
 bool astTreeParseConstant(ParserNode *parserNode, AstTreeVariables **variables,
@@ -1115,6 +1123,10 @@ AstTreeFunction *getFunction(AstTree *value) {
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_SUM:
+  case AST_TREE_TOKEN_OPERATOR_SUB:
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
+  case AST_TREE_TOKEN_OPERATOR_MODULO:
     return NULL;
   case AST_TREE_TOKEN_NONE:
   }
@@ -1139,6 +1151,10 @@ bool isConst(AstTree *value) {
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_SUM:
+  case AST_TREE_TOKEN_OPERATOR_SUB:
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
+  case AST_TREE_TOKEN_OPERATOR_MODULO:
     return false;
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *metadata = value->metadata;
@@ -1190,7 +1206,11 @@ AstTree *makeTypeOf(AstTree *value) {
     return copyAstTree(variable->type);
   }
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
-  case AST_TREE_TOKEN_OPERATOR_SUM: {
+  case AST_TREE_TOKEN_OPERATOR_SUM:
+  case AST_TREE_TOKEN_OPERATOR_SUB:
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
+  case AST_TREE_TOKEN_OPERATOR_MODULO: {
     AstTreeInfix *metadata = value->metadata;
     return copyAstTree(metadata->left.type);
   }
@@ -1213,6 +1233,10 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_SUM:
+  case AST_TREE_TOKEN_OPERATOR_SUB:
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
+  case AST_TREE_TOKEN_OPERATOR_MODULO:
     return false;
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_VOID:
@@ -1289,7 +1313,11 @@ bool setAllTypes(AstTree *tree, AstTreeFunction *function) {
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
     return setTypesOperatorAssign(tree);
   case AST_TREE_TOKEN_OPERATOR_SUM:
-    return setTypesOperatorSum(tree);
+  case AST_TREE_TOKEN_OPERATOR_SUB:
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
+  case AST_TREE_TOKEN_OPERATOR_MODULO:
+    return setTypesOperatorInfix(tree);
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
     return setTypesVariableDefine(tree);
   case AST_TREE_TOKEN_NONE:
@@ -1429,7 +1457,7 @@ bool setTypesOperatorAssign(AstTree *tree) {
   }
 }
 
-bool setTypesOperatorSum(AstTree *tree) {
+bool setTypesOperatorInfix(AstTree *tree) {
   AstTreeInfix *infix = tree->metadata;
   if (!setTypesAstInfix(infix)) {
     return false;
@@ -1500,6 +1528,10 @@ bool astTreeClean(AstTree *tree) {
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_SUM:
+  case AST_TREE_TOKEN_OPERATOR_SUB:
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
+  case AST_TREE_TOKEN_OPERATOR_MODULO:
     return true;
   case AST_TREE_TOKEN_NONE:
   }
@@ -1586,6 +1618,10 @@ size_t astTreeTypeSize(AstTree tree) {
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_SUM:
+  case AST_TREE_TOKEN_OPERATOR_SUB:
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
+  case AST_TREE_TOKEN_OPERATOR_MODULO:
   case AST_TREE_TOKEN_NONE:
   }
   UNREACHABLE;

@@ -31,6 +31,10 @@ typedef enum ParserToken {
 
   PARSER_TOKEN_OPERATOR_ASSIGN,
   PARSER_TOKEN_OPERATOR_SUM,
+  PARSER_TOKEN_OPERATOR_SUB,
+  PARSER_TOKEN_OPERATOR_MULTIPLY,
+  PARSER_TOKEN_OPERATOR_DIVIDE,
+  PARSER_TOKEN_OPERATOR_MODULO,
 
   PARSER_TOKEN_FUNCTION_DEFINITION,
 
@@ -130,10 +134,11 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
                            ParserNode *parent);
 ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
                            ParserNode *parent);
-ParserNode *parserAssign(LexerNode *node, LexerNode *begin, LexerNode *end,
-                         ParserNode *parent);
-ParserNode *parserPlus(LexerNode *node, LexerNode *begin, LexerNode *end,
-                       ParserNode *parent);
+ParserNode *parserBinaryOperator(LexerNode *node, LexerNode *begin,
+                                 LexerNode *end, ParserNode *parent,
+                                 ParserToken token);
+ParserNode *parserBinaryOrLeftOperator(LexerNode *node, LexerNode *begin, LexerNode *end,
+                       ParserNode *parent,ParserToken token);
 
 bool isAllArguments(const ParserNodeArray *nodes);
 

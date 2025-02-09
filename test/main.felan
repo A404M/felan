@@ -1,10 +1,12 @@
 main :: () -> void {
-  a := fun(2, 3);
-  print(a+5);
+  a := fun(2, 3,);
+  print(a+5+t);
 };
 
+t :: fun(1,2);
+
 fun :: (a:u64, b:u64)->u64 {
-  return a+b+1;
+  return b+a*b-b/a%2;
 };
 
 print :: (a:u64)->void {

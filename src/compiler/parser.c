@@ -36,6 +36,10 @@ const char *PARSER_TOKEN_STRINGS[] = {
 
     "PARSER_TOKEN_OPERATOR_ASSIGN",
     "PARSER_TOKEN_OPERATOR_SUM",
+    "PARSER_TOKEN_OPERATOR_SUB",
+    "PARSER_TOKEN_OPERATOR_MULTIPLY",
+    "PARSER_TOKEN_OPERATOR_DIVIDE",
+    "PARSER_TOKEN_OPERATOR_MODULO",
 
     "PARSER_TOKEN_FUNCTION_DEFINITION",
 
@@ -67,7 +71,12 @@ static constexpr ParserOrder PARSER_ORDER[] = {
     },
     {
         .ltr = true,
-        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_PLUS, ),
+        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_MULTIPLY, LEXER_TOKEN_SYMBOL_DIVIDE,
+                    LEXER_TOKEN_SYMBOL_MODULO, ),
+    },
+    {
+        .ltr = true,
+        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_PLUS, LEXER_TOKEN_SYMBOL_MINUS, ),
     },
     {
         .ltr = true,
@@ -242,7 +251,11 @@ void parserNodePrint(const ParserNode *node, int indent) {
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_OPERATOR_ASSIGN:
-  case PARSER_TOKEN_OPERATOR_SUM: {
+  case PARSER_TOKEN_OPERATOR_SUM:
+  case PARSER_TOKEN_OPERATOR_SUB:
+  case PARSER_TOKEN_OPERATOR_MULTIPLY:
+  case PARSER_TOKEN_OPERATOR_DIVIDE:
+  case PARSER_TOKEN_OPERATOR_MODULO: {
     const ParserNodeInfixMetadata *metadata = node->metadata;
     printf(",\n");
     for (int i = 0; i < indent; ++i)
@@ -342,14 +355,17 @@ void parserNodeDelete(ParserNode *node) {
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_OPERATOR_ASSIGN:
-  case PARSER_TOKEN_OPERATOR_SUM: {
+  case PARSER_TOKEN_OPERATOR_SUM:
+  case PARSER_TOKEN_OPERATOR_SUB:
+  case PARSER_TOKEN_OPERATOR_MULTIPLY:
+  case PARSER_TOKEN_OPERATOR_DIVIDE:
+  case PARSER_TOKEN_OPERATOR_MODULO: {
     ParserNodeInfixMetadata *metadata = node->metadata;
     parserNodeDelete(metadata->left);
     parserNodeDelete(metadata->right);
     free(metadata);
   }
     goto RETURN_SUCCESS;
-
   case PARSER_TOKEN_NONE:
   }
   UNREACHABLE;
@@ -412,12 +428,13 @@ bool parserNodeArray(LexerNode *begin, LexerNode *end, ParserNode *parent) {
 
   for (LexerNode *iter = begin; iter < end; ++iter) {
     ParserNode *pNode = iter->parserNode;
-    if (pNode->parent != parent) {
-      continue;
-    } else if (pNode == NULL) {
-      printError(pNode->str_begin, pNode->str_end, "Bad child");
+    if (pNode == NULL) {
+      printError(iter->str_begin, iter->str_end, "Bad child");
       goto RETURN_ERROR;
+    } else if (pNode->parent != parent) {
+      continue;
     }
+
     for (size_t i = 0; i < parsedNodes->size; ++i) {
       if (parsedNodes->data[i] == pNode) {
         goto CONTINUE;
@@ -484,13 +501,28 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
   case LEXER_TOKEN_NUMBER:
     return parserNumber(node, parent);
   case LEXER_TOKEN_SYMBOL_ASSIGN:
-    return parserAssign(node, begin, end, parent);
+    return parserBinaryOperator(node, begin, end, parent,
+                                PARSER_TOKEN_OPERATOR_ASSIGN);
+  case LEXER_TOKEN_SYMBOL_MULTIPLY:
+    return parserBinaryOperator(node, begin, end, parent,
+                                PARSER_TOKEN_OPERATOR_MULTIPLY);
+  case LEXER_TOKEN_SYMBOL_DIVIDE:
+    return parserBinaryOperator(node, begin, end, parent,
+                                PARSER_TOKEN_OPERATOR_DIVIDE);
+  case LEXER_TOKEN_SYMBOL_MODULO:
+    return parserBinaryOperator(node, begin, end, parent,
+                                PARSER_TOKEN_OPERATOR_MODULO);
   case LEXER_TOKEN_SYMBOL_PLUS:
-    return parserPlus(node, begin, end, parent);
+    return parserBinaryOrLeftOperator(node, begin, end, parent,
+                                      PARSER_TOKEN_OPERATOR_SUM);
+  case LEXER_TOKEN_SYMBOL_MINUS:
+    return parserBinaryOrLeftOperator(node, begin, end, parent,
+                                      PARSER_TOKEN_OPERATOR_SUB);
   case LEXER_TOKEN_SYMBOL:
   case LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS:
   case LEXER_TOKEN_SYMBOL_OPEN_CURLY_BRACKET:
   case LEXER_TOKEN_NONE:
+    break;
   }
   UNREACHABLE;
 }
@@ -915,7 +947,7 @@ ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
     } else {
       value = getUntilCommonParent(valueNode->parserNode, parent);
       if (!isValue(value)) {
-        printError(name->str_begin, name->str_end, "No value");
+        printError(name->str_begin, name->str_end, "Bad value");
         return NULL;
       }
       value->parent = variableNode;
@@ -943,13 +975,14 @@ RETURN_ERROR:
   return NULL;
 }
 
-ParserNode *parserAssign(LexerNode *node, LexerNode *begin, LexerNode *end,
-                         ParserNode *parent) {
+ParserNode *parserBinaryOperator(LexerNode *node, LexerNode *begin,
+                                 LexerNode *end, ParserNode *parent,
+                                 ParserToken token) {
   LexerNode *leftNode = node - 1;
   LexerNode *rightNode = node + 1;
 
   if (leftNode < begin || rightNode >= end) {
-    printError(node->str_begin, node->str_end, "Bad assign");
+    printError(node->str_begin, node->str_end, "Bad binary operator");
     return NULL;
   }
 
@@ -957,7 +990,7 @@ ParserNode *parserAssign(LexerNode *node, LexerNode *begin, LexerNode *end,
   ParserNode *right = getUntilCommonParent(rightNode->parserNode, parent);
 
   if (left == NULL || right == NULL) {
-    printError(node->str_begin, node->str_end, "Bad assign");
+    printError(node->str_begin, node->str_end, "Bad binary operator");
     return NULL;
   }
 
@@ -965,13 +998,13 @@ ParserNode *parserAssign(LexerNode *node, LexerNode *begin, LexerNode *end,
   metadata->left = left;
   metadata->right = right;
 
-  return left->parent = right->parent = node->parserNode =
-             newParserNode(PARSER_TOKEN_OPERATOR_ASSIGN, left->str_begin,
-                           right->str_end, metadata, parent);
+  return left->parent = right->parent = node->parserNode = newParserNode(
+             token, left->str_begin, right->str_end, metadata, parent);
 }
 
-ParserNode *parserPlus(LexerNode *node, LexerNode *begin, LexerNode *end,
-                       ParserNode *parent) {
+ParserNode *parserBinaryOrLeftOperator(LexerNode *node, LexerNode *begin,
+                                       LexerNode *end, ParserNode *parent,
+                                       ParserToken token) {
   LexerNode *leftNode = node - 1;
   LexerNode *rightNode = node + 1;
 
@@ -992,9 +1025,8 @@ ParserNode *parserPlus(LexerNode *node, LexerNode *begin, LexerNode *end,
   metadata->left = left;
   metadata->right = right;
 
-  return left->parent = right->parent = node->parserNode =
-             newParserNode(PARSER_TOKEN_OPERATOR_SUM, left->str_begin,
-                           right->str_end, metadata, parent);
+  return left->parent = right->parent = node->parserNode = newParserNode(
+             token, left->str_begin, right->str_end, metadata, parent);
 }
 
 bool isAllArguments(const ParserNodeArray *nodes) {
@@ -1019,6 +1051,10 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_KEYWORD_RETURN:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM:
+  case PARSER_TOKEN_OPERATOR_SUB:
+  case PARSER_TOKEN_OPERATOR_MULTIPLY:
+  case PARSER_TOKEN_OPERATOR_DIVIDE:
+  case PARSER_TOKEN_OPERATOR_MODULO:
   case PARSER_TOKEN_VALUE_U64:
   case PARSER_TOKEN_VALUE_BOOL:
     return true;
@@ -1061,6 +1097,10 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_KEYWORD_RETURN:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM:
+  case PARSER_TOKEN_OPERATOR_SUB:
+  case PARSER_TOKEN_OPERATOR_MULTIPLY:
+  case PARSER_TOKEN_OPERATOR_DIVIDE:
+  case PARSER_TOKEN_OPERATOR_MODULO:
     return false;
   case PARSER_TOKEN_NONE:
   }
@@ -1076,12 +1116,16 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM:
-    return true;
-  case PARSER_TOKEN_TYPE_FUNCTION:
+  case PARSER_TOKEN_OPERATOR_SUB:
+  case PARSER_TOKEN_OPERATOR_MULTIPLY:
+  case PARSER_TOKEN_OPERATOR_DIVIDE:
+  case PARSER_TOKEN_OPERATOR_MODULO:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_U64:
   case PARSER_TOKEN_TYPE_BOOL:
+    return true;
+  case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_VARIABLE:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:

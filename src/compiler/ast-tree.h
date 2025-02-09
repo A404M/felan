@@ -25,6 +25,10 @@ typedef enum AstTreeToken {
 
   AST_TREE_TOKEN_OPERATOR_ASSIGN,
   AST_TREE_TOKEN_OPERATOR_SUM,
+  AST_TREE_TOKEN_OPERATOR_SUB,
+  AST_TREE_TOKEN_OPERATOR_MULTIPLY,
+  AST_TREE_TOKEN_OPERATOR_DIVIDE,
+  AST_TREE_TOKEN_OPERATOR_MODULO,
 
   AST_TREE_TOKEN_NONE,
 } AstTreeToken;
@@ -146,12 +150,9 @@ AstTree *astTreeParseReturn(ParserNode *parserNode,
                               AstTreeVariables **variables,
                               size_t variables_size);
 
-AstTree *astTreeParseAssign(ParserNode *parserNode,
+AstTree *astTreeParseBinaryOperator(ParserNode *parserNode,
                             AstTreeVariables **variables,
-                            size_t variables_size);
-
-AstTree *astTreeParseSum(ParserNode *parserNode, AstTreeVariables **variables,
-                         size_t variables_size);
+                            size_t variables_size,AstTreeToken token);
 
 bool astTreeParseConstant(ParserNode *parserNode, AstTreeVariables **variables,
                           size_t variables_size);
@@ -174,7 +175,7 @@ bool setTypesTypeFunction(AstTree *tree);
 bool setTypesFunctionCall(AstTree *tree);
 bool setTypesVariable(AstTree *tree);
 bool setTypesOperatorAssign(AstTree *tree);
-bool setTypesOperatorSum(AstTree *tree);
+bool setTypesOperatorInfix(AstTree *tree);
 bool setTypesVariableDefine(AstTree *tree);
 
 bool setTypesAstVariable(AstTreeVariable *variable);
