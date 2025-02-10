@@ -1,5 +1,6 @@
 #include "string.h"
 #include "memory.h"
+#include "utils/log.h"
 
 #include <stdint.h>
 #include <string.h>

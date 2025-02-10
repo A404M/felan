@@ -4,6 +4,7 @@
 #include "utils/memory.h"
 #include "utils/string.h"
 
+#include <stdint.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -74,6 +75,10 @@ const LexerToken LEXER_KEYWORD_TOKENS[] = {
 };
 const size_t LEXER_KEYWORD_SIZE =
     sizeof(LEXER_KEYWORD_TOKENS) / sizeof(*LEXER_KEYWORD_TOKENS);
+
+const LexerNodeArray LEXER_NODE_ARRAY_ERROR = {
+    .size = SIZE_MAX,
+};
 
 bool lexerNodeArrayIsError(LexerNodeArray array) {
   return LEXER_NODE_ARRAY_ERROR.size == array.size;

@@ -59,9 +59,7 @@ typedef struct LexerNodeArray {
   size_t size;
 } LexerNodeArray;
 
-constexpr LexerNodeArray LEXER_NODE_ARRAY_ERROR = {
-    .size = -1ULL,
-};
+extern const LexerNodeArray LEXER_NODE_ARRAY_ERROR;
 
 extern bool lexerNodeArrayIsError(LexerNodeArray array);
 extern void lexerNodeArrayPrint(LexerNodeArray array);

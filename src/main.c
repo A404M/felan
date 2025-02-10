@@ -1,7 +1,4 @@
-#include "compiler/ast-tree.h"
 #include "compiler/code-generator.h"
-#include "compiler/lexer.h"
-#include "compiler/parser.h"
 #include "runner/runner.h"
 #include "utils/file.h"
 #include "utils/log.h"
@@ -18,7 +15,7 @@ static int compileRun(const char *filePath, const char *outFilePath,
 
   LexerNodeArray lexed = lexer(code);
   if (lexerNodeArrayIsError(lexed)) {
-    goto RETURN_ERROR;
+    return 1;
   }
   if (print)
     lexerNodeArrayPrint(lexed);
@@ -26,7 +23,7 @@ static int compileRun(const char *filePath, const char *outFilePath,
   ParserNode *parsedRoot = parser(lexed);
   lexerNodeArrayDestroy(lexed);
   if (parsedRoot == NULL) {
-    goto RETURN_ERROR;
+    return 1;
   }
   if (print)
     parserNodePrint(parsedRoot, 0);
@@ -34,7 +31,7 @@ static int compileRun(const char *filePath, const char *outFilePath,
   AstTreeRoot *astTree = makeAstTree(parsedRoot);
   parserNodeDelete(parsedRoot);
   if (astTree == NULL) {
-    goto RETURN_ERROR;
+    return 1;
   }
   if (print)
     astTreeRootPrint(astTree);
@@ -42,7 +39,7 @@ static int compileRun(const char *filePath, const char *outFilePath,
   CodeGeneratorCodes *codes = codeGenerator(astTree);
   astTreeRootDelete(astTree);
   if (codes == NULL) {
-    goto RETURN_ERROR;
+    return 1;
   }
 
   char *fasm = codeGeneratorToFlatASM(codes);
@@ -58,40 +55,30 @@ static int compileRun(const char *filePath, const char *outFilePath,
   }
 
   return 1;
-
-RETURN_ERROR:
-  free(code);
-  return 1;
 }
 
-static int run(const char *filePath, bool print) {
-  char *code = readWholeFile(filePath);
-
-  if (code == NULL) {
-    return 1;
-  }
-
+int runWithoutRead(char *code, bool shouldPrint) {
   LexerNodeArray lexed = lexer(code);
   if (lexerNodeArrayIsError(lexed)) {
-    goto RETURN_ERROR;
+    return 1;
   }
-  if (print)
+  if (shouldPrint)
     lexerNodeArrayPrint(lexed);
 
   ParserNode *parsedRoot = parser(lexed);
   lexerNodeArrayDestroy(lexed);
   if (parsedRoot == NULL) {
-    goto RETURN_ERROR;
+    return 1;
   }
-  if (print)
+  if (shouldPrint)
     parserNodePrint(parsedRoot, 0);
 
   AstTreeRoot *astTree = makeAstTree(parsedRoot);
   parserNodeDelete(parsedRoot);
   if (astTree == NULL) {
-    goto RETURN_ERROR;
+    return 1;
   }
-  if (print)
+  if (shouldPrint)
     astTreeRootPrint(astTree);
 
   int ret;
@@ -103,10 +90,16 @@ static int run(const char *filePath, bool print) {
   astTreeRootDelete(astTree);
 
   return ret;
+}
 
-RETURN_ERROR:
-  free(code);
-  return 1;
+static int run(const char *filePath, bool shouldPrint) {
+  char *code = readWholeFile(filePath);
+
+  if (code == NULL) {
+    return 1;
+  }
+
+  return runWithoutRead(code, shouldPrint);
 }
 
 int main(int argc, char *argv[]) {
@@ -118,7 +111,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  const int ret = run(argv[1], true);
+  const int ret = run(argv[1], false);
   fileDelete();
   return ret;
 }

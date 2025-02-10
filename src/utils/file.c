@@ -30,6 +30,21 @@ void fileDelete() {
   fileCodes_length = 0;
 }
 
+void filePush(const char *filePath, char *code) {
+  if (fileCodes_capacity == fileCodes_length) {
+    fileCodes_capacity += fileCodes_capacity / 2 + 1;
+    fileCodes =
+        a404m_realloc(fileCodes, fileCodes_capacity * sizeof(*fileCodes));
+    fileCodes_names = a404m_realloc(
+        fileCodes_names, fileCodes_capacity * sizeof(*fileCodes_names));
+  }
+  fileCodes[fileCodes_length] = code;
+  fileCodes_names[fileCodes_length] =
+      a404m_malloc((strlen(filePath) + 1) * sizeof(**fileCodes_names));
+  strcpy(fileCodes_names[fileCodes_length], filePath);
+  fileCodes_length += 1;
+}
+
 char *readWholeFile(const char *filePath) {
   FILE *file = fopen(filePath, "r");
 
@@ -48,18 +63,7 @@ char *readWholeFile(const char *filePath) {
 
   fclose(file);
 
-  if (fileCodes_capacity == fileCodes_length) {
-    fileCodes_capacity += fileCodes_capacity / 2 + 1;
-    fileCodes =
-        a404m_realloc(fileCodes, fileCodes_capacity * sizeof(*fileCodes));
-    fileCodes_names = a404m_realloc(
-        fileCodes_names, fileCodes_capacity * sizeof(*fileCodes_names));
-  }
-  fileCodes[fileCodes_length] = str;
-  fileCodes_names[fileCodes_length] =
-      a404m_malloc((strlen(filePath) + 1) * sizeof(**fileCodes_names));
-  strcpy(fileCodes_names[fileCodes_length], filePath);
-  fileCodes_length += 1;
+  filePush(filePath, str);
 
   return str;
 }
