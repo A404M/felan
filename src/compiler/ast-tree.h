@@ -24,6 +24,8 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_VALUE_BOOL,
 
   AST_TREE_TOKEN_OPERATOR_ASSIGN,
+  AST_TREE_TOKEN_OPERATOR_PLUS,
+  AST_TREE_TOKEN_OPERATOR_MINUS,
   AST_TREE_TOKEN_OPERATOR_SUM,
   AST_TREE_TOKEN_OPERATOR_SUB,
   AST_TREE_TOKEN_OPERATOR_MULTIPLY,
@@ -113,7 +115,8 @@ void astTreeVariableDelete(AstTreeVariable *variable);
 void astTreeDelete(AstTree *tree);
 void astTreeRootDelete(AstTreeRoot *root);
 
-AstTree *newAstTree(AstTreeToken token, void *metadata, AstTree *type,char *str_begin,char *str_end);
+AstTree *newAstTree(AstTreeToken token, void *metadata, AstTree *type,
+                    char *str_begin, char *str_end);
 AstTree *copyAstTree(AstTree *tree);
 AstTreeVariables copyAstTreeVariables(AstTreeVariables variables);
 
@@ -147,12 +150,16 @@ AstTree *astTreeParsePrintU64(ParserNode *parserNode,
                               AstTreeVariables **variables,
                               size_t variables_size);
 AstTree *astTreeParseReturn(ParserNode *parserNode,
-                              AstTreeVariables **variables,
-                              size_t variables_size);
+                            AstTreeVariables **variables,
+                            size_t variables_size);
 
 AstTree *astTreeParseBinaryOperator(ParserNode *parserNode,
-                            AstTreeVariables **variables,
-                            size_t variables_size,AstTreeToken token);
+                                    AstTreeVariables **variables,
+                                    size_t variables_size, AstTreeToken token);
+
+AstTree *astTreeParseUnaryOperator(ParserNode *parserNode,
+                                  AstTreeVariables **variables,
+                                  size_t variables_size, AstTreeToken token);
 
 bool astTreeParseConstant(ParserNode *parserNode, AstTreeVariables **variables,
                           size_t variables_size);
@@ -167,15 +174,16 @@ AstTree *makeTypeOf(AstTree *value);
 bool typeIsEqual(const AstTree *type0, const AstTree *type1);
 
 bool setAllTypesRoot(AstTreeRoot *root);
-bool setAllTypes(AstTree *tree,AstTreeFunction *function);
+bool setAllTypes(AstTree *tree, AstTreeFunction *function);
 bool setTypesFunction(AstTree *tree);
 bool setTypesPrintU64(AstTree *tree);
-bool setTypesReturn(AstTree *tree,AstTreeFunction *function);
+bool setTypesReturn(AstTree *tree, AstTreeFunction *function);
 bool setTypesTypeFunction(AstTree *tree);
 bool setTypesFunctionCall(AstTree *tree);
 bool setTypesVariable(AstTree *tree);
 bool setTypesOperatorAssign(AstTree *tree);
 bool setTypesOperatorInfix(AstTree *tree);
+bool setTypesOperatorUnary(AstTree *tree);
 bool setTypesVariableDefine(AstTree *tree);
 
 bool setTypesAstVariable(AstTreeVariable *variable);

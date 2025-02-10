@@ -204,6 +204,8 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
       runnerVariableSetValue(&pages, variable, copyAstTree(variable->value));
     }
       continue;
+    case AST_TREE_TOKEN_OPERATOR_PLUS:
+    case AST_TREE_TOKEN_OPERATOR_MINUS:
     case AST_TREE_TOKEN_OPERATOR_SUM:
     case AST_TREE_TOKEN_OPERATOR_SUB:
     case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
@@ -295,6 +297,31 @@ AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
         UNREACHABLE;
       }
     }
+    UNREACHABLE;
+  }
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS: {
+    AstTreeSingleChild *metadata = tree->metadata;
+    if (typeIsEqual(metadata->type, &AST_TREE_U64_TYPE)) {
+      AstTree *operand = calcAstTreeValue(metadata, pages);
+      if (operand->token == AST_TREE_TOKEN_VALUE_U64) {
+        switch (tree->token) {
+        case AST_TREE_TOKEN_OPERATOR_PLUS:
+          operand->metadata = (void *)(+(AstTreeU64)operand->metadata);
+          break;
+        case AST_TREE_TOKEN_OPERATOR_MINUS:
+          operand->metadata = (void *)(-(AstTreeU64)operand->metadata);
+          break;
+        default:
+          UNREACHABLE;
+        }
+        return operand;
+      } else {
+        UNREACHABLE;
+      }
+    } else {
+      UNREACHABLE;
+    }
   }
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
@@ -330,6 +357,8 @@ AstTree *deepCopyAstTree(AstTree *tree) {
   case AST_TREE_TOKEN_FUNCTION_CALL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
   case AST_TREE_TOKEN_OPERATOR_SUM:
   case AST_TREE_TOKEN_OPERATOR_SUB:
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY:

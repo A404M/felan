@@ -4,8 +4,8 @@
 #include "utils/memory.h"
 #include "utils/string.h"
 
-#include <stdint.h>
 #include <ctype.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -35,6 +35,8 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_COMMA",
     "LEXER_TOKEN_SYMBOL_PLUS",
     "LEXER_TOKEN_SYMBOL_MINUS",
+    "LEXER_TOKEN_SYMBOL_SUM",
+    "LEXER_TOKEN_SYMBOL_SUB",
     "LEXER_TOKEN_SYMBOL_MULTIPLY",
     "LEXER_TOKEN_SYMBOL_DIVIDE",
     "LEXER_TOKEN_SYMBOL_MODULO",
@@ -215,6 +217,8 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_SYMBOL_COMMA:
   case LEXER_TOKEN_SYMBOL_PLUS:
   case LEXER_TOKEN_SYMBOL_MINUS:
+  case LEXER_TOKEN_SYMBOL_SUM:
+  case LEXER_TOKEN_SYMBOL_SUB:
   case LEXER_TOKEN_SYMBOL_MULTIPLY:
   case LEXER_TOKEN_SYMBOL_DIVIDE:
   case LEXER_TOKEN_SYMBOL_MODULO:

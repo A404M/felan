@@ -115,6 +115,8 @@ void astTreePrint(const AstTree *tree, int indent) {
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
     goto RETURN_SUCCESS;
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64: {
     AstTreeSingleChild *metadata = tree->metadata;
     printf(",\n");
@@ -260,6 +262,8 @@ void astTreeDestroy(AstTree tree) {
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
     return;
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64: {
     AstTreeSingleChild *metadata = tree.metadata;
     astTreeDelete(metadata);
@@ -424,6 +428,8 @@ AstTree *copyAstTree(AstTree *tree) {
     return newAstTree(tree->token, new_metadata, copyAstTree(tree->type),
                       tree->str_begin, tree->str_end);
   }
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64: {
     AstTreeSingleChild *metadata = tree->metadata;
     AstTreeSingleChild *new_metadata = copyAstTree(metadata);
@@ -461,7 +467,6 @@ AstTree *copyAstTree(AstTree *tree) {
   case AST_TREE_TOKEN_NONE:
   }
   printLog("Bad token %ld", tree->token);
-  *(int *)(NULL) = 2;
   UNREACHABLE;
 }
 
@@ -570,6 +575,8 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
     case PARSER_TOKEN_SYMBOL_PARENTHESIS:
     case PARSER_TOKEN_SYMBOL_COMMA:
     case PARSER_TOKEN_OPERATOR_ASSIGN:
+    case PARSER_TOKEN_OPERATOR_PLUS:
+    case PARSER_TOKEN_OPERATOR_MINUS:
     case PARSER_TOKEN_OPERATOR_SUM:
     case PARSER_TOKEN_OPERATOR_SUB:
     case PARSER_TOKEN_OPERATOR_MULTIPLY:
@@ -712,6 +719,12 @@ AstTree *astTreeParse(ParserNode *parserNode, AstTreeVariables **variables,
   case PARSER_TOKEN_OPERATOR_MODULO:
     return astTreeParseBinaryOperator(parserNode, variables, variables_size,
                                       AST_TREE_TOKEN_OPERATOR_MODULO);
+  case PARSER_TOKEN_OPERATOR_PLUS:
+    return astTreeParseUnaryOperator(parserNode, variables, variables_size,
+                                     AST_TREE_TOKEN_OPERATOR_PLUS);
+  case PARSER_TOKEN_OPERATOR_MINUS:
+    return astTreeParseUnaryOperator(parserNode, variables, variables_size,
+                                     AST_TREE_TOKEN_OPERATOR_MINUS);
   case PARSER_TOKEN_VARIABLE:
     return astTreeParseVariable(parserNode, variables, variables_size);
   case PARSER_TOKEN_CONSTANT:
@@ -1005,6 +1018,21 @@ AstTree *astTreeParseBinaryOperator(ParserNode *parserNode,
                     parserNode->str_end);
 }
 
+AstTree *astTreeParseUnaryOperator(ParserNode *parserNode,
+                                   AstTreeVariables **variables,
+                                   size_t variables_size, AstTreeToken token) {
+  ParserNodeSingleChildMetadata *node_metadata = parserNode->metadata;
+
+  AstTreeSingleChild *metadata =
+      astTreeParse(node_metadata, variables, variables_size);
+  if (metadata == NULL) {
+    return NULL;
+  }
+
+  return newAstTree(token, metadata, NULL, parserNode->str_begin,
+                    parserNode->str_end);
+}
+
 bool astTreeParseConstant(ParserNode *parserNode, AstTreeVariables **variables,
                           size_t variables_size) {
   ParserNodeVariableMetadata *node_metadata = parserNode->metadata;
@@ -1122,6 +1150,8 @@ AstTreeFunction *getFunction(AstTree *value) {
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
   case AST_TREE_TOKEN_OPERATOR_SUM:
   case AST_TREE_TOKEN_OPERATOR_SUB:
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
@@ -1150,6 +1180,8 @@ bool isConst(AstTree *value) {
   case AST_TREE_TOKEN_FUNCTION_CALL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
   case AST_TREE_TOKEN_OPERATOR_SUM:
   case AST_TREE_TOKEN_OPERATOR_SUB:
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
@@ -1205,6 +1237,11 @@ AstTree *makeTypeOf(AstTree *value) {
     AstTreeVariable *variable = value->metadata;
     return copyAstTree(variable->type);
   }
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS: {
+    AstTreeSingleChild *metadata = value->metadata;
+    return copyAstTree(metadata->type);
+  }
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_SUM:
   case AST_TREE_TOKEN_OPERATOR_SUB:
@@ -1237,6 +1274,8 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
   case AST_TREE_TOKEN_OPERATOR_DIVIDE:
   case AST_TREE_TOKEN_OPERATOR_MODULO:
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
     return false;
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_VOID:
@@ -1312,6 +1351,9 @@ bool setAllTypes(AstTree *tree, AstTreeFunction *function) {
     return setTypesVariable(tree);
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
     return setTypesOperatorAssign(tree);
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
+    return setTypesOperatorUnary(tree);
   case AST_TREE_TOKEN_OPERATOR_SUM:
   case AST_TREE_TOKEN_OPERATOR_SUB:
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
@@ -1470,6 +1512,16 @@ bool setTypesOperatorInfix(AstTree *tree) {
   }
 }
 
+bool setTypesOperatorUnary(AstTree *tree) {
+  AstTreeSingleChild *operand = tree->metadata;
+  if (!setAllTypes(operand, NULL)) {
+    return false;
+  } else {
+    tree->type = copyAstTree(operand->type);
+    return true;
+  }
+}
+
 bool setTypesVariableDefine(AstTree *tree) {
   AstTreeVariable *metadata = tree->metadata;
   tree->type = &AST_TREE_VOID_TYPE;
@@ -1527,6 +1579,8 @@ bool astTreeClean(AstTree *tree) {
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
   case AST_TREE_TOKEN_OPERATOR_SUM:
   case AST_TREE_TOKEN_OPERATOR_SUB:
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
@@ -1617,6 +1671,8 @@ size_t astTreeTypeSize(AstTree tree) {
   case AST_TREE_TOKEN_VALUE_U64:
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
   case AST_TREE_TOKEN_OPERATOR_SUM:
   case AST_TREE_TOKEN_OPERATOR_SUB:
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
