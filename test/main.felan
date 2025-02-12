@@ -1,5 +1,9 @@
 main :: () -> void {
-  b := true;
-  if b print_u64 23;
+  b := false;
+  if b {
+    print_u64 1;
+  } else {
+    print_u64 2;
+  }
 };
 

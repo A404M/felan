@@ -29,5 +29,7 @@ bool runAstTree(AstTreeRoot *root);
 AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
                             size_t arguments_size,RunnerVariablePages *pages);
 
+AstTree* runExpression(AstTree *expr,RunnerVariablePages *pages);
+
 AstTree *calcAstTreeValue(AstTree *tree,RunnerVariablePages *pages);
 AstTree *deepCopyAstTree(AstTree *tree);

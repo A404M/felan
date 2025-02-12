@@ -297,8 +297,13 @@ void parserNodePrint(const ParserNode *node, int indent) {
     printf(",\n");
     for (int i = 0; i < indent; ++i)
       printf(" ");
-    printf("body=\n");
-    parserNodePrint(metadata->body, indent + 1);
+    printf("ifBody=\n");
+    parserNodePrint(metadata->ifBody, indent + 1);
+    printf("\n,");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("elseBody=\n");
+    parserNodePrint(metadata->elseBody, indent + 1);
     printf("\n");
     for (int i = 0; i < indent; ++i)
       printf(" ");
@@ -404,7 +409,8 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_KEYWORD_IF: {
     ParserNodeIfMetadata *metadata = node->metadata;
     parserNodeDelete(metadata->condition);
-    parserNodeDelete(metadata->body);
+    parserNodeDelete(metadata->ifBody);
+    parserNodeDelete(metadata->elseBody);
     free(metadata);
   }
     goto RETURN_SUCCESS;
@@ -577,6 +583,7 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
   }
   case LEXER_TOKEN_KEYWORD_IF:
     return parserIf(node, end, parent);
+  case LEXER_TOKEN_KEYWORD_ELSE:
   case LEXER_TOKEN_SYMBOL:
   case LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS:
   case LEXER_TOKEN_SYMBOL_OPEN_CURLY_BRACKET:
@@ -588,6 +595,23 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
 
 ParserNode *getUntilCommonParent(ParserNode *node, ParserNode *parent) {
   while (node != NULL && node != parent && node->parent != parent) {
+    if (node == node->parent) {
+      return NULL;
+    }
+
+    node = node->parent;
+  }
+  return node;
+}
+
+ParserNode *getUntilCommonParents(ParserNode *node, ParserNode *parent,
+                                  ParserNode *parent2) {
+  while (node != NULL && node != parent && node->parent != parent &&
+         node->parent != parent2) {
+    if (node == node->parent) {
+      return NULL;
+    }
+
     node = node->parent;
   }
   return node;
@@ -610,6 +634,29 @@ ParserNode *getNextUsingCommonParent(LexerNode *node, LexerNode *end,
 
     if (newParsed == NULL) {
       return getUntilCommonParent(node->parserNode, parent);
+    }
+  }
+
+  return NULL;
+}
+
+LexerNode *getNextLexerNodeUsingCommonParent(LexerNode *node, LexerNode *end,
+                                             ParserNode *parent) {
+  ParserNode *parsed = getUntilCommonParent(node->parserNode, parent);
+  if (parsed == NULL) {
+    return NULL;
+  }
+
+  while (true) {
+    node += 1;
+    if (node >= end) {
+      return NULL;
+    }
+
+    ParserNode *newParsed = getUntilCommonParent(node->parserNode, parsed);
+
+    if (newParsed == NULL) {
+      return node;
     }
   }
 
@@ -781,9 +828,11 @@ ParserNode *parserParenthesis(LexerNode *closing, LexerNode *begin,
   for (LexerNode *iter = closing - 1; iter >= begin; --iter) {
 
     if (iter->parserNode != NULL) {
-      ParserNode *pNode = getUntilCommonParent(iter->parserNode, parent);
+      ParserNode *pNode =
+          getUntilCommonParents(iter->parserNode, parent, parserNode);
       if (pNode == NULL) {
         printLog("Bad node", pNode->str_begin, pNode->str_end);
+        return NULL;
       } else {
         pNode->parent = parserNode;
       }
@@ -850,9 +899,11 @@ ParserNode *parserCurlyBrackets(LexerNode *closing, LexerNode *begin,
 
   for (LexerNode *iter = closing - 1; iter >= begin; --iter) {
     if (iter->parserNode != NULL) {
-      ParserNode *pNode = getUntilCommonParent(iter->parserNode, parent);
+      ParserNode *pNode =
+          getUntilCommonParents(iter->parserNode, parent, parserNode);
       if (pNode == NULL) {
-        printLog("Bad node", pNode->str_begin, pNode->str_end);
+        printLog(iter->str_begin, iter->str_end, "Bad node");
+        return NULL;
       } else {
         pNode->parent = parserNode;
       }
@@ -868,11 +919,11 @@ ParserNode *parserCurlyBrackets(LexerNode *closing, LexerNode *begin,
     return NULL;
   }
 
-  parserNode->str_begin = opening->str_begin,
+  parserNode->str_begin = opening->str_begin;
   parserNode->str_end = closing->str_end;
 
-  opening->parserNode = parserNode;
-  closing->parserNode = parserNode;
+  opening->parserNode = closing->parserNode = parserNode;
+
   if (parserNodeArray(opening + 1, closing, parserNode)) {
     return parserNode;
   } else {
@@ -1156,7 +1207,9 @@ ParserNode *parserIf(LexerNode *node, LexerNode *end, ParserNode *parent) {
     return NULL;
   }
 
-  ParserNode *body = getNextUsingCommonParent(conditionNode, end, parent);
+  LexerNode *bodyNode =
+      getNextLexerNodeUsingCommonParent(conditionNode, end, parent);
+  ParserNode *body = getUntilCommonParent(bodyNode->parserNode, parent);
 
   if (body == NULL) {
     printError(node->str_begin, node->str_end, "If has bad body");
@@ -1165,11 +1218,37 @@ ParserNode *parserIf(LexerNode *node, LexerNode *end, ParserNode *parent) {
 
   ParserNodeIfMetadata *metadata = a404m_malloc(sizeof(*metadata));
   metadata->condition = condition;
-  metadata->body = body;
+  metadata->ifBody = body;
 
-  return condition->parent = body->parent = node->parserNode =
-             newParserNode(PARSER_TOKEN_KEYWORD_IF, node->str_begin,
-                           node->str_end, metadata, parent);
+  LexerNode *elseNode =
+      getNextLexerNodeUsingCommonParent(bodyNode, end, parent);
+  if (elseNode == NULL || elseNode->token != LEXER_TOKEN_KEYWORD_ELSE) {
+    metadata->elseBody = NULL;
+    return condition->parent = body->parent = node->parserNode =
+               newParserNode(PARSER_TOKEN_KEYWORD_IF, node->str_begin,
+                             body->str_end, metadata, parent);
+  }
+
+  LexerNode *elseBodyNode = elseNode + 1;
+
+  if (elseBodyNode >= end || elseBodyNode->parserNode == NULL) {
+    printError(elseNode->str_begin, elseNode->str_end, "Else has bad body");
+    return NULL;
+  }
+
+  ParserNode *elseBody = getUntilCommonParent(elseBodyNode->parserNode, parent);
+
+  if (elseBody == NULL) {
+    printError(elseNode->str_begin, elseNode->str_end, "Else has bad body");
+    return NULL;
+  }
+
+  metadata->elseBody = elseBody;
+
+  return elseBody->parent = elseNode->parserNode = condition->parent =
+             body->parent = node->parserNode =
+                 newParserNode(PARSER_TOKEN_KEYWORD_IF, node->str_begin,
+                               elseBody->str_end, metadata, parent);
 }
 
 bool isAllArguments(const ParserNodeArray *nodes) {

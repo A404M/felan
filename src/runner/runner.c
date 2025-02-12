@@ -162,87 +162,122 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
   AstTree *ret = &AST_TREE_VOID_VALUE;
 
   for (size_t i = 0; i < function->scope.expressions_size; ++i) {
-    AstTree *expr = function->scope.expressions[i];
-  RUN:
-    switch (expr->token) {
-    case AST_TREE_TOKEN_KEYWORD_PRINT_U64: {
-      AstTreeSingleChild *metadata = expr->metadata;
-      AstTree *tree = calcAstTreeValue(metadata, &pages);
-      printf("%lu", (AstTreeU64)tree->metadata);
-      astTreeDelete(tree);
+    AstTree *r = runExpression(function->scope.expressions[i], &pages);
+    if (r) {
+      ret = r;
+      break;
     }
-      continue;
-    case AST_TREE_TOKEN_FUNCTION_CALL: {
-      AstTree *ret = calcAstTreeValue(expr, &pages);
-      if (ret != &AST_TREE_VOID_VALUE) {
-        astTreeDelete(ret);
-      }
-    }
-      continue;
-    case AST_TREE_TOKEN_OPERATOR_ASSIGN: {
-      AstTreeInfix *metadata = expr->metadata;
-      if (metadata->left.token == AST_TREE_TOKEN_VARIABLE) {
-        AstTreeVariable *left = metadata->left.metadata;
-        runnerVariableSetValue(&pages, left,
-                               calcAstTreeValue(&metadata->right, &pages));
-      } else {
-        UNREACHABLE;
-      }
-    }
-      continue;
-    case AST_TREE_TOKEN_KEYWORD_RETURN: {
-      AstTreeReturn *metadata = expr->metadata;
-      if (metadata->value != NULL) {
-        ret = calcAstTreeValue(metadata->value, &pages);
-      } else {
-        ret = &AST_TREE_VOID_VALUE;
-      }
-      goto RETURN;
-    }
-      continue;
-    case AST_TREE_TOKEN_VARIABLE_DEFINE: {
-      AstTreeVariable *variable = expr->metadata;
-      runnerVariableSetValue(&pages, variable, copyAstTree(variable->value));
-    }
-      continue;
-    case AST_TREE_TOKEN_KEYWORD_IF: {
-      AstTreeIf *metadata = expr->metadata;
-      AstTree *tree = calcAstTreeValue(metadata->condition, &pages);
-      if ((AstTreeBool)tree->metadata) {
-        expr = metadata->body;
-        goto RUN;
-      }
-      astTreeDelete(tree);
-    }
-      continue;
-    case AST_TREE_TOKEN_OPERATOR_PLUS:
-    case AST_TREE_TOKEN_OPERATOR_MINUS:
-    case AST_TREE_TOKEN_OPERATOR_SUM:
-    case AST_TREE_TOKEN_OPERATOR_SUB:
-    case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
-    case AST_TREE_TOKEN_OPERATOR_DIVIDE:
-    case AST_TREE_TOKEN_OPERATOR_MODULO:
-    case AST_TREE_TOKEN_FUNCTION:
-    case AST_TREE_TOKEN_TYPE_TYPE:
-    case AST_TREE_TOKEN_TYPE_FUNCTION:
-    case AST_TREE_TOKEN_TYPE_VOID:
-    case AST_TREE_TOKEN_TYPE_U64:
-    case AST_TREE_TOKEN_TYPE_BOOL:
-    case AST_TREE_TOKEN_VARIABLE:
-    case AST_TREE_TOKEN_VALUE_VOID:
-    case AST_TREE_TOKEN_VALUE_U64:
-    case AST_TREE_TOKEN_VALUE_BOOL:
-    case AST_TREE_TOKEN_NONE:
-    }
-    printLog("Bad token %d", expr->token);
-    UNREACHABLE;
   }
 
-RETURN:
   runnerVariablesDelete(pages.data[pages.size - 1]);
   free(pages.data);
 
   return ret;
+}
+
+AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
+  switch (expr->token) {
+  case AST_TREE_TOKEN_KEYWORD_PRINT_U64: {
+    AstTreeSingleChild *metadata = expr->metadata;
+    AstTree *tree = calcAstTreeValue(metadata, pages);
+    printf("%lu", (AstTreeU64)tree->metadata);
+    astTreeDelete(tree);
+  }
+    return NULL;
+  case AST_TREE_TOKEN_FUNCTION_CALL: {
+    AstTree *ret = calcAstTreeValue(expr, pages);
+    if (ret != &AST_TREE_VOID_VALUE) {
+      astTreeDelete(ret);
+    }
+  }
+    return NULL;
+  case AST_TREE_TOKEN_OPERATOR_ASSIGN: {
+    AstTreeInfix *metadata = expr->metadata;
+    if (metadata->left.token == AST_TREE_TOKEN_VARIABLE) {
+      AstTreeVariable *left = metadata->left.metadata;
+      runnerVariableSetValue(pages, left,
+                             calcAstTreeValue(&metadata->right, pages));
+    } else {
+      UNREACHABLE;
+    }
+  }
+    return NULL;
+  case AST_TREE_TOKEN_KEYWORD_RETURN: {
+    AstTreeReturn *metadata = expr->metadata;
+    if (metadata->value != NULL) {
+      return calcAstTreeValue(metadata->value, pages);
+    } else {
+      return &AST_TREE_VOID_VALUE;
+    }
+  }
+  case AST_TREE_TOKEN_VARIABLE_DEFINE: {
+    AstTreeVariable *variable = expr->metadata;
+    runnerVariableSetValue(pages, variable, copyAstTree(variable->value));
+  }
+    return NULL;
+  case AST_TREE_TOKEN_KEYWORD_IF: {
+    AstTreeIf *metadata = expr->metadata;
+    AstTree *tree = calcAstTreeValue(metadata->condition, pages);
+    if ((AstTreeBool)tree->metadata) {
+      return runExpression(metadata->ifBody, pages);
+    } else {
+      return runExpression(metadata->elseBody, pages);
+    }
+    astTreeDelete(tree);
+  }
+    return NULL;
+  case AST_TREE_TOKEN_SCOPE: {
+    AstTreeScope *metadata = expr->metadata;
+
+    RunnerVariablePages newPages = {
+        .data = a404m_malloc((pages->size + 1) * sizeof(*newPages.data)),
+        .size = pages->size + 1,
+    };
+
+    for (size_t i = 0; i < pages->size; ++i) {
+      newPages.data[i] = pages->data[i];
+    }
+
+    newPages.data[pages->size] =
+        a404m_malloc(sizeof(*newPages.data[pages->size]));
+    newPages.data[pages->size]->size = 0;
+    newPages.data[pages->size]->data =
+        a404m_malloc(newPages.data[pages->size]->size *
+                     sizeof(*newPages.data[pages->size]->data));
+
+    for (size_t i = 0; i < metadata->variables.size; ++i) {
+      AstTreeVariable *variable = metadata->variables.data[i];
+      runnerVariablePush(newPages.data[newPages.size - 1], variable);
+    }
+
+    for (size_t i = 0; i < metadata->expressions_size; ++i) {
+      AstTree *r = runExpression(metadata->expressions[i], &newPages);
+      if (r) {
+        return r;
+      }
+    }
+  }
+    return NULL;
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
+  case AST_TREE_TOKEN_OPERATOR_SUM:
+  case AST_TREE_TOKEN_OPERATOR_SUB:
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
+  case AST_TREE_TOKEN_OPERATOR_MODULO:
+  case AST_TREE_TOKEN_FUNCTION:
+  case AST_TREE_TOKEN_TYPE_TYPE:
+  case AST_TREE_TOKEN_TYPE_FUNCTION:
+  case AST_TREE_TOKEN_TYPE_VOID:
+  case AST_TREE_TOKEN_TYPE_U64:
+  case AST_TREE_TOKEN_TYPE_BOOL:
+  case AST_TREE_TOKEN_VARIABLE:
+  case AST_TREE_TOKEN_VALUE_VOID:
+  case AST_TREE_TOKEN_VALUE_U64:
+  case AST_TREE_TOKEN_VALUE_BOOL:
+  case AST_TREE_TOKEN_NONE:
+  }
+  UNREACHABLE;
 }
 
 AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {

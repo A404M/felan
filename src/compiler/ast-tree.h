@@ -33,6 +33,8 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_OPERATOR_DIVIDE,
   AST_TREE_TOKEN_OPERATOR_MODULO,
 
+  AST_TREE_TOKEN_SCOPE,
+
   AST_TREE_TOKEN_NONE,
 } AstTreeToken;
 
@@ -109,7 +111,8 @@ typedef struct AstTreeReturn {
 
 typedef struct AstTreeIf {
   AstTree *condition;
-  AstTree *body;
+  AstTree *ifBody;
+  AstTree *elseBody;
 } AstTreeIf;
 
 typedef struct AstTreeHelper {
@@ -141,31 +144,22 @@ AstTreeVariable *getVariable(AstTreeHelper *helper, char *name_begin,
                              char *name_end);
 
 AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper);
-
 AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *helper);
-
 AstTree *astTreeParseTypeFunction(ParserNode *parserNode,
                                   AstTreeHelper *helper);
-
 AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
                                   AstTreeHelper *helper);
-
 AstTree *astTreeParseIdentifier(ParserNode *parserNode, AstTreeHelper *helper);
-
 AstTree *astTreeParsePrintU64(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseReturn(ParserNode *parserNode, AstTreeHelper *helper);
-
 AstTree *astTreeParseBinaryOperator(ParserNode *parserNode,
                                     AstTreeHelper *helper, AstTreeToken token);
-
 AstTree *astTreeParseUnaryOperator(ParserNode *parserNode,
                                    AstTreeHelper *helper, AstTreeToken token);
-
 bool astTreeParseConstant(ParserNode *parserNode, AstTreeHelper *helper);
-
 AstTree *astTreeParseVariable(ParserNode *parserNode, AstTreeHelper *helper);
-
 AstTree *astTreeParseIf(ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseCurlyBracket(ParserNode *parserNode, AstTreeHelper *helper);
 
 AstTreeFunction *getFunction(AstTree *value);
 bool isConst(AstTree *value);
@@ -188,6 +182,7 @@ bool setTypesOperatorInfix(AstTree *tree);
 bool setTypesOperatorUnary(AstTree *tree);
 bool setTypesVariableDefine(AstTree *tree);
 bool setTypesIf(AstTree *tree,AstTreeFunction *function);
+bool setTypesScope(AstTree *tree,AstTreeFunction *function);
 
 bool setTypesAstVariable(AstTreeVariable *variable);
 bool setTypesAstInfix(AstTreeInfix *infix);

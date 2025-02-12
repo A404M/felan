@@ -106,7 +106,8 @@ typedef bool ParserNodeBoolMetadata;
 
 typedef struct ParserNodeIfMetadata {
   ParserNode *condition;
-  ParserNode *body;
+  ParserNode *ifBody;
+  ParserNode *elseBody;
 }ParserNodeIfMetadata;
 
 void parserNodePrint(const ParserNode *node, int indent);
@@ -122,7 +123,9 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
                       ParserNode *parent, bool *conti);
 
 ParserNode *getUntilCommonParent(ParserNode *node, ParserNode *parent);
+ParserNode *getUntilCommonParents(ParserNode *node, ParserNode *parent,ParserNode *parent2);
 ParserNode *getNextUsingCommonParent(LexerNode *node,LexerNode *end, ParserNode *parent);
+LexerNode *getNextLexerNodeUsingCommonParent(LexerNode *node,LexerNode *end, ParserNode *parent);
 
 ParserNode *parserIdentifier(LexerNode *node, ParserNode *parent);
 ParserNode *parserType(LexerNode *node, ParserNode *parent);
