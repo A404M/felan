@@ -1,15 +1,5 @@
 main :: () -> void {
-  a := fun(-2, t,);
-  print(a);
-};
-
-t :: 5+4;
-
-fun :: (a:u64, b:u64)->u64 {
-  return a+b;
-};
-
-print :: (a:u64)->void {
-  print_u64 a;
+  b := true;
+  if b print_u64 23;
 };
 

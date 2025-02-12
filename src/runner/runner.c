@@ -163,6 +163,7 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
 
   for (size_t i = 0; i < function->scope.expressions_size; ++i) {
     AstTree *expr = function->scope.expressions[i];
+  RUN:
     switch (expr->token) {
     case AST_TREE_TOKEN_KEYWORD_PRINT_U64: {
       AstTreeSingleChild *metadata = expr->metadata;
@@ -202,6 +203,16 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
     case AST_TREE_TOKEN_VARIABLE_DEFINE: {
       AstTreeVariable *variable = expr->metadata;
       runnerVariableSetValue(&pages, variable, copyAstTree(variable->value));
+    }
+      continue;
+    case AST_TREE_TOKEN_KEYWORD_IF: {
+      AstTreeIf *metadata = expr->metadata;
+      AstTree *tree = calcAstTreeValue(metadata->condition, &pages);
+      if ((AstTreeBool)tree->metadata) {
+        expr = metadata->body;
+        goto RUN;
+      }
+      astTreeDelete(tree);
     }
       continue;
     case AST_TREE_TOKEN_OPERATOR_PLUS:
@@ -323,6 +334,7 @@ AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
       UNREACHABLE;
     }
   }
+  case AST_TREE_TOKEN_KEYWORD_IF:
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
