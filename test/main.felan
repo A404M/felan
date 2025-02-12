@@ -1,9 +1,9 @@
 main :: () -> void {
-  a := fun(-2, 3,);
+  a := fun(-2, t,);
   print(a);
 };
 
-t :: fun(1,2);
+t :: 5+4;
 
 fun :: (a:u64, b:u64)->u64 {
   return a+b;

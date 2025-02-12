@@ -1049,7 +1049,6 @@ ParserNode *parserBinaryOrLeftOperator(LexerNode *node, LexerNode *begin,
     return NULL;
   }
 
-  printLog("here");
   return right->parent = node->parserNode =
              newParserNode(token, node->str_begin, right->str_end,
                            (ParserNodeSingleChildMetadata *)right, parent);

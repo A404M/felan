@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  const int ret = run(argv[1], true);
+  const int ret = run(argv[1], false);
   fileDelete();
   return ret;
 }

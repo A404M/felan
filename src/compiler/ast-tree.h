@@ -106,6 +106,13 @@ typedef struct AstTreeReturn {
   AstTree *value;
 } AstTreeReturn;
 
+typedef struct AstTreeHelper {
+  AstTreeVariables **variables;
+  size_t variables_size;
+  AstTreeVariable *variable;
+  AstTreeVariables *globalDeps;
+} AstTreeHelper;
+
 void astTreePrint(const AstTree *tree, int indent);
 void astTreeRootPrint(const AstTreeRoot *root);
 
@@ -122,58 +129,43 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables);
 
 AstTreeRoot *makeAstTree(ParserNode *parsedRoot);
 
-bool pushVariable(AstTreeVariables *variables, AstTreeVariable *variable);
-AstTreeVariable *getVariable(AstTreeVariables **variables,
-                             size_t variables_size, char *name_begin,
+bool pushVariable(AstTreeHelper *helper,AstTreeVariables *variables, AstTreeVariable *variable);
+AstTreeVariable *getVariable(AstTreeHelper *helper, char *name_begin,
                              char *name_end);
 
-AstTree *astTreeParse(ParserNode *parserNode, AstTreeVariables **variables,
-                      size_t variables_size);
+AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper);
 
-AstTree *astTreeParseFunction(ParserNode *parserNode,
-                              AstTreeVariables **variables,
-                              size_t variables_size);
+AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *helper);
 
 AstTree *astTreeParseTypeFunction(ParserNode *parserNode,
-                                  AstTreeVariables **variables,
-                                  size_t variables_size);
+                                  AstTreeHelper *helper);
 
 AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
-                                  AstTreeVariables **variables,
-                                  size_t variables_size);
+                                  AstTreeHelper *helper);
 
-AstTree *astTreeParseIdentifier(ParserNode *parserNode,
-                                AstTreeVariables **variables,
-                                size_t variables_size);
+AstTree *astTreeParseIdentifier(ParserNode *parserNode, AstTreeHelper *helper);
 
-AstTree *astTreeParsePrintU64(ParserNode *parserNode,
-                              AstTreeVariables **variables,
-                              size_t variables_size);
-AstTree *astTreeParseReturn(ParserNode *parserNode,
-                            AstTreeVariables **variables,
-                            size_t variables_size);
+AstTree *astTreeParsePrintU64(ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseReturn(ParserNode *parserNode, AstTreeHelper *helper);
 
 AstTree *astTreeParseBinaryOperator(ParserNode *parserNode,
-                                    AstTreeVariables **variables,
-                                    size_t variables_size, AstTreeToken token);
+                                    AstTreeHelper *helper, AstTreeToken token);
 
 AstTree *astTreeParseUnaryOperator(ParserNode *parserNode,
-                                  AstTreeVariables **variables,
-                                  size_t variables_size, AstTreeToken token);
+                                   AstTreeHelper *helper, AstTreeToken token);
 
-bool astTreeParseConstant(ParserNode *parserNode, AstTreeVariables **variables,
-                          size_t variables_size);
+bool astTreeParseConstant(ParserNode *parserNode, AstTreeHelper *helper);
 
-AstTree *astTreeParseVariable(ParserNode *parserNode,
-                              AstTreeVariables **variables,
-                              size_t variables_size);
+AstTree *astTreeParseVariable(ParserNode *parserNode, AstTreeHelper *helper);
 
 AstTreeFunction *getFunction(AstTree *value);
 bool isConst(AstTree *value);
 AstTree *makeTypeOf(AstTree *value);
 bool typeIsEqual(const AstTree *type0, const AstTree *type1);
 
-bool setAllTypesRoot(AstTreeRoot *root);
+bool isCircularDependencies(AstTreeHelper *helper,AstTreeVariable *variable,AstTree *tree);
+
+bool setAllTypesRoot(AstTreeRoot *root,AstTreeHelper *helper);
 bool setAllTypes(AstTree *tree, AstTreeFunction *function);
 bool setTypesFunction(AstTree *tree);
 bool setTypesPrintU64(AstTree *tree);

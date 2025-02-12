@@ -167,7 +167,7 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
     case AST_TREE_TOKEN_KEYWORD_PRINT_U64: {
       AstTreeSingleChild *metadata = expr->metadata;
       AstTree *tree = calcAstTreeValue(metadata, &pages);
-      printf("%ld", (AstTreeU64)tree->metadata);
+      printf("%lu", (AstTreeU64)tree->metadata);
       astTreeDelete(tree);
     }
       continue;
