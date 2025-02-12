@@ -221,8 +221,13 @@ void astTreePrint(const AstTree *tree, int indent) {
     printf(",\n");
     for (int i = 0; i < indent; ++i)
       printf(" ");
-    printf("body=\n");
+    printf("ifBody=\n");
     astTreePrint(metadata->ifBody, indent + 1);
+    printf(",\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("elseBody=\n");
+    astTreePrint(metadata->elseBody, indent + 1);
     printf("\n");
     for (int i = 0; i < indent; ++i)
       printf(" ");
@@ -348,6 +353,9 @@ void astTreeDestroy(AstTree tree) {
     AstTreeIf *metadata = tree.metadata;
     astTreeDelete(metadata->condition);
     astTreeDelete(metadata->ifBody);
+    if (metadata->elseBody != NULL) {
+      astTreeDelete(metadata->elseBody);
+    }
     free(metadata);
   }
     return;
@@ -1252,12 +1260,12 @@ AstTree *astTreeParseIf(ParserNode *parserNode, AstTreeHelper *helper) {
   }
 
   AstTree *elseBody;
-  if(node_metadata->elseBody != NULL){
+  if (node_metadata->elseBody != NULL) {
     elseBody = astTreeParse(node_metadata->elseBody, helper);
-    if(elseBody == NULL){
+    if (elseBody == NULL) {
       return NULL;
     }
-  }else{
+  } else {
     elseBody = NULL;
   }
 
@@ -1887,7 +1895,9 @@ bool setTypesIf(AstTree *tree, AstTreeFunction *function) {
   AstTreeIf *metadata = tree->metadata;
 
   if (!setAllTypes(metadata->condition, function) ||
-      !setAllTypes(metadata->ifBody, function)) {
+      !setAllTypes(metadata->ifBody, function) ||
+      (metadata->elseBody != NULL &&
+       !setAllTypes(metadata->elseBody, function))) {
     return false;
   }
 
@@ -1897,7 +1907,12 @@ bool setTypesIf(AstTree *tree, AstTreeFunction *function) {
     return false;
   }
 
-  tree->type = &AST_TREE_VOID_TYPE;
+  if (metadata->elseBody != NULL &&
+      typeIsEqual(metadata->ifBody, metadata->elseBody)) {
+    tree->type = copyAstTree(metadata->ifBody);
+  } else {
+    tree->type = &AST_TREE_VOID_TYPE;
+  }
 
   return true;
 }

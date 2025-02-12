@@ -218,12 +218,14 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   case AST_TREE_TOKEN_KEYWORD_IF: {
     AstTreeIf *metadata = expr->metadata;
     AstTree *tree = calcAstTreeValue(metadata->condition, pages);
+    AstTree *ret;
     if ((AstTreeBool)tree->metadata) {
-      return runExpression(metadata->ifBody, pages);
+      ret = runExpression(metadata->ifBody, pages);
     } else {
-      return runExpression(metadata->elseBody, pages);
+      ret = runExpression(metadata->elseBody, pages);
     }
     astTreeDelete(tree);
+    return ret;
   }
     return NULL;
   case AST_TREE_TOKEN_SCOPE: {
