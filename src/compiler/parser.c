@@ -14,7 +14,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
 
     "PARSER_TOKEN_IDENTIFIER",
 
-    "PARSER_TOKEN_VALUE_U64",
+    "PARSER_TOKEN_VALUE_INT",
     "PARSER_TOKEN_VALUE_BOOL",
 
     "PARSER_TOKEN_TYPE_TYPE",
@@ -64,9 +64,10 @@ static constexpr ParserOrder PARSER_ORDER[] = {
         .ltr = true,
         ORDER_ARRAY(LEXER_TOKEN_SYMBOL_CLOSE_PARENTHESIS,
                     LEXER_TOKEN_IDENTIFIER, LEXER_TOKEN_KEYWORD_TYPE,
-                    LEXER_TOKEN_KEYWORD_VOID, LEXER_TOKEN_KEYWORD_U64,
-                    LEXER_TOKEN_KEYWORD_BOOL, LEXER_TOKEN_KEYWORD_TRUE,
-                    LEXER_TOKEN_KEYWORD_FALSE, LEXER_TOKEN_NUMBER, ),
+                    LEXER_TOKEN_KEYWORD_VOID, LEXER_TOKEN_KEYWORD_I64,
+                    LEXER_TOKEN_KEYWORD_U64, LEXER_TOKEN_KEYWORD_BOOL,
+                    LEXER_TOKEN_KEYWORD_TRUE, LEXER_TOKEN_KEYWORD_FALSE,
+                    LEXER_TOKEN_NUMBER, ),
     },
     {
         .ltr = false,
@@ -140,12 +141,13 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
+  case PARSER_TOKEN_TYPE_I64:
   case PARSER_TOKEN_TYPE_U64:
   case PARSER_TOKEN_TYPE_BOOL:
     goto RETURN_SUCCESS;
-  case PARSER_TOKEN_VALUE_U64: {
+  case PARSER_TOKEN_VALUE_INT: {
     ParserNodeU64Metadata metadata = (ParserNodeU64Metadata)node->metadata;
-    printf(",operand=%lu", metadata);
+    printf(",operand=%ld", metadata);
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_VALUE_BOOL: {
@@ -337,9 +339,10 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
+  case PARSER_TOKEN_TYPE_I64:
   case PARSER_TOKEN_TYPE_U64:
   case PARSER_TOKEN_TYPE_BOOL:
-  case PARSER_TOKEN_VALUE_U64:
+  case PARSER_TOKEN_VALUE_INT:
   case PARSER_TOKEN_VALUE_BOOL:
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_CONSTANT:
@@ -519,15 +522,17 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
                       ParserNode *parent, bool *conti) {
   switch (node->token) {
   case LEXER_TOKEN_IDENTIFIER:
-    return parserIdentifier(node, parent);
+    return parserNoMetadata(node, parent, PARSER_TOKEN_IDENTIFIER);
   case LEXER_TOKEN_KEYWORD_TYPE:
-    return parserType(node, parent);
+    return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_TYPE);
   case LEXER_TOKEN_KEYWORD_VOID:
-    return parserVoid(node, parent);
+    return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_VOID);
+  case LEXER_TOKEN_KEYWORD_I64:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_I64);
   case LEXER_TOKEN_KEYWORD_U64:
-    return parserU64(node, parent);
+    return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_U64);
   case LEXER_TOKEN_KEYWORD_BOOL:
-    return parserBool(node, parent);
+    return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_BOOL);
   case LEXER_TOKEN_KEYWORD_PRINT_U64:
     return parserPrintU64(node, end, parent);
   case LEXER_TOKEN_KEYWORD_RETURN:
@@ -663,34 +668,10 @@ LexerNode *getNextLexerNodeUsingCommonParent(LexerNode *node, LexerNode *end,
   return NULL;
 }
 
-ParserNode *parserIdentifier(LexerNode *node, ParserNode *parent) {
+ParserNode *parserNoMetadata(LexerNode *node, ParserNode *parent,
+                             ParserToken token) {
   return node->parserNode =
-             newParserNode(PARSER_TOKEN_IDENTIFIER, node->str_begin,
-                           node->str_end, NULL, parent);
-}
-
-ParserNode *parserType(LexerNode *node, ParserNode *parent) {
-  return node->parserNode =
-             newParserNode(PARSER_TOKEN_TYPE_TYPE, node->str_begin,
-                           node->str_end, NULL, parent);
-}
-
-ParserNode *parserVoid(LexerNode *node, ParserNode *parent) {
-  return node->parserNode =
-             newParserNode(PARSER_TOKEN_TYPE_VOID, node->str_begin,
-                           node->str_end, NULL, parent);
-}
-
-ParserNode *parserU64(LexerNode *node, ParserNode *parent) {
-  return node->parserNode =
-             newParserNode(PARSER_TOKEN_TYPE_U64, node->str_begin,
-                           node->str_end, NULL, parent);
-}
-
-ParserNode *parserBool(LexerNode *node, ParserNode *parent) {
-  return node->parserNode =
-             newParserNode(PARSER_TOKEN_TYPE_BOOL, node->str_begin,
-                           node->str_end, NULL, parent);
+             newParserNode(token, node->str_begin, node->str_end, NULL, parent);
 }
 
 ParserNode *parserPrintU64(LexerNode *node, LexerNode *end,
@@ -756,7 +737,7 @@ ParserNode *parserNumber(LexerNode *node, ParserNode *parent) {
       return NULL;
     }
     parserNode =
-        newParserNode(PARSER_TOKEN_VALUE_U64, node->str_begin, node->str_end,
+        newParserNode(PARSER_TOKEN_VALUE_INT, node->str_begin, node->str_end,
                       (void *)(ParserNodeU64Metadata)value, parent);
   }
   }
@@ -966,11 +947,12 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
         continue;
       case PARSER_TOKEN_ROOT:
       case PARSER_TOKEN_IDENTIFIER:
-      case PARSER_TOKEN_VALUE_U64:
+      case PARSER_TOKEN_VALUE_INT:
       case PARSER_TOKEN_VALUE_BOOL:
       case PARSER_TOKEN_TYPE_TYPE:
       case PARSER_TOKEN_TYPE_FUNCTION:
       case PARSER_TOKEN_TYPE_VOID:
+      case PARSER_TOKEN_TYPE_I64:
       case PARSER_TOKEN_TYPE_U64:
       case PARSER_TOKEN_TYPE_BOOL:
       case PARSER_TOKEN_KEYWORD_PRINT_U64:
@@ -1279,7 +1261,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_MULTIPLY:
   case PARSER_TOKEN_OPERATOR_DIVIDE:
   case PARSER_TOKEN_OPERATOR_MODULO:
-  case PARSER_TOKEN_VALUE_U64:
+  case PARSER_TOKEN_VALUE_INT:
   case PARSER_TOKEN_VALUE_BOOL:
   case PARSER_TOKEN_KEYWORD_IF:
     return true;
@@ -1287,6 +1269,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_TYPE_VOID:
+  case PARSER_TOKEN_TYPE_I64:
   case PARSER_TOKEN_TYPE_U64:
   case PARSER_TOKEN_TYPE_BOOL:
   case PARSER_TOKEN_SYMBOL_EOL:
@@ -1303,6 +1286,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_TYPE_VOID:
+  case PARSER_TOKEN_TYPE_I64:
   case PARSER_TOKEN_TYPE_U64:
   case PARSER_TOKEN_TYPE_BOOL:
     return true;
@@ -1316,7 +1300,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
   case PARSER_TOKEN_SYMBOL_COMMA:
   case PARSER_TOKEN_FUNCTION_CALL:
-  case PARSER_TOKEN_VALUE_U64:
+  case PARSER_TOKEN_VALUE_INT:
   case PARSER_TOKEN_VALUE_BOOL:
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
   case PARSER_TOKEN_KEYWORD_RETURN:
@@ -1339,7 +1323,7 @@ bool isValue(ParserNode *node) {
   switch (node->token) {
   case PARSER_TOKEN_FUNCTION_DEFINITION:
   case PARSER_TOKEN_FUNCTION_CALL:
-  case PARSER_TOKEN_VALUE_U64:
+  case PARSER_TOKEN_VALUE_INT:
   case PARSER_TOKEN_VALUE_BOOL:
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
@@ -1352,6 +1336,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_MODULO:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
+  case PARSER_TOKEN_TYPE_I64:
   case PARSER_TOKEN_TYPE_U64:
   case PARSER_TOKEN_TYPE_BOOL:
   case PARSER_TOKEN_KEYWORD_IF:

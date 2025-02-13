@@ -102,7 +102,7 @@ CodeGeneratorFunctionEnd *newCodeGeneratorFunctionEnd(char *name_begin,
 
 CodeGeneratorOperand *newCodeGeneratorOperandFromAstTree(AstTree tree) {
   switch (tree.token) {
-  case AST_TREE_TOKEN_VALUE_U64:
+  case AST_TREE_TOKEN_VALUE_INT:
     return newCodeGeneratorOperand((void *)(uint64_t)(AstTreeU64)tree.metadata,
                                    false);
   case AST_TREE_TOKEN_VARIABLE: {
@@ -214,7 +214,7 @@ CodeGeneratorCodes *codeGenerator(AstTreeRoot *astTreeRoot) {
         return NULL;
       }
       continue;
-    case AST_TREE_TOKEN_VALUE_U64:
+    case AST_TREE_TOKEN_VALUE_INT:
       if (!variable->isConst) {
         CodeGeneratorOperand value = makeCodeGeneratorOperand(
             (void *)(uint64_t)(AstTreeU64)variable->value->metadata, false);
@@ -279,7 +279,7 @@ bool codeGeneratorAstTreeFunction(char *name_begin, char *name_end,
       goto OK;
     case AST_TREE_TOKEN_KEYWORD_PRINT_U64: {
       AstTreeSingleChild *metadata = tree->metadata;
-      if (metadata->token == AST_TREE_TOKEN_VALUE_U64) {
+      if (metadata->token == AST_TREE_TOKEN_VALUE_INT) {
         CodeGeneratorOperand *value = newCodeGeneratorOperand(
             (void *)(uint64_t)(AstTreeU64)metadata->metadata, false);
         generateCodePushCode(
@@ -361,7 +361,7 @@ bool codeGeneratorAstTreeFunction(char *name_begin, char *name_end,
     }
       goto OK;
     case AST_TREE_TOKEN_VARIABLE_DEFINE:
-    case AST_TREE_TOKEN_VALUE_U64:
+    case AST_TREE_TOKEN_VALUE_INT:
     case AST_TREE_TOKEN_VARIABLE:
     case AST_TREE_TOKEN_FUNCTION:
     case AST_TREE_TOKEN_TYPE_TYPE:

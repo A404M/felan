@@ -275,7 +275,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VARIABLE:
   case AST_TREE_TOKEN_VALUE_VOID:
-  case AST_TREE_TOKEN_VALUE_U64:
+  case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_NONE:
   }
@@ -285,7 +285,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
 AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
   switch (tree->token) {
   case AST_TREE_TOKEN_VALUE_VOID:
-  case AST_TREE_TOKEN_VALUE_U64:
+  case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_BOOL:
     return deepCopyAstTree(tree);
   case AST_TREE_TOKEN_VARIABLE: {
@@ -313,8 +313,8 @@ AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
     AstTree *right = calcAstTreeValue(&metadata->right, pages);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
-      if (left->token == AST_TREE_TOKEN_VALUE_U64 &&
-          right->token == AST_TREE_TOKEN_VALUE_U64) {
+      if (left->token == AST_TREE_TOKEN_VALUE_INT &&
+          right->token == AST_TREE_TOKEN_VALUE_INT) {
         switch (tree->token) {
         case AST_TREE_TOKEN_OPERATOR_SUM:
           left->metadata = (void *)((AstTreeU64)left->metadata +
@@ -352,7 +352,7 @@ AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
     AstTreeSingleChild *metadata = tree->metadata;
     if (typeIsEqual(metadata->type, &AST_TREE_U64_TYPE)) {
       AstTree *operand = calcAstTreeValue(metadata, pages);
-      if (operand->token == AST_TREE_TOKEN_VALUE_U64) {
+      if (operand->token == AST_TREE_TOKEN_VALUE_INT) {
         switch (tree->token) {
         case AST_TREE_TOKEN_OPERATOR_PLUS:
           operand->metadata = (void *)(+(AstTreeU64)operand->metadata);
@@ -390,7 +390,7 @@ AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
 AstTree *deepCopyAstTree(AstTree *tree) {
   switch (tree->token) {
   case AST_TREE_TOKEN_VALUE_VOID:
-  case AST_TREE_TOKEN_VALUE_U64:
+  case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_BOOL:
     return newAstTree(tree->token, tree->metadata, copyAstTree(tree->type),
                       NULL, NULL);
