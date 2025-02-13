@@ -766,6 +766,7 @@ ParserNode *parserNumber(LexerNode *node, ParserNode *parent) {
       printError(node->str_begin, node->str_end, "Not implemented");
       return NULL;
     }
+    // fall through
   default: {
     bool success;
     uint64_t value = decimalToU64(node->str_begin, node->str_end, &success);

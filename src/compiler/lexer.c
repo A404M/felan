@@ -215,6 +215,7 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
     }
   }
     // goto PUSH;
+    // fall through
   PUSH:
   case LEXER_TOKEN_KEYWORD_TYPE:
   case LEXER_TOKEN_KEYWORD_VOID:

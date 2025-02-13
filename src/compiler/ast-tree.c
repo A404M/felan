@@ -554,6 +554,8 @@ AstTree *copyAstTree(AstTree *tree) {
     return newAstTree(tree->token, new_metadata, copyAstTree(tree->type),
                       tree->str_begin, tree->str_end);
   }
+  case AST_TREE_TOKEN_KEYWORD_IF:
+  case AST_TREE_TOKEN_SCOPE:
   case AST_TREE_TOKEN_NONE:
   }
   printLog("Bad token %ld", tree->token);
@@ -741,6 +743,7 @@ RETURN_ERROR:
 
 bool pushVariable(AstTreeHelper *helper, AstTreeVariables *variables,
                   AstTreeVariable *variable) {
+  (void)helper;
   for (size_t j = 0; j < variables->size; ++j) {
     char *var_begin = variables->data[j]->name_begin;
     char *var_end = variables->data[j]->name_end;
@@ -1448,7 +1451,7 @@ AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
 
 RETURN_ERROR:
   for (size_t i = 0; i < scope->expressions_size; ++i) {
-    // astTreeDelete(scope->expressions[i]);
+    astTreeDelete(scope->expressions[i]);
   }
   free(scope->variables.data);
   free(scope->expressions);

@@ -277,6 +277,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_FUNCTION:
   case AST_TREE_TOKEN_TYPE_VOID:
+  case AST_TREE_TOKEN_TYPE_I64:
   case AST_TREE_TOKEN_TYPE_U64:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VARIABLE:
