@@ -889,8 +889,9 @@ AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper) {
                         helper);
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
     return astTreeParseCurlyBracket(parserNode, helper);
-  case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
+    return astTreeParseParenthesis(parserNode, helper);
+  case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_SYMBOL_COMMA:
   case PARSER_TOKEN_NONE:
   case PARSER_TOKEN_ROOT:
@@ -1452,6 +1453,18 @@ RETURN_ERROR:
   free(scope->variables.data);
   free(scope->expressions);
   return NULL;
+}
+
+AstTree *astTreeParseParenthesis(ParserNode *parserNode,
+                                 AstTreeHelper *helper) {
+  ParserNodeArray *metadata = parserNode->metadata;
+
+  if (metadata->size != 1) {
+    printError(parserNode->str_begin, parserNode->str_end, "Bad parenthesis");
+    return NULL;
+  } else {
+    return astTreeParse(metadata->data[0], helper);
+  }
 }
 
 AstTreeFunction *getFunction(AstTree *value) {

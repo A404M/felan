@@ -174,6 +174,9 @@ AstTree *astTreeParseVariable(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseIf(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
                                   AstTreeHelper *helper);
+AstTree *astTreeParseParenthesis(ParserNode *parserNode,
+                                  AstTreeHelper *helper);
+
 
 AstTreeFunction *getFunction(AstTree *value);
 bool isConst(AstTree *value);
