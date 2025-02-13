@@ -39,6 +39,12 @@ typedef enum ParserToken {
   PARSER_TOKEN_OPERATOR_MULTIPLY,
   PARSER_TOKEN_OPERATOR_DIVIDE,
   PARSER_TOKEN_OPERATOR_MODULO,
+  PARSER_TOKEN_OPERATOR_EQUAL,
+  PARSER_TOKEN_OPERATOR_NOT_EQUAL,
+  PARSER_TOKEN_OPERATOR_GREATER,
+  PARSER_TOKEN_OPERATOR_SMALLER,
+  PARSER_TOKEN_OPERATOR_GREATER_OR_EQUAL,
+  PARSER_TOKEN_OPERATOR_SMALLER_OR_EQUAL,
 
   PARSER_TOKEN_FUNCTION_DEFINITION,
 
@@ -92,7 +98,7 @@ typedef struct ParserNodeFunctionCall {
 
 typedef ParserNode ParserNodeSingleChildMetadata;
 
-typedef uint64_t ParserNodeU64Metadata;
+typedef uint64_t ParserNodeIntMetadata;
 
 typedef struct ParserNodeInfixMetadata {
   ParserNode *left;

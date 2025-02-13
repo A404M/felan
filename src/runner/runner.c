@@ -180,7 +180,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64: {
     AstTreeSingleChild *metadata = expr->metadata;
     AstTree *tree = calcAstTreeValue(metadata, pages);
-    printf("%lu", (AstTreeU64)tree->metadata);
+    printf("%lu", (AstTreeInt)tree->metadata);
     astTreeDelete(tree);
   }
     return NULL;
@@ -267,6 +267,12 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
   case AST_TREE_TOKEN_OPERATOR_DIVIDE:
   case AST_TREE_TOKEN_OPERATOR_MODULO:
+  case AST_TREE_TOKEN_OPERATOR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_GREATER:
+  case AST_TREE_TOKEN_OPERATOR_SMALLER:
+  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_FUNCTION:
@@ -307,34 +313,79 @@ AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
   case AST_TREE_TOKEN_OPERATOR_SUB:
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
   case AST_TREE_TOKEN_OPERATOR_DIVIDE:
-  case AST_TREE_TOKEN_OPERATOR_MODULO: {
+  case AST_TREE_TOKEN_OPERATOR_MODULO:
+  case AST_TREE_TOKEN_OPERATOR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_GREATER:
+  case AST_TREE_TOKEN_OPERATOR_SMALLER:
+  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL: {
     AstTreeInfix *metadata = tree->metadata;
     AstTree *left = calcAstTreeValue(&metadata->left, pages);
     AstTree *right = calcAstTreeValue(&metadata->right, pages);
 
-    if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
+    if ((left->type == &AST_TREE_U64_TYPE &&
+         right->type == &AST_TREE_U64_TYPE) ||
+        (left->type == &AST_TREE_I64_TYPE &&
+         right->type == &AST_TREE_I64_TYPE)) {
       if (left->token == AST_TREE_TOKEN_VALUE_INT &&
           right->token == AST_TREE_TOKEN_VALUE_INT) {
         switch (tree->token) {
         case AST_TREE_TOKEN_OPERATOR_SUM:
-          left->metadata = (void *)((AstTreeU64)left->metadata +
-                                    (AstTreeU64)right->metadata);
+          left->metadata = (void *)((AstTreeInt)left->metadata +
+                                    (AstTreeInt)right->metadata);
           break;
         case AST_TREE_TOKEN_OPERATOR_SUB:
-          left->metadata = (void *)((AstTreeU64)left->metadata -
-                                    (AstTreeU64)right->metadata);
+          left->metadata = (void *)((AstTreeInt)left->metadata -
+                                    (AstTreeInt)right->metadata);
           break;
         case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
-          left->metadata = (void *)((AstTreeU64)left->metadata *
-                                    (AstTreeU64)right->metadata);
+          left->metadata = (void *)((AstTreeInt)left->metadata *
+                                    (AstTreeInt)right->metadata);
           break;
         case AST_TREE_TOKEN_OPERATOR_DIVIDE:
-          left->metadata = (void *)((AstTreeU64)left->metadata /
-                                    (AstTreeU64)right->metadata);
+          left->metadata = (void *)((AstTreeInt)left->metadata /
+                                    (AstTreeInt)right->metadata);
           break;
         case AST_TREE_TOKEN_OPERATOR_MODULO:
-          left->metadata = (void *)((AstTreeU64)left->metadata %
-                                    (AstTreeU64)right->metadata);
+          left->metadata = (void *)((AstTreeInt)left->metadata %
+                                    (AstTreeInt)right->metadata);
+          break;
+        case AST_TREE_TOKEN_OPERATOR_EQUAL:
+          left->metadata = (void *)(bool)((AstTreeInt)left->metadata ==
+                                          (AstTreeInt)right->metadata);
+          astTreeDelete(left->type);
+          left->type = &AST_TREE_U64_TYPE;
+          break;
+        case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
+          left->metadata = (void *)(bool)((AstTreeInt)left->metadata ==
+                                          (AstTreeInt)right->metadata);
+          astTreeDelete(left->type);
+          left->type = &AST_TREE_U64_TYPE;
+          break;
+        case AST_TREE_TOKEN_OPERATOR_GREATER:
+          left->metadata = (void *)(bool)((AstTreeInt)left->metadata >
+                                          (AstTreeInt)right->metadata);
+          astTreeDelete(left->type);
+          left->type = &AST_TREE_U64_TYPE;
+          break;
+        case AST_TREE_TOKEN_OPERATOR_SMALLER:
+          left->metadata = (void *)(bool)((AstTreeInt)left->metadata <
+                                          (AstTreeInt)right->metadata);
+          astTreeDelete(left->type);
+          left->type = &AST_TREE_U64_TYPE;
+          break;
+        case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
+          left->metadata = (void *)(bool)((AstTreeInt)left->metadata >=
+                                          (AstTreeInt)right->metadata);
+          astTreeDelete(left->type);
+          left->type = &AST_TREE_U64_TYPE;
+          break;
+        case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
+          left->metadata = (void *)(bool)((AstTreeInt)left->metadata <=
+                                          (AstTreeInt)right->metadata);
+          astTreeDelete(left->type);
+          left->type = &AST_TREE_U64_TYPE;
           break;
         default:
           UNREACHABLE;
@@ -355,10 +406,10 @@ AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
       if (operand->token == AST_TREE_TOKEN_VALUE_INT) {
         switch (tree->token) {
         case AST_TREE_TOKEN_OPERATOR_PLUS:
-          operand->metadata = (void *)(+(AstTreeU64)operand->metadata);
+          operand->metadata = (void *)(+(AstTreeInt)operand->metadata);
           break;
         case AST_TREE_TOKEN_OPERATOR_MINUS:
-          operand->metadata = (void *)(-(AstTreeU64)operand->metadata);
+          operand->metadata = (void *)(-(AstTreeInt)operand->metadata);
           break;
         default:
           UNREACHABLE;
@@ -378,10 +429,12 @@ AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_FUNCTION:
   case AST_TREE_TOKEN_TYPE_VOID:
+  case AST_TREE_TOKEN_TYPE_I64:
   case AST_TREE_TOKEN_TYPE_U64:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
+  case AST_TREE_TOKEN_SCOPE:
   case AST_TREE_TOKEN_NONE:
   }
   UNREACHABLE;
@@ -413,6 +466,15 @@ AstTree *deepCopyAstTree(AstTree *tree) {
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
   case AST_TREE_TOKEN_OPERATOR_DIVIDE:
   case AST_TREE_TOKEN_OPERATOR_MODULO:
+  case AST_TREE_TOKEN_OPERATOR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_GREATER:
+  case AST_TREE_TOKEN_OPERATOR_SMALLER:
+  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
+  case AST_TREE_TOKEN_KEYWORD_IF:
+  case AST_TREE_TOKEN_TYPE_I64:
+  case AST_TREE_TOKEN_SCOPE:
   case AST_TREE_TOKEN_NONE:
   }
   UNREACHABLE;

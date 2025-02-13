@@ -33,6 +33,12 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_OPERATOR_MULTIPLY,
   AST_TREE_TOKEN_OPERATOR_DIVIDE,
   AST_TREE_TOKEN_OPERATOR_MODULO,
+  AST_TREE_TOKEN_OPERATOR_EQUAL,
+  AST_TREE_TOKEN_OPERATOR_NOT_EQUAL,
+  AST_TREE_TOKEN_OPERATOR_GREATER,
+  AST_TREE_TOKEN_OPERATOR_SMALLER,
+  AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL,
+  AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL,
 
   AST_TREE_TOKEN_SCOPE,
 
@@ -51,6 +57,7 @@ typedef struct AstTree {
 
 extern AstTree AST_TREE_TYPE_TYPE;
 extern AstTree AST_TREE_VOID_TYPE;
+extern AstTree AST_TREE_BOOL_TYPE;
 extern AstTree AST_TREE_I64_TYPE;
 extern AstTree AST_TREE_U64_TYPE;
 extern AstTree AST_TREE_VOID_VALUE;
@@ -96,7 +103,7 @@ typedef struct AstTreeFunctionCall {
   size_t parameters_size;
 } AstTreeFunctionCall;
 
-typedef uint64_t AstTreeU64;
+typedef uint64_t AstTreeInt;
 
 typedef bool AstTreeBool;
 
@@ -189,6 +196,8 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorAssign(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorInfix(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesOperatorInfixWithRet(AstTree *tree, AstTree *retType,
+                                  AstTreeSetTypesHelper helper);
 bool setTypesOperatorUnary(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesVariableDefine(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesIf(AstTree *tree, AstTreeSetTypesHelper helper,
@@ -196,7 +205,8 @@ bool setTypesIf(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesScope(AstTree *tree, AstTreeSetTypesHelper helper,
                    AstTreeFunction *function);
 
-bool setTypesAstVariable(AstTreeVariable *variable, AstTreeSetTypesHelper helper);
+bool setTypesAstVariable(AstTreeVariable *variable,
+                         AstTreeSetTypesHelper helper);
 bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper helper);
 
 bool astTreeCleanRoot(AstTreeRoot *root);

@@ -103,7 +103,7 @@ CodeGeneratorFunctionEnd *newCodeGeneratorFunctionEnd(char *name_begin,
 CodeGeneratorOperand *newCodeGeneratorOperandFromAstTree(AstTree tree) {
   switch (tree.token) {
   case AST_TREE_TOKEN_VALUE_INT:
-    return newCodeGeneratorOperand((void *)(uint64_t)(AstTreeU64)tree.metadata,
+    return newCodeGeneratorOperand((void *)(uint64_t)(AstTreeInt)tree.metadata,
                                    false);
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *variable = tree.metadata;
@@ -112,7 +112,7 @@ CodeGeneratorOperand *newCodeGeneratorOperandFromAstTree(AstTree tree) {
     }
     if (variable->isConst) {
       return newCodeGeneratorOperand(
-          (void *)(uint64_t)(AstTreeU64)variable->value->metadata, false);
+          (void *)(uint64_t)(AstTreeInt)variable->value->metadata, false);
     } else {
       char *name = a404m_malloc(
           (variable->name_end - variable->name_begin + 1) * sizeof(*name));
@@ -217,7 +217,7 @@ CodeGeneratorCodes *codeGenerator(AstTreeRoot *astTreeRoot) {
     case AST_TREE_TOKEN_VALUE_INT:
       if (!variable->isConst) {
         CodeGeneratorOperand value = makeCodeGeneratorOperand(
-            (void *)(uint64_t)(AstTreeU64)variable->value->metadata, false);
+            (void *)(uint64_t)(AstTreeInt)variable->value->metadata, false);
         generateCodePushDefine(
             codes,
             createGenerateDefine(variable->name_begin, variable->name_end,
@@ -281,7 +281,7 @@ bool codeGeneratorAstTreeFunction(char *name_begin, char *name_end,
       AstTreeSingleChild *metadata = tree->metadata;
       if (metadata->token == AST_TREE_TOKEN_VALUE_INT) {
         CodeGeneratorOperand *value = newCodeGeneratorOperand(
-            (void *)(uint64_t)(AstTreeU64)metadata->metadata, false);
+            (void *)(uint64_t)(AstTreeInt)metadata->metadata, false);
         generateCodePushCode(
             codes,
             createGenerateCode(NULL, NULL, CODE_GENERATOR_INSTRUCTION_PRINT_U64,
@@ -290,7 +290,7 @@ bool codeGeneratorAstTreeFunction(char *name_begin, char *name_end,
         AstTreeVariable *variable = metadata->metadata;
         if (variable->isConst) {
           CodeGeneratorOperand *value = newCodeGeneratorOperand(
-              (void *)(uint64_t)(AstTreeU64)variable->value->metadata, false);
+              (void *)(uint64_t)(AstTreeInt)variable->value->metadata, false);
           generateCodePushCode(
               codes,
               createGenerateCode(NULL, NULL,

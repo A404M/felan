@@ -1,8 +1,8 @@
 main :: () -> void {
-  b := false;
   a := 2;
+  b := a;
   c : u64 = 5;
-  if b 
+  if a == b 
     print_u64 2;
   else 
     print_u64 c;
