@@ -328,7 +328,19 @@ AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
     if ((left->type == &AST_TREE_U64_TYPE &&
          right->type == &AST_TREE_U64_TYPE) ||
         (left->type == &AST_TREE_I64_TYPE &&
-         right->type == &AST_TREE_I64_TYPE)) {
+         right->type == &AST_TREE_I64_TYPE) ||
+        (left->type == &AST_TREE_U32_TYPE &&
+         right->type == &AST_TREE_U32_TYPE) ||
+        (left->type == &AST_TREE_I32_TYPE &&
+         right->type == &AST_TREE_I32_TYPE) ||
+        (left->type == &AST_TREE_U16_TYPE &&
+         right->type == &AST_TREE_U16_TYPE) ||
+        (left->type == &AST_TREE_I16_TYPE &&
+         right->type == &AST_TREE_I16_TYPE) ||
+        (left->type == &AST_TREE_U8_TYPE &&
+         right->type == &AST_TREE_U8_TYPE) ||
+        (left->type == &AST_TREE_I8_TYPE &&
+         right->type == &AST_TREE_I8_TYPE)) {
       if (left->token == AST_TREE_TOKEN_VALUE_INT &&
           right->token == AST_TREE_TOKEN_VALUE_INT) {
         switch (tree->token) {

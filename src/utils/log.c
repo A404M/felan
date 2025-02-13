@@ -17,8 +17,8 @@ void _printLogBack(const char *format, const char *file, int line, ...) {
   free(errorStr);
 }
 
-void _printErrorBack(const char *file, int line, char *begin, char *end,
-                     const char *format, ...) {
+void _printErrorWarningBack(const char *file, int line, char *begin, char *end,
+                            bool isError, const char *format, ...) {
   va_list args;
   va_start(args, end);
   char *errorStr;
@@ -35,9 +35,14 @@ void _printErrorBack(const char *file, int line, char *begin, char *end,
   }
 
   const char firstColor[] = "\e[0;36m";
-  const char secondColor[] = "\e[0;31m";
-  fprintf(stderr, "%sError: %s at compiler %s:%d\e[0m\n", firstColor, errorStr,
-          file, line);
+  const char *secondColor = isError ? "\e[0;31m" : "\e[0;33m";
+  if (isError) {
+    fprintf(stderr, "%sError: %s at compiler %s:%d\e[0m\n", firstColor,
+            errorStr, file, line);
+  } else {
+    fprintf(stderr, "%sWarning: %s at compiler %s:%d\e[0m\n", firstColor,
+            errorStr, file, line);
+  }
   free(errorStr);
 
   if (file_index == SIZE_MAX) {

@@ -15,6 +15,12 @@ typedef enum ParserToken {
   PARSER_TOKEN_TYPE_TYPE,
   PARSER_TOKEN_TYPE_FUNCTION,
   PARSER_TOKEN_TYPE_VOID,
+  PARSER_TOKEN_TYPE_I8,
+  PARSER_TOKEN_TYPE_U8,
+  PARSER_TOKEN_TYPE_I16,
+  PARSER_TOKEN_TYPE_U16,
+  PARSER_TOKEN_TYPE_I32,
+  PARSER_TOKEN_TYPE_U32,
   PARSER_TOKEN_TYPE_I64,
   PARSER_TOKEN_TYPE_U64,
   PARSER_TOKEN_TYPE_BOOL,
@@ -58,7 +64,7 @@ extern const char *PARSER_TOKEN_STRINGS[];
 typedef struct ParserOrder {
   bool ltr;
   size_t size;
-  LexerToken data[15];
+  LexerToken data[20];
 } ParserOrder;
 
 typedef struct ParserNode {
