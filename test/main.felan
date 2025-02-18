@@ -1,14 +1,10 @@
 main :: () -> void {
-  a :i8 = 121312;
-  b :u8 = 1;
-  c :i16 = 1;
-  d :u16 = 1;
-  e :i32 = 1;
-  f :u32 = 1;
-  g :i64 = 1;
-  h :u64 = 1;
-  if a == 2
-    print_u64 h;
+  a :f32 = 23;
+  b :f64 = 54.5;
+  c :f128 = 1.0;
+  d :f16 = 5.5;
+  if a == 23
+    print_u64 1;
   else
-    print_u64 h+2;
+    print_u64 2;
 };

@@ -22,6 +22,10 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_KEYWORD_U32",
     "LEXER_TOKEN_KEYWORD_I64",
     "LEXER_TOKEN_KEYWORD_U64",
+    "LEXER_TOKEN_KEYWORD_F16",
+    "LEXER_TOKEN_KEYWORD_F32",
+    "LEXER_TOKEN_KEYWORD_F64",
+    "LEXER_TOKEN_KEYWORD_F128",
     "LEXER_TOKEN_KEYWORD_BOOL",
     "LEXER_TOKEN_KEYWORD_PRINT_U64",
     "LEXER_TOKEN_KEYWORD_RETURN",
@@ -89,9 +93,9 @@ const size_t LEXER_SYMBOL_SIZE =
     sizeof(LEXER_SYMBOL_TOKENS) / sizeof(*LEXER_SYMBOL_TOKENS);
 
 const char *LEXER_KEYWORD_STRINGS[] = {
-    "type",   "void", "i8",    "u8",  "i16",  "u16",
-    "i32",    "u32",  "i64",   "u64", "bool", "print_u64",
-    "return", "true", "false", "if",  "else",
+    "type", "void",      "i8",     "u8",   "i16",   "u16", "i32",
+    "u32",  "i64",       "u64",    "f16",  "f32",   "f64", "f128",
+    "bool", "print_u64", "return", "true", "false", "if",  "else",
 };
 const LexerToken LEXER_KEYWORD_TOKENS[] = {
     LEXER_TOKEN_KEYWORD_TYPE,   LEXER_TOKEN_KEYWORD_VOID,
@@ -99,6 +103,8 @@ const LexerToken LEXER_KEYWORD_TOKENS[] = {
     LEXER_TOKEN_KEYWORD_I16,    LEXER_TOKEN_KEYWORD_U16,
     LEXER_TOKEN_KEYWORD_I32,    LEXER_TOKEN_KEYWORD_U32,
     LEXER_TOKEN_KEYWORD_I64,    LEXER_TOKEN_KEYWORD_U64,
+    LEXER_TOKEN_KEYWORD_F16,    LEXER_TOKEN_KEYWORD_F32,
+    LEXER_TOKEN_KEYWORD_F64,    LEXER_TOKEN_KEYWORD_F128,
     LEXER_TOKEN_KEYWORD_BOOL,   LEXER_TOKEN_KEYWORD_PRINT_U64,
     LEXER_TOKEN_KEYWORD_RETURN, LEXER_TOKEN_KEYWORD_TRUE,
     LEXER_TOKEN_KEYWORD_FALSE,  LEXER_TOKEN_KEYWORD_IF,
@@ -172,7 +178,8 @@ LexerNodeArray lexer(char *str) {
       lexerPushClear(&result, &result_size, iter, &node_str_begin, &node_token,
                      LEXER_TOKEN_NONE);
     } else if (isIdentifier(c)) {
-      if (node_token != LEXER_TOKEN_IDENTIFIER) {
+      if (node_token != LEXER_TOKEN_IDENTIFIER &&
+          node_token != LEXER_TOKEN_NUMBER) {
         lexerPushClear(&result, &result_size, iter, &node_str_begin,
                        &node_token, LEXER_TOKEN_IDENTIFIER);
       }
@@ -237,6 +244,10 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_KEYWORD_U32:
   case LEXER_TOKEN_KEYWORD_I64:
   case LEXER_TOKEN_KEYWORD_U64:
+  case LEXER_TOKEN_KEYWORD_F16:
+  case LEXER_TOKEN_KEYWORD_F32:
+  case LEXER_TOKEN_KEYWORD_F64:
+  case LEXER_TOKEN_KEYWORD_F128:
   case LEXER_TOKEN_KEYWORD_BOOL:
   case LEXER_TOKEN_KEYWORD_PRINT_U64:
   case LEXER_TOKEN_KEYWORD_RETURN:
@@ -295,7 +306,7 @@ bool isIdentifier(char c) {
   return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') || c == '_';
 }
 
-bool isNumber(char c) { return '0' <= c && c <= '9'; }
+bool isNumber(char c) { return ('0' <= c && c <= '9') || c == '.'; }
 
 bool isSymbol(char c) {
   switch (c) {

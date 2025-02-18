@@ -1,5 +1,6 @@
 #include "string.h"
 #include "memory.h"
+#include "utils/type.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -15,8 +16,8 @@ size_t searchInStringArray(const char *array[], size_t array_size,
   return array_size;
 }
 
-uint64_t decimalToU64(char *str_begin, char *str_end, bool *success) {
-  uint64_t result = 0;
+u64 decimalToU64(char *str_begin, char *str_end, bool *success) {
+  u64 result = 0;
 
   while (str_begin < str_end) {
     if (*str_begin < '0' || *str_begin > '9') {
@@ -32,7 +33,39 @@ uint64_t decimalToU64(char *str_begin, char *str_end, bool *success) {
   return result;
 }
 
-char *u64ToString(uint64_t value) {
+f128 numberToFloat(char *str_begin, char *str_end, bool *success) {
+  f64 left = 0;
+  f64 right = 0;
+  bool isPastPoint = false;
+
+  while (str_begin < str_end) {
+    char c;
+    if (isPastPoint) {
+      c = *--str_end;
+    } else {
+      c = *str_begin++;
+    }
+    if (c >= '0' && c <= '9') {
+      if (isPastPoint) {
+        left *= 10;
+        left += c - '0';
+      } else {
+        right /= 10;
+        right += c - '0';
+      }
+    } else if (c == '.' && !isPastPoint) {
+      isPastPoint = true;
+    } else {
+      *success = false;
+      return 0;
+    }
+  }
+
+  *success = true;
+  return left + right;
+}
+
+char *u64ToString(u64 value) {
   char *str = a404m_malloc(21 * sizeof(*str));
   size_t i = 0;
 

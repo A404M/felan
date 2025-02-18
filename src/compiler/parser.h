@@ -1,6 +1,7 @@
 #pragma once
 
 #include "compiler/lexer.h"
+#include "utils/type.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -10,11 +11,13 @@ typedef enum ParserToken {
   PARSER_TOKEN_IDENTIFIER,
 
   PARSER_TOKEN_VALUE_INT,
+  PARSER_TOKEN_VALUE_FLOAT,
   PARSER_TOKEN_VALUE_BOOL,
 
   PARSER_TOKEN_TYPE_TYPE,
   PARSER_TOKEN_TYPE_FUNCTION,
   PARSER_TOKEN_TYPE_VOID,
+  PARSER_TOKEN_TYPE_BOOL,
   PARSER_TOKEN_TYPE_I8,
   PARSER_TOKEN_TYPE_U8,
   PARSER_TOKEN_TYPE_I16,
@@ -23,7 +26,10 @@ typedef enum ParserToken {
   PARSER_TOKEN_TYPE_U32,
   PARSER_TOKEN_TYPE_I64,
   PARSER_TOKEN_TYPE_U64,
-  PARSER_TOKEN_TYPE_BOOL,
+  PARSER_TOKEN_TYPE_F16,
+  PARSER_TOKEN_TYPE_F32,
+  PARSER_TOKEN_TYPE_F64,
+  PARSER_TOKEN_TYPE_F128,
 
   PARSER_TOKEN_KEYWORD_PRINT_U64,
   PARSER_TOKEN_KEYWORD_RETURN,
@@ -104,7 +110,9 @@ typedef struct ParserNodeFunctionCall {
 
 typedef ParserNode ParserNodeSingleChildMetadata;
 
-typedef uint64_t ParserNodeIntMetadata;
+typedef u64 ParserNodeIntMetadata;
+
+typedef f128 ParserNodeFloatMetadata;
 
 typedef struct ParserNodeInfixMetadata {
   ParserNode *left;
@@ -121,7 +129,7 @@ typedef struct ParserNodeIfMetadata {
   ParserNode *condition;
   ParserNode *ifBody;
   ParserNode *elseBody;
-}ParserNodeIfMetadata;
+} ParserNodeIfMetadata;
 
 void parserNodePrint(const ParserNode *node, int indent);
 void parserNodeDelete(ParserNode *node);
@@ -136,11 +144,15 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
                       ParserNode *parent, bool *conti);
 
 ParserNode *getUntilCommonParent(ParserNode *node, ParserNode *parent);
-ParserNode *getUntilCommonParents(ParserNode *node, ParserNode *parent,ParserNode *parent2);
-ParserNode *getNextUsingCommonParent(LexerNode *node,LexerNode *end, ParserNode *parent);
-LexerNode *getNextLexerNodeUsingCommonParent(LexerNode *node,LexerNode *end, ParserNode *parent);
+ParserNode *getUntilCommonParents(ParserNode *node, ParserNode *parent,
+                                  ParserNode *parent2);
+ParserNode *getNextUsingCommonParent(LexerNode *node, LexerNode *end,
+                                     ParserNode *parent);
+LexerNode *getNextLexerNodeUsingCommonParent(LexerNode *node, LexerNode *end,
+                                             ParserNode *parent);
 
-ParserNode *parserNoMetadata(LexerNode *node, ParserNode *parent,ParserToken token);
+ParserNode *parserNoMetadata(LexerNode *node, ParserNode *parent,
+                             ParserToken token);
 ParserNode *parserPrintU64(LexerNode *node, LexerNode *end, ParserNode *parent);
 ParserNode *parserReturn(LexerNode *node, LexerNode *end, ParserNode *parent);
 ParserNode *parserNumber(LexerNode *node, ParserNode *parent);
@@ -162,8 +174,7 @@ ParserNode *parserBinaryOrLeftOperator(LexerNode *node, LexerNode *begin,
                                        LexerNode *end, ParserNode *parent,
                                        ParserToken token,
                                        LexerToken laterToken);
-ParserNode *parserIf(LexerNode *node, LexerNode *end,
-                           ParserNode *parent);
+ParserNode *parserIf(LexerNode *node, LexerNode *end, ParserNode *parent);
 
 bool isAllArguments(const ParserNodeArray *nodes);
 

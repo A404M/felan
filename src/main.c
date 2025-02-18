@@ -2,6 +2,7 @@
 #include "runner/runner.h"
 #include "utils/file.h"
 #include "utils/log.h"
+#include "utils/type.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -103,7 +104,9 @@ static int run(const char *filePath, bool shouldPrint) {
 }
 
 int main(int argc, char *argv[]) {
+  checkTypes();
   fileInit();
+
   if (argc < 2) {
     // compileRun("test/main.felan", "build/out", false);
     // run("test/main.felan", false);

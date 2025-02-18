@@ -6,6 +6,123 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define doOperation(op0, op1, operator, originalType, type)                    \
+  (op0)->metadata = (void *)(u64)((type)(originalType)(op0)                    \
+                                      ->metadata                               \
+                                      operator(type)(originalType)(op1)        \
+                                      ->metadata)
+
+#define doOperationFloat(op0, op1, operator, originalType, type)               \
+  (op0)->metadata =                                                            \
+      (void *)(u64)((type) * (originalType *)(op0)->metadata operator(type) *  \
+                    (originalType *)(op1)->metadata)
+
+#define doLogicalOperation(op0, op1, operator, originalType, type)             \
+  (op0)->metadata = (void *)(u64)(bool)((type)(originalType)(op0)              \
+                                            ->metadata                         \
+                                            operator(type)(originalType)(op1)  \
+                                            ->metadata)
+
+#define doLogicalOperationFloat(op0, op1, operator, originalType, type)        \
+  (op0)->metadata =                                                            \
+      (void *)(u64)(bool)((type) *                                             \
+                          (originalType *)(op0)->metadata operator(type) *     \
+                          (originalType *)(op1)->metadata)
+
+#define doLeftOperation(op0, operator, originalType, type)                     \
+  (op0)->metadata = (void *)(u64)(operator(type)(originalType)(op0)->metadata)
+
+#define doLeftOperationFloat(op0, operator, originalType, type)                \
+  (op0)->metadata =                                                            \
+      (void *)(u64)(operator(type) * (originalType *)(op0)->metadata)
+
+#define doAllOperationsInt(op0, op1, operator, originalType, type)             \
+  switch (operator) {                                                          \
+  case AST_TREE_TOKEN_OPERATOR_SUM:                                            \
+    doOperation(op0, op1, +, originalType, type);                              \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_SUB:                                            \
+    doOperation(op0, op1, -, originalType, type);                              \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:                                       \
+    doOperation(op0, op1, *, originalType, type);                              \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:                                         \
+    doOperation(op0, op1, /, originalType, type);                              \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_MODULO:                                         \
+    doOperation(op0, op1, %, originalType, type);                              \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_PLUS:                                           \
+    doLeftOperation(op0, +, originalType, type);                               \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_MINUS:                                          \
+    doLeftOperation(op0, -, originalType, type);                               \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_EQUAL:                                          \
+    doLogicalOperation(op0, op1, ==, originalType, type);                      \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:                                      \
+    doLogicalOperation(op0, op1, !=, originalType, type);                      \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_GREATER:                                        \
+    doLogicalOperation(op0, op1, >, originalType, type);                       \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:                               \
+    doLogicalOperation(op0, op1, >=, originalType, type);                      \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_SMALLER:                                        \
+    doLogicalOperation(op0, op1, <, originalType, type);                       \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:                               \
+    doLogicalOperation(op0, op1, <=, originalType, type);                      \
+    break;                                                                     \
+  default:                                                                     \
+    UNREACHABLE;                                                               \
+  }
+
+#define doAllOperationsFloat(op0, op1, operator, originalType, type)           \
+  switch (operator) {                                                          \
+  case AST_TREE_TOKEN_OPERATOR_SUM:                                            \
+    doOperationFloat(op0, op1, +, originalType, type);                         \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_SUB:                                            \
+    doOperationFloat(op0, op1, -, originalType, type);                         \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:                                       \
+    doOperationFloat(op0, op1, *, originalType, type);                         \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:                                         \
+    doOperationFloat(op0, op1, /, originalType, type);                         \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_PLUS:                                           \
+    doLeftOperationFloat(op0, +, originalType, type);                          \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_MINUS:                                          \
+    doLeftOperationFloat(op0, -, originalType, type);                          \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_EQUAL:                                          \
+    doLogicalOperationFloat(op0, op1, ==, originalType, type);                 \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:                                      \
+    doLogicalOperationFloat(op0, op1, !=, originalType, type);                 \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_GREATER:                                        \
+    doLogicalOperationFloat(op0, op1, >, originalType, type);                  \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:                               \
+    doLogicalOperationFloat(op0, op1, >=, originalType, type);                 \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_SMALLER:                                        \
+    doLogicalOperationFloat(op0, op1, <, originalType, type);                  \
+    break;                                                                     \
+  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:                               \
+    doLogicalOperationFloat(op0, op1, <=, originalType, type);                 \
+    break;                                                                     \
+  default:                                                                     \
+    UNREACHABLE;                                                               \
+  }
+
 void runnerVariablesDelete(RunnerVariables *variables) {
   for (size_t i = 0; i < variables->size; ++i) {
     if (variables->data[i]->value != NULL) {
@@ -277,12 +394,23 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_FUNCTION:
   case AST_TREE_TOKEN_TYPE_VOID:
+  case AST_TREE_TOKEN_TYPE_BOOL:
+  case AST_TREE_TOKEN_TYPE_I8:
+  case AST_TREE_TOKEN_TYPE_U8:
+  case AST_TREE_TOKEN_TYPE_I16:
+  case AST_TREE_TOKEN_TYPE_U16:
+  case AST_TREE_TOKEN_TYPE_I32:
+  case AST_TREE_TOKEN_TYPE_U32:
   case AST_TREE_TOKEN_TYPE_I64:
   case AST_TREE_TOKEN_TYPE_U64:
-  case AST_TREE_TOKEN_TYPE_BOOL:
+  case AST_TREE_TOKEN_TYPE_F16:
+  case AST_TREE_TOKEN_TYPE_F32:
+  case AST_TREE_TOKEN_TYPE_F64:
+  case AST_TREE_TOKEN_TYPE_F128:
   case AST_TREE_TOKEN_VARIABLE:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_INT:
+  case AST_TREE_TOKEN_VALUE_FLOAT:
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_NONE:
   }
@@ -294,7 +422,8 @@ AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_BOOL:
-    return deepCopyAstTree(tree);
+  case AST_TREE_TOKEN_VALUE_FLOAT:
+    return copyAstTree(tree);
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *variable = tree->metadata;
     return calcAstTreeValue(runnerVariableGetValue(pages, variable), pages);
@@ -325,91 +454,46 @@ AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
     AstTree *left = calcAstTreeValue(&metadata->left, pages);
     AstTree *right = calcAstTreeValue(&metadata->right, pages);
 
-    if ((left->type == &AST_TREE_U64_TYPE &&
-         right->type == &AST_TREE_U64_TYPE) ||
-        (left->type == &AST_TREE_I64_TYPE &&
-         right->type == &AST_TREE_I64_TYPE) ||
-        (left->type == &AST_TREE_U32_TYPE &&
-         right->type == &AST_TREE_U32_TYPE) ||
-        (left->type == &AST_TREE_I32_TYPE &&
-         right->type == &AST_TREE_I32_TYPE) ||
-        (left->type == &AST_TREE_U16_TYPE &&
-         right->type == &AST_TREE_U16_TYPE) ||
-        (left->type == &AST_TREE_I16_TYPE &&
-         right->type == &AST_TREE_I16_TYPE) ||
-        (left->type == &AST_TREE_U8_TYPE &&
-         right->type == &AST_TREE_U8_TYPE) ||
-        (left->type == &AST_TREE_I8_TYPE &&
-         right->type == &AST_TREE_I8_TYPE)) {
-      if (left->token == AST_TREE_TOKEN_VALUE_INT &&
-          right->token == AST_TREE_TOKEN_VALUE_INT) {
-        switch (tree->token) {
-        case AST_TREE_TOKEN_OPERATOR_SUM:
-          left->metadata = (void *)((AstTreeInt)left->metadata +
-                                    (AstTreeInt)right->metadata);
-          break;
-        case AST_TREE_TOKEN_OPERATOR_SUB:
-          left->metadata = (void *)((AstTreeInt)left->metadata -
-                                    (AstTreeInt)right->metadata);
-          break;
-        case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
-          left->metadata = (void *)((AstTreeInt)left->metadata *
-                                    (AstTreeInt)right->metadata);
-          break;
-        case AST_TREE_TOKEN_OPERATOR_DIVIDE:
-          left->metadata = (void *)((AstTreeInt)left->metadata /
-                                    (AstTreeInt)right->metadata);
-          break;
-        case AST_TREE_TOKEN_OPERATOR_MODULO:
-          left->metadata = (void *)((AstTreeInt)left->metadata %
-                                    (AstTreeInt)right->metadata);
-          break;
-        case AST_TREE_TOKEN_OPERATOR_EQUAL:
-          left->metadata = (void *)(bool)((AstTreeInt)left->metadata ==
-                                          (AstTreeInt)right->metadata);
-          astTreeDelete(left->type);
-          left->type = &AST_TREE_U64_TYPE;
-          break;
-        case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
-          left->metadata = (void *)(bool)((AstTreeInt)left->metadata ==
-                                          (AstTreeInt)right->metadata);
-          astTreeDelete(left->type);
-          left->type = &AST_TREE_U64_TYPE;
-          break;
-        case AST_TREE_TOKEN_OPERATOR_GREATER:
-          left->metadata = (void *)(bool)((AstTreeInt)left->metadata >
-                                          (AstTreeInt)right->metadata);
-          astTreeDelete(left->type);
-          left->type = &AST_TREE_U64_TYPE;
-          break;
-        case AST_TREE_TOKEN_OPERATOR_SMALLER:
-          left->metadata = (void *)(bool)((AstTreeInt)left->metadata <
-                                          (AstTreeInt)right->metadata);
-          astTreeDelete(left->type);
-          left->type = &AST_TREE_U64_TYPE;
-          break;
-        case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
-          left->metadata = (void *)(bool)((AstTreeInt)left->metadata >=
-                                          (AstTreeInt)right->metadata);
-          astTreeDelete(left->type);
-          left->type = &AST_TREE_U64_TYPE;
-          break;
-        case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
-          left->metadata = (void *)(bool)((AstTreeInt)left->metadata <=
-                                          (AstTreeInt)right->metadata);
-          astTreeDelete(left->type);
-          left->type = &AST_TREE_U64_TYPE;
-          break;
-        default:
-          UNREACHABLE;
-        }
-        astTreeDelete(right);
-        return left;
-      } else {
-        UNREACHABLE;
-      }
+    if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
+      doAllOperationsInt(left, right, tree->token, AstTreeInt, u64);
+    } else if (left->type == &AST_TREE_I64_TYPE &&
+               right->type == &AST_TREE_I64_TYPE) {
+      doAllOperationsInt(left, right, tree->token, AstTreeInt, i64);
+    } else if (left->type == &AST_TREE_U32_TYPE &&
+               right->type == &AST_TREE_U32_TYPE) {
+      doAllOperationsInt(left, right, tree->token, AstTreeInt, u32);
+    } else if (left->type == &AST_TREE_I32_TYPE &&
+               right->type == &AST_TREE_I32_TYPE) {
+      doAllOperationsInt(left, right, tree->token, AstTreeInt, i32);
+    } else if (left->type == &AST_TREE_U16_TYPE &&
+               right->type == &AST_TREE_U16_TYPE) {
+      doAllOperationsInt(left, right, tree->token, AstTreeInt, u16);
+    } else if (left->type == &AST_TREE_I16_TYPE &&
+               right->type == &AST_TREE_I16_TYPE) {
+      doAllOperationsInt(left, right, tree->token, AstTreeInt, i16);
+    } else if (left->type == &AST_TREE_U8_TYPE &&
+               right->type == &AST_TREE_U8_TYPE) {
+      doAllOperationsInt(left, right, tree->token, AstTreeInt, u8);
+    } else if (left->type == &AST_TREE_I8_TYPE &&
+               right->type == &AST_TREE_I8_TYPE) {
+      doAllOperationsInt(left, right, tree->token, AstTreeInt, i8);
+    } else if (left->type == &AST_TREE_F128_TYPE &&
+               right->type == &AST_TREE_F128_TYPE) {
+      doAllOperationsFloat(left, right, tree->token, AstTreeFloat, f128);
+    } else if (left->type == &AST_TREE_F64_TYPE &&
+               right->type == &AST_TREE_F64_TYPE) {
+      doAllOperationsFloat(left, right, tree->token, AstTreeFloat, f64);
+    } else if (left->type == &AST_TREE_F32_TYPE &&
+               right->type == &AST_TREE_F32_TYPE) {
+      doAllOperationsFloat(left, right, tree->token, AstTreeFloat, f32);
+    } else if (left->type == &AST_TREE_F16_TYPE &&
+               right->type == &AST_TREE_F16_TYPE) {
+      doAllOperationsFloat(left, right, tree->token, AstTreeFloat, f16);
+    } else {
+      UNREACHABLE;
     }
-    UNREACHABLE;
+    astTreeDelete(right);
+    return left;
   }
   case AST_TREE_TOKEN_OPERATOR_PLUS:
   case AST_TREE_TOKEN_OPERATOR_MINUS: {
@@ -442,51 +526,21 @@ AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_FUNCTION:
   case AST_TREE_TOKEN_TYPE_VOID:
+  case AST_TREE_TOKEN_TYPE_BOOL:
+  case AST_TREE_TOKEN_TYPE_I8:
+  case AST_TREE_TOKEN_TYPE_U8:
+  case AST_TREE_TOKEN_TYPE_I16:
+  case AST_TREE_TOKEN_TYPE_U16:
+  case AST_TREE_TOKEN_TYPE_I32:
+  case AST_TREE_TOKEN_TYPE_U32:
   case AST_TREE_TOKEN_TYPE_I64:
   case AST_TREE_TOKEN_TYPE_U64:
-  case AST_TREE_TOKEN_TYPE_BOOL:
+  case AST_TREE_TOKEN_TYPE_F16:
+  case AST_TREE_TOKEN_TYPE_F32:
+  case AST_TREE_TOKEN_TYPE_F64:
+  case AST_TREE_TOKEN_TYPE_F128:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
-  case AST_TREE_TOKEN_SCOPE:
-  case AST_TREE_TOKEN_NONE:
-  }
-  UNREACHABLE;
-}
-
-AstTree *deepCopyAstTree(AstTree *tree) {
-  switch (tree->token) {
-  case AST_TREE_TOKEN_VALUE_VOID:
-  case AST_TREE_TOKEN_VALUE_INT:
-  case AST_TREE_TOKEN_VALUE_BOOL:
-    return newAstTree(tree->token, tree->metadata, copyAstTree(tree->type),
-                      NULL, NULL);
-  case AST_TREE_TOKEN_VARIABLE:
-  case AST_TREE_TOKEN_FUNCTION:
-  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
-  case AST_TREE_TOKEN_KEYWORD_RETURN:
-  case AST_TREE_TOKEN_TYPE_TYPE:
-  case AST_TREE_TOKEN_TYPE_FUNCTION:
-  case AST_TREE_TOKEN_TYPE_VOID:
-  case AST_TREE_TOKEN_TYPE_U64:
-  case AST_TREE_TOKEN_TYPE_BOOL:
-  case AST_TREE_TOKEN_FUNCTION_CALL:
-  case AST_TREE_TOKEN_VARIABLE_DEFINE:
-  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
-  case AST_TREE_TOKEN_OPERATOR_PLUS:
-  case AST_TREE_TOKEN_OPERATOR_MINUS:
-  case AST_TREE_TOKEN_OPERATOR_SUM:
-  case AST_TREE_TOKEN_OPERATOR_SUB:
-  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
-  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
-  case AST_TREE_TOKEN_OPERATOR_MODULO:
-  case AST_TREE_TOKEN_OPERATOR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_GREATER:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER:
-  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
-  case AST_TREE_TOKEN_KEYWORD_IF:
-  case AST_TREE_TOKEN_TYPE_I64:
   case AST_TREE_TOKEN_SCOPE:
   case AST_TREE_TOKEN_NONE:
   }
