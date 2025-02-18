@@ -38,6 +38,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_KEYWORD_PRINT_U64",
     "PARSER_TOKEN_KEYWORD_RETURN",
     "PARSER_TOKEN_KEYWORD_IF",
+    "PARSER_TOKEN_KEYWORD_WHILE",
 
     "PARSER_TOKEN_CONSTANT",
     "PARSER_TOKEN_VARIABLE",
@@ -129,7 +130,7 @@ static constexpr ParserOrder PARSER_ORDER[] = {
     },
     {
         .ltr = true,
-        ORDER_ARRAY(LEXER_TOKEN_KEYWORD_IF, ),
+        ORDER_ARRAY(LEXER_TOKEN_KEYWORD_IF, LEXER_TOKEN_KEYWORD_WHILE, ),
     },
 };
 
@@ -354,7 +355,27 @@ void parserNodePrint(const ParserNode *node, int indent) {
     printf("\n");
     for (int i = 0; i < indent; ++i)
       printf(" ");
-    free(metadata);
+  }
+  case PARSER_TOKEN_KEYWORD_WHILE: {
+    ParserNodeIfMetadata *metadata = node->metadata;
+    printf(",\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("condition=\n");
+    parserNodePrint(metadata->condition, indent + 1);
+    printf(",\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("ifBody=\n");
+    parserNodePrint(metadata->ifBody, indent + 1);
+    printf("\n,");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("elseBody=\n");
+    parserNodePrint(metadata->elseBody, indent + 1);
+    printf("\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_NONE:
@@ -480,6 +501,13 @@ void parserNodeDelete(ParserNode *node) {
     parserNodeDelete(metadata->condition);
     parserNodeDelete(metadata->ifBody);
     parserNodeDelete(metadata->elseBody);
+    free(metadata);
+  }
+    goto RETURN_SUCCESS;
+  case PARSER_TOKEN_KEYWORD_WHILE: {
+    ParserNodeWhileMetadata *metadata = node->metadata;
+    parserNodeDelete(metadata->condition);
+    parserNodeDelete(metadata->body);
     free(metadata);
   }
     goto RETURN_SUCCESS;
@@ -692,6 +720,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
   }
   case LEXER_TOKEN_KEYWORD_IF:
     return parserIf(node, end, parent);
+  case LEXER_TOKEN_KEYWORD_WHILE:
+    return parserWhile(node, end, parent);
   case LEXER_TOKEN_KEYWORD_ELSE:
   case LEXER_TOKEN_SYMBOL:
   case LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS:
@@ -1058,6 +1088,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       switch (bodyArray->data[i]->token) {
       case PARSER_TOKEN_SYMBOL_EOL:
       case PARSER_TOKEN_KEYWORD_IF:
+      case PARSER_TOKEN_KEYWORD_WHILE:
         continue;
       case PARSER_TOKEN_ROOT:
       case PARSER_TOKEN_IDENTIFIER:
@@ -1364,6 +1395,40 @@ ParserNode *parserIf(LexerNode *node, LexerNode *end, ParserNode *parent) {
                                elseBody->str_end, metadata, parent);
 }
 
+ParserNode *parserWhile(LexerNode *node, LexerNode *end, ParserNode *parent) {
+  LexerNode *conditionNode = node + 1;
+  if (conditionNode >= end) {
+    printError(node->str_begin, node->str_end, "While has no condition");
+    return NULL;
+  }
+
+  ParserNode *condition =
+      getUntilCommonParent(conditionNode->parserNode, parent);
+
+  if (condition == NULL) {
+    printError(conditionNode->str_begin, conditionNode->str_end,
+               "While has bad condition");
+    return NULL;
+  }
+
+  LexerNode *bodyNode =
+      getNextLexerNodeUsingCommonParent(conditionNode, end, parent);
+  ParserNode *body = getUntilCommonParent(bodyNode->parserNode, parent);
+
+  if (body == NULL) {
+    printError(node->str_begin, node->str_end, "While has bad body");
+    return NULL;
+  }
+
+  ParserNodeWhileMetadata *metadata = a404m_malloc(sizeof(*metadata));
+  metadata->condition = condition;
+  metadata->body = body;
+
+  return condition->parent = body->parent = node->parserNode =
+             newParserNode(PARSER_TOKEN_KEYWORD_WHILE, node->str_begin,
+                           body->str_end, metadata, parent);
+}
+
 bool isAllArguments(const ParserNodeArray *nodes) {
   for (size_t i = 0; i < nodes->size; ++i) {
     const ParserNode *node = nodes->data[i];
@@ -1402,6 +1467,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_VALUE_FLOAT:
   case PARSER_TOKEN_VALUE_BOOL:
   case PARSER_TOKEN_KEYWORD_IF:
+  case PARSER_TOKEN_KEYWORD_WHILE:
     return true;
   case PARSER_TOKEN_ROOT:
   case PARSER_TOKEN_TYPE_TYPE:
@@ -1478,6 +1544,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_GREATER_OR_EQUAL:
   case PARSER_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
   case PARSER_TOKEN_KEYWORD_IF:
+  case PARSER_TOKEN_KEYWORD_WHILE:
     return false;
   case PARSER_TOKEN_NONE:
   }
@@ -1533,6 +1600,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_SYMBOL_COMMA:
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
   case PARSER_TOKEN_KEYWORD_RETURN:
+  case PARSER_TOKEN_KEYWORD_WHILE:
     return false;
   case PARSER_TOKEN_NONE:
   }

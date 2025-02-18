@@ -10,6 +10,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_KEYWORD_PRINT_U64,
   AST_TREE_TOKEN_KEYWORD_RETURN,
   AST_TREE_TOKEN_KEYWORD_IF,
+  AST_TREE_TOKEN_KEYWORD_WHILE,
 
   AST_TREE_TOKEN_TYPE_FUNCTION,
   AST_TREE_TOKEN_TYPE_TYPE,
@@ -149,6 +150,11 @@ typedef struct AstTreeIf {
   AstTree *elseBody;
 } AstTreeIf;
 
+typedef struct AstTreeWhile {
+  AstTree *condition;
+  AstTree *body;
+} AstTreeWhile;
+
 typedef struct AstTreeHelper {
   AstTreeVariables **variables;
   size_t variables_size;
@@ -198,6 +204,7 @@ AstTree *astTreeParseUnaryOperator(ParserNode *parserNode,
 bool astTreeParseConstant(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseVariable(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseIf(ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseWhile(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
                                   AstTreeHelper *helper);
 AstTree *astTreeParseParenthesis(ParserNode *parserNode, AstTreeHelper *helper);
@@ -230,6 +237,8 @@ bool setTypesOperatorUnary(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesVariableDefine(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesIf(AstTree *tree, AstTreeSetTypesHelper helper,
                 AstTreeFunction *function);
+bool setTypesWhile(AstTree *tree, AstTreeSetTypesHelper helper,
+                   AstTreeFunction *function);
 bool setTypesScope(AstTree *tree, AstTreeSetTypesHelper helper,
                    AstTreeFunction *function);
 

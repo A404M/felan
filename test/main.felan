@@ -1,10 +1,7 @@
 main :: () -> void {
-  a :f32 = 23;
-  b :f64 = 54.5;
-  c :f128 = 1.0;
-  d :f16 = 5.5;
-  if -a == -23.0
-    print_u64 1;
-  else
+  a := 10000;
+  while a > 0 {
     print_u64 2;
+    a = a -1;
+  }
 };

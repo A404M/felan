@@ -17,24 +17,24 @@
       (void *)(u64)((type) * (originalType *)(op0)->metadata operator(type) *  \
                     (originalType *)(op1)->metadata)
 
-#define doLogicalOperation(op0, op1, operator, originalType, _type)             \
+#define doLogicalOperation(op0, op1, operator, originalType, _type)            \
   {                                                                            \
-    bool res = (bool)((_type)(originalType)(op0)                                \
+    bool res = (bool)((_type)(originalType)(op0)                               \
                           ->metadata                                           \
-                          operator(_type)(originalType)(op1)                    \
+                          operator(_type)(originalType)(op1)                   \
                           ->metadata);                                         \
     astTreeDestroy(*(op0));                                                    \
-    (op0)->metadata = (void*)(u64)res;                                                     \
-    (op0)->type = &AST_TREE_BOOL_TYPE;                                          \
+    (op0)->metadata = (void *)(u64)res;                                        \
+    (op0)->type = &AST_TREE_BOOL_TYPE;                                         \
   }
 
-#define doLogicalOperationFloat(op0, op1, operator, originalType, _type)        \
+#define doLogicalOperationFloat(op0, op1, operator, originalType, _type)       \
   {                                                                            \
-    bool res = (bool)(((_type) * ((originalType *)(op0)->metadata)) operator(   \
-        (_type) * ((originalType *)(op1)->metadata)));                          \
+    bool res = (bool)(((_type) * ((originalType *)(op0)->metadata)) operator(  \
+        (_type) * ((originalType *)(op1)->metadata)));                         \
     astTreeDestroy(*(op0));                                                    \
-    (op0)->metadata = (void*)(u64)res;                                                     \
-    (op0)->type = &AST_TREE_BOOL_TYPE;                                          \
+    (op0)->metadata = (void *)(u64)res;                                        \
+    (op0)->type = &AST_TREE_BOOL_TYPE;                                         \
   }
 
 #define doLeftOperation(op0, operator, originalType, type)                     \
@@ -340,7 +340,20 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
     astTreeDelete(tree);
     return ret;
   }
-    return NULL;
+  case AST_TREE_TOKEN_KEYWORD_WHILE: {
+    AstTreeWhile *metadata = expr->metadata;
+    AstTree *ret = NULL;
+    while (true) {
+      AstTree *tree = calcAstTreeValue(metadata->condition, pages);
+      bool conti = (AstTreeBool)tree->metadata;
+      astTreeDelete(tree);
+      if (!conti) {
+        break;
+      }
+      ret = runExpression(metadata->body, pages);
+    }
+    return ret;
+  }
   case AST_TREE_TOKEN_SCOPE: {
     AstTreeScope *metadata = expr->metadata;
 
@@ -365,12 +378,20 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
       runnerVariablePush(newPages.data[newPages.size - 1], variable);
     }
 
+    AstTree *ret = NULL;
     for (size_t i = 0; i < metadata->expressions_size; ++i) {
-      AstTree *r = runExpression(metadata->expressions[i], &newPages);
-      if (r) {
-        return r;
-      }
+      ret = runExpression(metadata->expressions[i], &newPages);
     }
+    for (size_t i = 0; i < newPages.data[pages->size]->size; ++i) {
+      if (newPages.data[pages->size]->data[i]->value) {
+        astTreeDelete(newPages.data[pages->size]->data[i]->value);
+      }
+      free(newPages.data[pages->size]->data[i]);
+    }
+    free(newPages.data[pages->size]->data);
+    free(newPages.data[pages->size]);
+    free(newPages.data);
+    return ret;
   }
     return NULL;
   case AST_TREE_TOKEN_OPERATOR_PLUS:

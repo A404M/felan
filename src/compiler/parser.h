@@ -34,6 +34,7 @@ typedef enum ParserToken {
   PARSER_TOKEN_KEYWORD_PRINT_U64,
   PARSER_TOKEN_KEYWORD_RETURN,
   PARSER_TOKEN_KEYWORD_IF,
+  PARSER_TOKEN_KEYWORD_WHILE,
 
   PARSER_TOKEN_CONSTANT,
   PARSER_TOKEN_VARIABLE,
@@ -131,6 +132,11 @@ typedef struct ParserNodeIfMetadata {
   ParserNode *elseBody;
 } ParserNodeIfMetadata;
 
+typedef struct ParserNodeWhileMetadata {
+  ParserNode *condition;
+  ParserNode *body;
+} ParserNodeWhileMetadata;
+
 void parserNodePrint(const ParserNode *node, int indent);
 void parserNodeDelete(ParserNode *node);
 
@@ -175,6 +181,7 @@ ParserNode *parserBinaryOrLeftOperator(LexerNode *node, LexerNode *begin,
                                        ParserToken token,
                                        LexerToken laterToken);
 ParserNode *parserIf(LexerNode *node, LexerNode *end, ParserNode *parent);
+ParserNode *parserWhile(LexerNode *node, LexerNode *end, ParserNode *parent);
 
 bool isAllArguments(const ParserNodeArray *nodes);
 
