@@ -17,24 +17,32 @@
       (void *)(u64)((type) * (originalType *)(op0)->metadata operator(type) *  \
                     (originalType *)(op1)->metadata)
 
-#define doLogicalOperation(op0, op1, operator, originalType, type)             \
-  (op0)->metadata = (void *)(u64)(bool)((type)(originalType)(op0)              \
-                                            ->metadata                         \
-                                            operator(type)(originalType)(op1)  \
-                                            ->metadata)
+#define doLogicalOperation(op0, op1, operator, originalType, _type)             \
+  {                                                                            \
+    bool res = (bool)((_type)(originalType)(op0)                                \
+                          ->metadata                                           \
+                          operator(_type)(originalType)(op1)                    \
+                          ->metadata);                                         \
+    astTreeDestroy(*(op0));                                                    \
+    (op0)->metadata = (void*)(u64)res;                                                     \
+    (op0)->type = &AST_TREE_BOOL_TYPE;                                          \
+  }
 
-#define doLogicalOperationFloat(op0, op1, operator, originalType, type)        \
-  (op0)->metadata =                                                            \
-      (void *)(u64)(bool)((type) *                                             \
-                          (originalType *)(op0)->metadata operator(type) *     \
-                          (originalType *)(op1)->metadata)
+#define doLogicalOperationFloat(op0, op1, operator, originalType, _type)        \
+  {                                                                            \
+    bool res = (bool)(((_type) * ((originalType *)(op0)->metadata)) operator(   \
+        (_type) * ((originalType *)(op1)->metadata)));                          \
+    astTreeDestroy(*(op0));                                                    \
+    (op0)->metadata = (void*)(u64)res;                                                     \
+    (op0)->type = &AST_TREE_BOOL_TYPE;                                          \
+  }
 
 #define doLeftOperation(op0, operator, originalType, type)                     \
   (op0)->metadata = (void *)(u64)(operator(type)(originalType)(op0)->metadata)
 
 #define doLeftOperationFloat(op0, operator, originalType, type)                \
-  (op0)->metadata =                                                            \
-      (void *)(u64)(operator(type) * (originalType *)(op0)->metadata)
+  *((originalType *)(op0)->metadata) = operator(                               \
+      (type) * (originalType *)(op0)->metadata)
 
 #define doAllOperationsInt(op0, op1, operator, originalType, type)             \
   switch (operator) {                                                          \
@@ -52,12 +60,6 @@
     break;                                                                     \
   case AST_TREE_TOKEN_OPERATOR_MODULO:                                         \
     doOperation(op0, op1, %, originalType, type);                              \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_PLUS:                                           \
-    doLeftOperation(op0, +, originalType, type);                               \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_MINUS:                                          \
-    doLeftOperation(op0, -, originalType, type);                               \
     break;                                                                     \
   case AST_TREE_TOKEN_OPERATOR_EQUAL:                                          \
     doLogicalOperation(op0, op1, ==, originalType, type);                      \
@@ -94,12 +96,6 @@
     break;                                                                     \
   case AST_TREE_TOKEN_OPERATOR_DIVIDE:                                         \
     doOperationFloat(op0, op1, /, originalType, type);                         \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_PLUS:                                           \
-    doLeftOperationFloat(op0, +, originalType, type);                          \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_MINUS:                                          \
-    doLeftOperationFloat(op0, -, originalType, type);                          \
     break;                                                                     \
   case AST_TREE_TOKEN_OPERATOR_EQUAL:                                          \
     doLogicalOperationFloat(op0, op1, ==, originalType, type);                 \
@@ -495,29 +491,67 @@ AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
     astTreeDelete(right);
     return left;
   }
-  case AST_TREE_TOKEN_OPERATOR_PLUS:
-  case AST_TREE_TOKEN_OPERATOR_MINUS: {
-    AstTreeSingleChild *metadata = tree->metadata;
-    if (typeIsEqual(metadata->type, &AST_TREE_U64_TYPE)) {
-      AstTree *operand = calcAstTreeValue(metadata, pages);
-      if (operand->token == AST_TREE_TOKEN_VALUE_INT) {
-        switch (tree->token) {
-        case AST_TREE_TOKEN_OPERATOR_PLUS:
-          operand->metadata = (void *)(+(AstTreeInt)operand->metadata);
-          break;
-        case AST_TREE_TOKEN_OPERATOR_MINUS:
-          operand->metadata = (void *)(-(AstTreeInt)operand->metadata);
-          break;
-        default:
-          UNREACHABLE;
-        }
-        return operand;
-      } else {
-        UNREACHABLE;
-      }
+  case AST_TREE_TOKEN_OPERATOR_PLUS: {
+    AstTreeSingleChild *operand = calcAstTreeValue(tree->metadata, pages);
+    if (operand->type == &AST_TREE_U64_TYPE) {
+      doLeftOperation(operand, +, AstTreeInt, u64);
+    } else if (operand->type == &AST_TREE_I64_TYPE) {
+      doLeftOperation(operand, +, AstTreeInt, i64);
+    } else if (operand->type == &AST_TREE_U32_TYPE) {
+      doLeftOperation(operand, +, AstTreeInt, u32);
+    } else if (operand->type == &AST_TREE_I32_TYPE) {
+      doLeftOperation(operand, +, AstTreeInt, i32);
+    } else if (operand->type == &AST_TREE_U16_TYPE) {
+      doLeftOperation(operand, +, AstTreeInt, u16);
+    } else if (operand->type == &AST_TREE_I16_TYPE) {
+      doLeftOperation(operand, +, AstTreeInt, i16);
+    } else if (operand->type == &AST_TREE_U8_TYPE) {
+      doLeftOperation(operand, +, AstTreeInt, u8);
+    } else if (operand->type == &AST_TREE_I8_TYPE) {
+      doLeftOperation(operand, +, AstTreeInt, i8);
+    } else if (operand->type == &AST_TREE_F128_TYPE) {
+      doLeftOperationFloat(operand, +, AstTreeFloat, f128);
+    } else if (operand->type == &AST_TREE_F64_TYPE) {
+      doLeftOperationFloat(operand, +, AstTreeFloat, f64);
+    } else if (operand->type == &AST_TREE_F32_TYPE) {
+      doLeftOperationFloat(operand, +, AstTreeFloat, f32);
+    } else if (operand->type == &AST_TREE_F16_TYPE) {
+      doLeftOperationFloat(operand, +, AstTreeFloat, f16);
     } else {
       UNREACHABLE;
     }
+    return operand;
+  }
+  case AST_TREE_TOKEN_OPERATOR_MINUS: {
+    AstTreeSingleChild *operand = calcAstTreeValue(tree->metadata, pages);
+    if (operand->type == &AST_TREE_U64_TYPE) {
+      doLeftOperation(operand, -, AstTreeInt, u64);
+    } else if (operand->type == &AST_TREE_I64_TYPE) {
+      doLeftOperation(operand, -, AstTreeInt, i64);
+    } else if (operand->type == &AST_TREE_U32_TYPE) {
+      doLeftOperation(operand, -, AstTreeInt, u32);
+    } else if (operand->type == &AST_TREE_I32_TYPE) {
+      doLeftOperation(operand, -, AstTreeInt, i32);
+    } else if (operand->type == &AST_TREE_U16_TYPE) {
+      doLeftOperation(operand, -, AstTreeInt, u16);
+    } else if (operand->type == &AST_TREE_I16_TYPE) {
+      doLeftOperation(operand, -, AstTreeInt, i16);
+    } else if (operand->type == &AST_TREE_U8_TYPE) {
+      doLeftOperation(operand, -, AstTreeInt, u8);
+    } else if (operand->type == &AST_TREE_I8_TYPE) {
+      doLeftOperation(operand, -, AstTreeInt, i8);
+    } else if (operand->type == &AST_TREE_F128_TYPE) {
+      doLeftOperationFloat(operand, -, AstTreeFloat, f128);
+    } else if (operand->type == &AST_TREE_F64_TYPE) {
+      doLeftOperationFloat(operand, -, AstTreeFloat, f64);
+    } else if (operand->type == &AST_TREE_F32_TYPE) {
+      doLeftOperationFloat(operand, -, AstTreeFloat, f32);
+    } else if (operand->type == &AST_TREE_F16_TYPE) {
+      doLeftOperationFloat(operand, -, AstTreeFloat, f16);
+    } else {
+      UNREACHABLE;
+    }
+    return operand;
   }
   case AST_TREE_TOKEN_KEYWORD_IF:
   case AST_TREE_TOKEN_FUNCTION:

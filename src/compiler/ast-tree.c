@@ -416,7 +416,8 @@ void astTreeDestroy(AstTree tree) {
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
     return;
   case AST_TREE_TOKEN_VALUE_FLOAT: {
-    free(tree.metadata);
+    AstTreeFloat *metadata = tree.metadata;
+    free(metadata);
     return;
   }
   case AST_TREE_TOKEN_OPERATOR_PLUS:
@@ -2119,7 +2120,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     AstTreeInt value = (AstTreeInt)tree->metadata;
     f16 newValue = value;
     tree->metadata = a404m_malloc(sizeof(f128));
-    *(f128 *)tree->metadata = value;
+    *(AstTreeFloat *)tree->metadata = value;
     if (value - newValue != 0) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
@@ -2129,7 +2130,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     AstTreeInt value = (AstTreeInt)tree->metadata;
     f32 newValue = value;
     tree->metadata = a404m_malloc(sizeof(f128));
-    *(f128 *)tree->metadata = value;
+    *(AstTreeFloat *)tree->metadata = value;
     if (value - newValue != 0) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
@@ -2139,7 +2140,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     AstTreeInt value = (AstTreeInt)tree->metadata;
     f64 newValue = value;
     tree->metadata = a404m_malloc(sizeof(f128));
-    *(f128 *)tree->metadata = value;
+    *(AstTreeFloat *)tree->metadata = value;
     if (value - newValue != 0) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
@@ -2149,7 +2150,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     AstTreeInt value = (AstTreeInt)tree->metadata;
     f128 newValue = value;
     tree->metadata = a404m_malloc(sizeof(f128));
-    *(f128 *)tree->metadata = value;
+    *(AstTreeFloat *)tree->metadata = value;
     if (value - newValue != 0) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
@@ -2165,8 +2166,7 @@ bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeFloat value = *(AstTreeFloat *)tree->metadata;
     f16 newValue = value;
-    tree->metadata = a404m_malloc(sizeof(f128));
-    *(f128 *)tree->metadata = value;
+    *(AstTreeFloat *)tree->metadata = value;
     if (value - newValue != 0) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
@@ -2175,9 +2175,8 @@ bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeFloat value = *(AstTreeFloat *)tree->metadata;
     f32 newValue = value;
-    tree->metadata = a404m_malloc(sizeof(f128));
-    *(f128 *)tree->metadata = value;
-    if (value - newValue != 0) {
+    *(AstTreeFloat *)tree->metadata = value;
+    if (value != newValue) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_F32_TYPE;
@@ -2185,8 +2184,7 @@ bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeFloat value = *(AstTreeFloat *)tree->metadata;
     f64 newValue = value;
-    tree->metadata = a404m_malloc(sizeof(f128));
-    *(f128 *)tree->metadata = value;
+    *(AstTreeFloat *)tree->metadata = value;
     if (value - newValue != 0) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
@@ -2195,8 +2193,7 @@ bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeFloat value = *(AstTreeFloat *)tree->metadata;
     f128 newValue = value;
-    tree->metadata = a404m_malloc(sizeof(f128));
-    *(f128 *)tree->metadata = value;
+    *(AstTreeFloat *)tree->metadata = value;
     if (value - newValue != 0) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }

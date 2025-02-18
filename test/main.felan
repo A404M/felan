@@ -3,7 +3,7 @@ main :: () -> void {
   b :f64 = 54.5;
   c :f128 = 1.0;
   d :f16 = 5.5;
-  if a == 23
+  if -a == -23.0
     print_u64 1;
   else
     print_u64 2;
