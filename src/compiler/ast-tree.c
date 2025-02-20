@@ -528,6 +528,7 @@ void astTreeDestroy(AstTree tree) {
 
   case AST_TREE_TOKEN_NONE:
   }
+  printLog("token = %d", tree.token);
   UNREACHABLE;
 }
 
@@ -829,8 +830,6 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
     case PARSER_TOKEN_SYMBOL_PARENTHESIS:
     case PARSER_TOKEN_KEYWORD_IF:
     case PARSER_TOKEN_KEYWORD_WHILE:
-      goto AFTER_SWITCH;
-    case PARSER_TOKEN_ROOT:
     case PARSER_TOKEN_TYPE_TYPE:
     case PARSER_TOKEN_TYPE_FUNCTION:
     case PARSER_TOKEN_TYPE_VOID:
@@ -843,6 +842,8 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
     case PARSER_TOKEN_TYPE_I64:
     case PARSER_TOKEN_TYPE_U64:
     case PARSER_TOKEN_TYPE_BOOL:
+      goto AFTER_SWITCH;
+    case PARSER_TOKEN_ROOT:
     case PARSER_TOKEN_KEYWORD_PRINT_U64:
     case PARSER_TOKEN_KEYWORD_RETURN:
     case PARSER_TOKEN_CONSTANT:
@@ -850,7 +851,8 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
     case PARSER_TOKEN_SYMBOL_EOL:
     case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
     case PARSER_TOKEN_SYMBOL_COMMA:
-      printError(node->str_begin, node->str_end, "Should not be here");
+      printError(node->str_begin, node->str_end, "Should not be here %s",
+                 PARSER_TOKEN_STRINGS[node->token]);
       goto RETURN_ERROR;
     case PARSER_TOKEN_NONE:
     }
@@ -884,7 +886,9 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
     goto RETURN_ERROR;
   }
 
-  free(helper.globalDeps->data);
+  for (size_t i = 0; i < variables->size; ++i) {
+    free(helper.globalDeps[i].data);
+  }
   free(helper.globalDeps);
 
   return root;
@@ -1943,6 +1947,63 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
   UNREACHABLE;
 }
 
+AstTree *getValue(AstTree *tree) {
+  switch (tree->token) {
+  case AST_TREE_TOKEN_TYPE_FUNCTION:
+    return copyAstTree(tree);
+  case AST_TREE_TOKEN_TYPE_TYPE:
+  case AST_TREE_TOKEN_TYPE_VOID:
+  case AST_TREE_TOKEN_TYPE_I8:
+  case AST_TREE_TOKEN_TYPE_U8:
+  case AST_TREE_TOKEN_TYPE_I16:
+  case AST_TREE_TOKEN_TYPE_U16:
+  case AST_TREE_TOKEN_TYPE_I32:
+  case AST_TREE_TOKEN_TYPE_U32:
+  case AST_TREE_TOKEN_TYPE_I64:
+  case AST_TREE_TOKEN_TYPE_U64:
+  case AST_TREE_TOKEN_TYPE_F16:
+  case AST_TREE_TOKEN_TYPE_F32:
+  case AST_TREE_TOKEN_TYPE_F64:
+  case AST_TREE_TOKEN_TYPE_F128:
+  case AST_TREE_TOKEN_TYPE_BOOL:
+    return tree;
+  case AST_TREE_TOKEN_VARIABLE: {
+    AstTreeVariable *metadata = tree->metadata;
+    if (metadata->isConst) {
+      return getValue(metadata->value);
+    }
+  }
+  case AST_TREE_TOKEN_FUNCTION:
+  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_KEYWORD_RETURN:
+  case AST_TREE_TOKEN_KEYWORD_IF:
+  case AST_TREE_TOKEN_KEYWORD_WHILE:
+  case AST_TREE_TOKEN_FUNCTION_CALL:
+  case AST_TREE_TOKEN_VARIABLE_DEFINE:
+  case AST_TREE_TOKEN_VALUE_VOID:
+  case AST_TREE_TOKEN_VALUE_INT:
+  case AST_TREE_TOKEN_VALUE_FLOAT:
+  case AST_TREE_TOKEN_VALUE_BOOL:
+  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
+  case AST_TREE_TOKEN_OPERATOR_SUM:
+  case AST_TREE_TOKEN_OPERATOR_SUB:
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
+  case AST_TREE_TOKEN_OPERATOR_MODULO:
+  case AST_TREE_TOKEN_OPERATOR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_GREATER:
+  case AST_TREE_TOKEN_OPERATOR_SMALLER:
+  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
+  case AST_TREE_TOKEN_SCOPE:
+  case AST_TREE_TOKEN_NONE:
+  }
+  UNREACHABLE;
+}
+
 bool isCircularDependencies(AstTreeHelper *helper, AstTreeVariable *variable,
                             AstTree *tree) {
   switch (tree->token) {
@@ -2229,7 +2290,7 @@ bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
     AstTreeFloat value = *(AstTreeFloat *)tree->metadata;
     f32 newValue = value;
     *(AstTreeFloat *)tree->metadata = value;
-    if (value != newValue) {
+    if (value - newValue != 0) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_F32_TYPE;
@@ -2450,6 +2511,12 @@ bool setTypesAstVariable(AstTreeVariable *variable,
 
   if (variable->type != NULL && !setAllTypes(variable->type, helper, NULL)) {
     return false;
+  }
+
+  if (variable->type != NULL) {
+    AstTree *type = variable->type;
+    variable->type = getValue(type);
+    astTreeDelete(type);
   }
 
   helper.lookingType = variable->type;

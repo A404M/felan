@@ -1,7 +1,9 @@
-main :: () -> void {
-  a := 10000;
+test :: ()->void;
+
+main : test : () -> void {
+  a := 10;
   while a > 0 {
-    print_u64 2;
+    print_u64 1;
     a = a -1;
   }
 };

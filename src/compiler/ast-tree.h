@@ -213,6 +213,7 @@ AstTreeFunction *getFunction(AstTree *value);
 bool isConst(AstTree *value);
 AstTree *makeTypeOf(AstTree *value);
 bool typeIsEqual(const AstTree *type0, const AstTree *type1);
+AstTree *getValue(AstTree *tree);
 
 bool isCircularDependencies(AstTreeHelper *helper, AstTreeVariable *variable,
                             AstTree *tree);
