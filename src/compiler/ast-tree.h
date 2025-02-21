@@ -251,11 +251,4 @@ bool setTypesAstVariable(AstTreeVariable *variable,
                          AstTreeSetTypesHelper helper);
 bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper helper);
 
-bool astTreeCleanRoot(AstTreeRoot *root, AstTreeHelper *helper);
-bool astTreeClean(AstTree *tree, AstTreeSetTypesHelper helper);
-bool astTreeCleanFunction(AstTree *tree, AstTreeSetTypesHelper helper);
-bool astTreeCleanVariable(AstTree *tree, AstTreeSetTypesHelper helper);
-bool astTreeCleanAstVariable(AstTreeVariable *variable,
-                             AstTreeSetTypesHelper helper);
-
 size_t astTreeTypeSize(AstTree tree);

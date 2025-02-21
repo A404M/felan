@@ -1,13 +1,12 @@
 main :: () -> void {
-  a :theType= 10;
+  a :getType(i64,u64)= 10;
   while a > 0 {
-    print_u64 1;
+    print_u64 a;
     a = a -1;
   }
 };
 
-theType :: getType(u64,i64);
-signed :: true;
+signed :: false;
 
 getType :: (a:type,b:type)->type {
   if signed

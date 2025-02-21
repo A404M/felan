@@ -883,7 +883,7 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
   }
 
   helper.variable = NULL;
-  if (!setAllTypesRoot(root, &helper) || !astTreeCleanRoot(root, &helper)) {
+  if (!setAllTypesRoot(root, &helper)) {
     goto RETURN_ERROR;
   }
 
@@ -1785,7 +1785,7 @@ bool isConst(AstTree *tree, AstTreeHelper *helper) {
     return isConst(metadata->function, helper);
   }
   case AST_TREE_TOKEN_FUNCTION: {
-    AstTreeFunction *function;
+    return true;
   }
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
@@ -2021,7 +2021,9 @@ AstTree *getValue(AstTree *tree, AstTreeSetTypesHelper helper) {
     }
     return value;
   }
-  case AST_TREE_TOKEN_FUNCTION:
+  case AST_TREE_TOKEN_FUNCTION: {
+    return tree;
+  }
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
   case AST_TREE_TOKEN_KEYWORD_IF:
@@ -2048,9 +2050,14 @@ bool isCircularDependencies(AstTreeHelper *helper, AstTreeVariable *variable,
   case AST_TREE_TOKEN_TYPE_U32:
   case AST_TREE_TOKEN_TYPE_I64:
   case AST_TREE_TOKEN_TYPE_U64:
+  case AST_TREE_TOKEN_TYPE_F16:
+  case AST_TREE_TOKEN_TYPE_F32:
+  case AST_TREE_TOKEN_TYPE_F64:
+  case AST_TREE_TOKEN_TYPE_F128:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_INT:
+  case AST_TREE_TOKEN_VALUE_FLOAT:
   case AST_TREE_TOKEN_VALUE_BOOL:
     return false;
   case AST_TREE_TOKEN_OPERATOR_PLUS:
@@ -2104,6 +2111,7 @@ bool isCircularDependencies(AstTreeHelper *helper, AstTreeVariable *variable,
   case AST_TREE_TOKEN_KEYWORD_RETURN:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_KEYWORD_IF:
+  case AST_TREE_TOKEN_KEYWORD_WHILE:
   case AST_TREE_TOKEN_NONE:
   }
   UNREACHABLE;
@@ -2130,10 +2138,12 @@ bool setAllTypesRoot(AstTreeRoot *root, AstTreeHelper *helper) {
   for (size_t i = 0; i < root->variables.size; ++i) {
     AstTreeVariable *variable = root->variables.data[i];
     if (!setTypesAstVariable(variable, setTypesHelper)) {
+      destroyRootPages(pages);
       return false;
     }
   }
 
+  destroyRootPages(pages);
   return true;
 }
 
@@ -2554,7 +2564,9 @@ bool setTypesAstVariable(AstTreeVariable *variable,
     if (variable->type == NULL) {
       return false;
     }
-    astTreeDelete(type);
+    if (type != variable->type) {
+      astTreeDelete(type);
+    }
   }
 
   helper.lookingType = variable->type;
@@ -2574,6 +2586,23 @@ bool setTypesAstVariable(AstTreeVariable *variable,
     printError(variable->name_begin, variable->name_end, "Type mismatch %s",
                AST_TREE_TOKEN_STRINGS[variable->value->token]);
     return false;
+  }
+
+  if (variable->value != NULL && variable->isConst) {
+    if (!isConst(variable->value, helper.treeHelper)) {
+      printError(variable->value->str_begin, variable->value->str_end,
+                 "Can't initialize constant with non constant value");
+      return false;
+    }
+    AstTree *value = variable->value;
+    variable->value = getValue(value, helper);
+    if (variable->value != value) {
+      astTreeDelete(value);
+    }
+
+    if (variable->value == NULL) {
+      return false;
+    }
   }
 
   return true;
@@ -2657,135 +2686,6 @@ bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper helper) {
   };
 
   return setAllTypes(&infix->right, newHelper, NULL);
-}
-
-bool astTreeCleanRoot(AstTreeRoot *root, AstTreeHelper *_helper) {
-  AstTreeSetTypesHelper helper = {
-      .lookingType = NULL,
-      .treeHelper = _helper,
-      .pages = helper.pages,
-  };
-  for (size_t i = 0; i < root->variables.size; ++i) {
-    astTreeClean(root->variables.data[i]->value, helper);
-    astTreeClean(root->variables.data[i]->type, helper);
-  }
-  return true;
-}
-
-bool astTreeClean(AstTree *tree, AstTreeSetTypesHelper helper) {
-  switch (tree->token) {
-  case AST_TREE_TOKEN_VARIABLE:
-    return astTreeCleanVariable(tree, helper);
-  case AST_TREE_TOKEN_FUNCTION:
-    return astTreeCleanFunction(tree, helper);
-  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
-  case AST_TREE_TOKEN_KEYWORD_RETURN:
-  case AST_TREE_TOKEN_KEYWORD_IF:
-  case AST_TREE_TOKEN_KEYWORD_WHILE:
-  case AST_TREE_TOKEN_TYPE_TYPE:
-  case AST_TREE_TOKEN_TYPE_FUNCTION:
-  case AST_TREE_TOKEN_TYPE_VOID:
-  case AST_TREE_TOKEN_TYPE_BOOL:
-  case AST_TREE_TOKEN_TYPE_I8:
-  case AST_TREE_TOKEN_TYPE_U8:
-  case AST_TREE_TOKEN_TYPE_I16:
-  case AST_TREE_TOKEN_TYPE_U16:
-  case AST_TREE_TOKEN_TYPE_I32:
-  case AST_TREE_TOKEN_TYPE_U32:
-  case AST_TREE_TOKEN_TYPE_I64:
-  case AST_TREE_TOKEN_TYPE_U64:
-  case AST_TREE_TOKEN_TYPE_F16:
-  case AST_TREE_TOKEN_TYPE_F32:
-  case AST_TREE_TOKEN_TYPE_F64:
-  case AST_TREE_TOKEN_TYPE_F128:
-  case AST_TREE_TOKEN_FUNCTION_CALL:
-  case AST_TREE_TOKEN_VALUE_VOID:
-  case AST_TREE_TOKEN_VALUE_INT:
-  case AST_TREE_TOKEN_VALUE_BOOL:
-  case AST_TREE_TOKEN_VALUE_FLOAT:
-  case AST_TREE_TOKEN_VARIABLE_DEFINE:
-  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
-  case AST_TREE_TOKEN_OPERATOR_PLUS:
-  case AST_TREE_TOKEN_OPERATOR_MINUS:
-  case AST_TREE_TOKEN_OPERATOR_SUM:
-  case AST_TREE_TOKEN_OPERATOR_SUB:
-  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
-  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
-  case AST_TREE_TOKEN_OPERATOR_MODULO:
-  case AST_TREE_TOKEN_OPERATOR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_GREATER:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER:
-  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
-  case AST_TREE_TOKEN_SCOPE:
-    return true;
-  case AST_TREE_TOKEN_NONE:
-    break;
-  }
-  UNREACHABLE;
-}
-
-bool astTreeCleanFunction(AstTree *tree, AstTreeSetTypesHelper helper) {
-  AstTreeFunction *metadata = tree->metadata;
-
-  for (size_t i = 0; i < metadata->arguments.size; ++i) {
-    if (metadata->arguments.data[i]->value != NULL &&
-        !astTreeClean(metadata->arguments.data[i]->value, helper)) {
-      return false;
-    }
-  }
-
-  if (!astTreeClean(metadata->returnType, helper)) {
-    return false;
-  }
-
-  for (size_t i = 0; i < metadata->scope.expressions_size; ++i) {
-    if (!astTreeClean(metadata->scope.expressions[i], helper)) {
-      return false;
-    }
-  }
-
-  for (size_t i = 0; i < metadata->scope.variables.size; ++i) {
-    if (!astTreeCleanAstVariable(metadata->scope.variables.data[i], helper)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-bool astTreeCleanVariable(AstTree *tree, AstTreeSetTypesHelper helper) {
-  return astTreeCleanAstVariable(tree->metadata, helper);
-}
-
-bool astTreeCleanAstVariable(AstTreeVariable *variable,
-                             AstTreeSetTypesHelper helper) {
-  if (!astTreeClean(variable->value, helper) ||
-      !astTreeClean(variable->type, helper)) {
-    return false;
-  }
-  AstTree *value = variable->value;
-
-  while (value->token == AST_TREE_TOKEN_VARIABLE) {
-    AstTreeVariable *value_metadata = value->metadata;
-    if (!value_metadata->isConst) {
-      break;
-    }
-    AstTree *newValue = value_metadata->value;
-    astTreeDelete(value);
-    value = newValue;
-  }
-
-  if (variable->value != value) {
-    variable->value = copyAstTree(value);
-  }
-
-  if (variable->isConst && !isConst(value, helper.treeHelper)) {
-    return false;
-  }
-
-  return true;
 }
 
 size_t astTreeTypeSize(AstTree tree) {
