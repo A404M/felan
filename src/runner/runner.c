@@ -266,7 +266,7 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
 
   for (size_t i = 0; i < arguments_size; ++i) {
     AstTreeVariable *variable = function->arguments.data[i];
-    AstTree *value = calcAstTreeValue(arguments[i], &pages);
+    AstTree *value = runExpression(arguments[i], &pages);
     runnerVariablePush(pages.data[pages.size - 1], variable);
     runnerVariableSetValue(&pages, variable, value);
   }
@@ -301,24 +301,28 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   switch (expr->token) {
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64: {
     AstTreeSingleChild *metadata = expr->metadata;
-    AstTree *tree = calcAstTreeValue(metadata, pages);
+    AstTree *tree = runExpression(metadata, pages);
     printf("%lu", (AstTreeInt)tree->metadata);
     astTreeDelete(tree);
   }
     return NULL;
   case AST_TREE_TOKEN_FUNCTION_CALL: {
-    AstTree *ret = calcAstTreeValue(expr, pages);
-    if (ret != &AST_TREE_VOID_VALUE) {
-      astTreeDelete(ret);
+    AstTreeFunctionCall *metadata = expr->metadata;
+    if (metadata->function->token == AST_TREE_TOKEN_VARIABLE) {
+      AstTreeVariable *variable = metadata->function->metadata;
+      return runAstTreeFunction(runnerVariableGetValue(pages, variable),
+                                metadata->parameters, metadata->parameters_size,
+                                pages);
+    } else {
+      UNREACHABLE;
     }
-    return ret;
   }
   case AST_TREE_TOKEN_OPERATOR_ASSIGN: {
     AstTreeInfix *metadata = expr->metadata;
     if (metadata->left.token == AST_TREE_TOKEN_VARIABLE) {
       AstTreeVariable *left = metadata->left.metadata;
       runnerVariableSetValue(pages, left,
-                             calcAstTreeValue(&metadata->right, pages));
+                             runExpression(&metadata->right, pages));
     } else {
       UNREACHABLE;
     }
@@ -327,7 +331,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   case AST_TREE_TOKEN_KEYWORD_RETURN: {
     AstTreeReturn *metadata = expr->metadata;
     if (metadata->value != NULL) {
-      return calcAstTreeValue(metadata->value, pages);
+      return runExpression(metadata->value, pages);
     } else {
       return &AST_TREE_VOID_VALUE;
     }
@@ -339,7 +343,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
     return NULL;
   case AST_TREE_TOKEN_KEYWORD_IF: {
     AstTreeIf *metadata = expr->metadata;
-    AstTree *tree = calcAstTreeValue(metadata->condition, pages);
+    AstTree *tree = runExpression(metadata->condition, pages);
     AstTree *ret;
     if ((AstTreeBool)tree->metadata) {
       ret = runExpression(metadata->ifBody, pages);
@@ -353,7 +357,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
     AstTreeWhile *metadata = expr->metadata;
     AstTree *ret = NULL;
     while (true) {
-      AstTree *tree = calcAstTreeValue(metadata->condition, pages);
+      AstTree *tree = runExpression(metadata->condition, pages);
       bool conti = (AstTreeBool)tree->metadata;
       astTreeDelete(tree);
       if (!conti) {
@@ -403,142 +407,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
     return ret;
   }
     return NULL;
-  case AST_TREE_TOKEN_OPERATOR_PLUS:
-  case AST_TREE_TOKEN_OPERATOR_MINUS:
-  case AST_TREE_TOKEN_OPERATOR_SUM:
-  case AST_TREE_TOKEN_OPERATOR_SUB:
-  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
-  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
-  case AST_TREE_TOKEN_OPERATOR_MODULO:
-  case AST_TREE_TOKEN_OPERATOR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_GREATER:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER:
-  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
-  case AST_TREE_TOKEN_FUNCTION:
-  case AST_TREE_TOKEN_TYPE_TYPE:
-  case AST_TREE_TOKEN_TYPE_FUNCTION:
-  case AST_TREE_TOKEN_TYPE_VOID:
-  case AST_TREE_TOKEN_TYPE_BOOL:
-  case AST_TREE_TOKEN_TYPE_I8:
-  case AST_TREE_TOKEN_TYPE_U8:
-  case AST_TREE_TOKEN_TYPE_I16:
-  case AST_TREE_TOKEN_TYPE_U16:
-  case AST_TREE_TOKEN_TYPE_I32:
-  case AST_TREE_TOKEN_TYPE_U32:
-  case AST_TREE_TOKEN_TYPE_I64:
-  case AST_TREE_TOKEN_TYPE_U64:
-  case AST_TREE_TOKEN_TYPE_F16:
-  case AST_TREE_TOKEN_TYPE_F32:
-  case AST_TREE_TOKEN_TYPE_F64:
-  case AST_TREE_TOKEN_TYPE_F128:
-  case AST_TREE_TOKEN_VARIABLE:
-  case AST_TREE_TOKEN_VALUE_VOID:
-  case AST_TREE_TOKEN_VALUE_INT:
-  case AST_TREE_TOKEN_VALUE_FLOAT:
-  case AST_TREE_TOKEN_VALUE_BOOL:
-  case AST_TREE_TOKEN_NONE:
-  }
-  UNREACHABLE;
-}
-
-AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
-  switch (tree->token) {
-  case AST_TREE_TOKEN_TYPE_TYPE:
-  case AST_TREE_TOKEN_TYPE_FUNCTION:
-  case AST_TREE_TOKEN_TYPE_VOID:
-  case AST_TREE_TOKEN_TYPE_BOOL:
-  case AST_TREE_TOKEN_TYPE_I8:
-  case AST_TREE_TOKEN_TYPE_U8:
-  case AST_TREE_TOKEN_TYPE_I16:
-  case AST_TREE_TOKEN_TYPE_U16:
-  case AST_TREE_TOKEN_TYPE_I32:
-  case AST_TREE_TOKEN_TYPE_U32:
-  case AST_TREE_TOKEN_TYPE_I64:
-  case AST_TREE_TOKEN_TYPE_U64:
-  case AST_TREE_TOKEN_TYPE_F16:
-  case AST_TREE_TOKEN_TYPE_F32:
-  case AST_TREE_TOKEN_TYPE_F64:
-  case AST_TREE_TOKEN_TYPE_F128:
-  case AST_TREE_TOKEN_VALUE_VOID:
-  case AST_TREE_TOKEN_VALUE_INT:
-  case AST_TREE_TOKEN_VALUE_BOOL:
-  case AST_TREE_TOKEN_VALUE_FLOAT:
-    return copyAstTree(tree);
-  case AST_TREE_TOKEN_VARIABLE: {
-    AstTreeVariable *variable = tree->metadata;
-    return calcAstTreeValue(runnerVariableGetValue(pages, variable), pages);
-  }
-  case AST_TREE_TOKEN_FUNCTION_CALL: {
-    AstTreeFunctionCall *metadata = tree->metadata;
-    if (metadata->function->token == AST_TREE_TOKEN_VARIABLE) {
-      AstTreeVariable *variable = metadata->function->metadata;
-      return runAstTreeFunction(runnerVariableGetValue(pages, variable),
-                                metadata->parameters, metadata->parameters_size,
-                                pages);
-    } else {
-      UNREACHABLE;
-    }
-  }
-  case AST_TREE_TOKEN_OPERATOR_SUM:
-  case AST_TREE_TOKEN_OPERATOR_SUB:
-  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
-  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
-  case AST_TREE_TOKEN_OPERATOR_MODULO:
-  case AST_TREE_TOKEN_OPERATOR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_GREATER:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER:
-  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL: {
-    AstTreeInfix *metadata = tree->metadata;
-    AstTree *left = calcAstTreeValue(&metadata->left, pages);
-    AstTree *right = calcAstTreeValue(&metadata->right, pages);
-
-    if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
-      doAllOperationsInt(left, right, tree->token, AstTreeInt, u64);
-    } else if (left->type == &AST_TREE_I64_TYPE &&
-               right->type == &AST_TREE_I64_TYPE) {
-      doAllOperationsInt(left, right, tree->token, AstTreeInt, i64);
-    } else if (left->type == &AST_TREE_U32_TYPE &&
-               right->type == &AST_TREE_U32_TYPE) {
-      doAllOperationsInt(left, right, tree->token, AstTreeInt, u32);
-    } else if (left->type == &AST_TREE_I32_TYPE &&
-               right->type == &AST_TREE_I32_TYPE) {
-      doAllOperationsInt(left, right, tree->token, AstTreeInt, i32);
-    } else if (left->type == &AST_TREE_U16_TYPE &&
-               right->type == &AST_TREE_U16_TYPE) {
-      doAllOperationsInt(left, right, tree->token, AstTreeInt, u16);
-    } else if (left->type == &AST_TREE_I16_TYPE &&
-               right->type == &AST_TREE_I16_TYPE) {
-      doAllOperationsInt(left, right, tree->token, AstTreeInt, i16);
-    } else if (left->type == &AST_TREE_U8_TYPE &&
-               right->type == &AST_TREE_U8_TYPE) {
-      doAllOperationsInt(left, right, tree->token, AstTreeInt, u8);
-    } else if (left->type == &AST_TREE_I8_TYPE &&
-               right->type == &AST_TREE_I8_TYPE) {
-      doAllOperationsInt(left, right, tree->token, AstTreeInt, i8);
-    } else if (left->type == &AST_TREE_F128_TYPE &&
-               right->type == &AST_TREE_F128_TYPE) {
-      doAllOperationsFloat(left, right, tree->token, AstTreeFloat, f128);
-    } else if (left->type == &AST_TREE_F64_TYPE &&
-               right->type == &AST_TREE_F64_TYPE) {
-      doAllOperationsFloat(left, right, tree->token, AstTreeFloat, f64);
-    } else if (left->type == &AST_TREE_F32_TYPE &&
-               right->type == &AST_TREE_F32_TYPE) {
-      doAllOperationsFloat(left, right, tree->token, AstTreeFloat, f32);
-    } else if (left->type == &AST_TREE_F16_TYPE &&
-               right->type == &AST_TREE_F16_TYPE) {
-      doAllOperationsFloat(left, right, tree->token, AstTreeFloat, f16);
-    } else {
-      UNREACHABLE;
-    }
-    astTreeDelete(right);
-    return left;
-  }
   case AST_TREE_TOKEN_OPERATOR_PLUS: {
-    AstTreeSingleChild *operand = calcAstTreeValue(tree->metadata, pages);
+    AstTreeSingleChild *operand = runExpression(expr->metadata, pages);
     if (operand->type == &AST_TREE_U64_TYPE) {
       doLeftOperation(operand, +, AstTreeInt, u64);
     } else if (operand->type == &AST_TREE_I64_TYPE) {
@@ -569,7 +439,7 @@ AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
     return operand;
   }
   case AST_TREE_TOKEN_OPERATOR_MINUS: {
-    AstTreeSingleChild *operand = calcAstTreeValue(tree->metadata, pages);
+    AstTreeSingleChild *operand = runExpression(expr->metadata, pages);
     if (operand->type == &AST_TREE_U64_TYPE) {
       doLeftOperation(operand, -, AstTreeInt, u64);
     } else if (operand->type == &AST_TREE_I64_TYPE) {
@@ -599,13 +469,88 @@ AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
     }
     return operand;
   }
-  case AST_TREE_TOKEN_KEYWORD_IF:
+  case AST_TREE_TOKEN_OPERATOR_SUM:
+  case AST_TREE_TOKEN_OPERATOR_SUB:
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
+  case AST_TREE_TOKEN_OPERATOR_MODULO:
+  case AST_TREE_TOKEN_OPERATOR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_GREATER:
+  case AST_TREE_TOKEN_OPERATOR_SMALLER:
+  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL: {
+    AstTreeInfix *metadata = expr->metadata;
+    AstTree *left = runExpression(&metadata->left, pages);
+    AstTree *right = runExpression(&metadata->right, pages);
+
+    if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
+      doAllOperationsInt(left, right, expr->token, AstTreeInt, u64);
+    } else if (left->type == &AST_TREE_I64_TYPE &&
+               right->type == &AST_TREE_I64_TYPE) {
+      doAllOperationsInt(left, right, expr->token, AstTreeInt, i64);
+    } else if (left->type == &AST_TREE_U32_TYPE &&
+               right->type == &AST_TREE_U32_TYPE) {
+      doAllOperationsInt(left, right, expr->token, AstTreeInt, u32);
+    } else if (left->type == &AST_TREE_I32_TYPE &&
+               right->type == &AST_TREE_I32_TYPE) {
+      doAllOperationsInt(left, right, expr->token, AstTreeInt, i32);
+    } else if (left->type == &AST_TREE_U16_TYPE &&
+               right->type == &AST_TREE_U16_TYPE) {
+      doAllOperationsInt(left, right, expr->token, AstTreeInt, u16);
+    } else if (left->type == &AST_TREE_I16_TYPE &&
+               right->type == &AST_TREE_I16_TYPE) {
+      doAllOperationsInt(left, right, expr->token, AstTreeInt, i16);
+    } else if (left->type == &AST_TREE_U8_TYPE &&
+               right->type == &AST_TREE_U8_TYPE) {
+      doAllOperationsInt(left, right, expr->token, AstTreeInt, u8);
+    } else if (left->type == &AST_TREE_I8_TYPE &&
+               right->type == &AST_TREE_I8_TYPE) {
+      doAllOperationsInt(left, right, expr->token, AstTreeInt, i8);
+    } else if (left->type == &AST_TREE_F128_TYPE &&
+               right->type == &AST_TREE_F128_TYPE) {
+      doAllOperationsFloat(left, right, expr->token, AstTreeFloat, f128);
+    } else if (left->type == &AST_TREE_F64_TYPE &&
+               right->type == &AST_TREE_F64_TYPE) {
+      doAllOperationsFloat(left, right, expr->token, AstTreeFloat, f64);
+    } else if (left->type == &AST_TREE_F32_TYPE &&
+               right->type == &AST_TREE_F32_TYPE) {
+      doAllOperationsFloat(left, right, expr->token, AstTreeFloat, f32);
+    } else if (left->type == &AST_TREE_F16_TYPE &&
+               right->type == &AST_TREE_F16_TYPE) {
+      doAllOperationsFloat(left, right, expr->token, AstTreeFloat, f16);
+    } else {
+      UNREACHABLE;
+    }
+    astTreeDelete(right);
+    return left;
+  }
+  case AST_TREE_TOKEN_TYPE_TYPE:
+  case AST_TREE_TOKEN_TYPE_FUNCTION:
+  case AST_TREE_TOKEN_TYPE_VOID:
+  case AST_TREE_TOKEN_TYPE_BOOL:
+  case AST_TREE_TOKEN_TYPE_I8:
+  case AST_TREE_TOKEN_TYPE_U8:
+  case AST_TREE_TOKEN_TYPE_I16:
+  case AST_TREE_TOKEN_TYPE_U16:
+  case AST_TREE_TOKEN_TYPE_I32:
+  case AST_TREE_TOKEN_TYPE_U32:
+  case AST_TREE_TOKEN_TYPE_I64:
+  case AST_TREE_TOKEN_TYPE_U64:
+  case AST_TREE_TOKEN_TYPE_F16:
+  case AST_TREE_TOKEN_TYPE_F32:
+  case AST_TREE_TOKEN_TYPE_F64:
+  case AST_TREE_TOKEN_TYPE_F128:
+  case AST_TREE_TOKEN_VALUE_VOID:
+  case AST_TREE_TOKEN_VALUE_INT:
+  case AST_TREE_TOKEN_VALUE_BOOL:
+  case AST_TREE_TOKEN_VALUE_FLOAT:
+    return copyAstTree(expr);
+  case AST_TREE_TOKEN_VARIABLE: {
+    AstTreeVariable *variable = expr->metadata;
+    return runExpression(runnerVariableGetValue(pages, variable), pages);
+  }
   case AST_TREE_TOKEN_FUNCTION:
-  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
-  case AST_TREE_TOKEN_KEYWORD_RETURN:
-  case AST_TREE_TOKEN_VARIABLE_DEFINE:
-  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
-  case AST_TREE_TOKEN_SCOPE:
   case AST_TREE_TOKEN_NONE:
   }
   UNREACHABLE;

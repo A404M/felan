@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static int compileRun(const char *filePath, const char *outFilePath,
+int compileRun(const char *filePath, const char *outFilePath,
                       bool print) {
   char *code = readWholeFile(filePath);
 
@@ -93,7 +93,7 @@ int runWithoutRead(char *code, bool shouldPrint) {
   return ret;
 }
 
-static int run(const char *filePath, bool shouldPrint) {
+int run(const char *filePath, bool shouldPrint) {
   char *code = readWholeFile(filePath);
 
   if (code == NULL) {
