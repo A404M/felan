@@ -1,6 +1,7 @@
 #include "ast-tree.h"
 
 #include "compiler/parser.h"
+#include "runner/runner.h"
 #include "utils/log.h"
 #include "utils/memory.h"
 #include <stdint.h>
@@ -882,7 +883,7 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
   }
 
   helper.variable = NULL;
-  if (!setAllTypesRoot(root, &helper) || !astTreeCleanRoot(root)) {
+  if (!setAllTypesRoot(root, &helper) || !astTreeCleanRoot(root, &helper)) {
     goto RETURN_ERROR;
   }
 
@@ -1750,9 +1751,8 @@ AstTreeFunction *getFunction(AstTree *value) {
   UNREACHABLE;
 }
 
-bool isConst(AstTree *value) {
-  switch (value->token) {
-  case AST_TREE_TOKEN_FUNCTION:
+bool isConst(AstTree *tree, AstTreeHelper *helper) {
+  switch (tree->token) {
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_FUNCTION:
   case AST_TREE_TOKEN_TYPE_VOID:
@@ -1769,10 +1769,26 @@ bool isConst(AstTree *value) {
   case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_BOOL:
     return true;
+  case AST_TREE_TOKEN_KEYWORD_IF: {
+    AstTreeIf *metadata = tree->metadata;
+    return isConst(metadata->condition, helper) &&
+           isConst(metadata->ifBody, helper) &&
+           (metadata->elseBody == NULL || isConst(metadata->elseBody, helper));
+  }
+  case AST_TREE_TOKEN_FUNCTION_CALL: {
+    AstTreeFunctionCall *metadata = tree->metadata;
+    for (size_t i = 0; i < metadata->parameters_size; ++i) {
+      if (!isConst(metadata->parameters[i], helper)) {
+        return false;
+      }
+    }
+    return isConst(metadata->function, helper);
+  }
+  case AST_TREE_TOKEN_FUNCTION: {
+    AstTreeFunction *function;
+  }
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
-  case AST_TREE_TOKEN_KEYWORD_IF:
-  case AST_TREE_TOKEN_FUNCTION_CALL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_PLUS:
@@ -1791,7 +1807,7 @@ bool isConst(AstTree *value) {
   case AST_TREE_TOKEN_SCOPE:
     return false;
   case AST_TREE_TOKEN_VARIABLE: {
-    AstTreeVariable *metadata = value->metadata;
+    AstTreeVariable *metadata = tree->metadata;
     return metadata->isConst;
   }
   case AST_TREE_TOKEN_NONE:
@@ -1947,10 +1963,13 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
   UNREACHABLE;
 }
 
-AstTree *getValue(AstTree *tree) {
+AstTree *getValue(AstTree *tree, AstTreeSetTypesHelper helper) {
+  if (!isConst(tree, helper.treeHelper)) {
+    printLog("Can't get value at compile time because it is not const");
+    return NULL;
+  }
   switch (tree->token) {
   case AST_TREE_TOKEN_TYPE_FUNCTION:
-    return copyAstTree(tree);
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_VOID:
   case AST_TREE_TOKEN_TYPE_I8:
@@ -1966,24 +1985,22 @@ AstTree *getValue(AstTree *tree) {
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
   case AST_TREE_TOKEN_TYPE_BOOL:
-    return tree;
-  case AST_TREE_TOKEN_VARIABLE: {
-    AstTreeVariable *metadata = tree->metadata;
-    if (metadata->isConst) {
-      return getValue(metadata->value);
-    }
-  }
-  case AST_TREE_TOKEN_FUNCTION:
-  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
-  case AST_TREE_TOKEN_KEYWORD_RETURN:
-  case AST_TREE_TOKEN_KEYWORD_IF:
-  case AST_TREE_TOKEN_KEYWORD_WHILE:
-  case AST_TREE_TOKEN_FUNCTION_CALL:
-  case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_FLOAT:
   case AST_TREE_TOKEN_VALUE_BOOL:
+    return copyAstTree(tree);
+  case AST_TREE_TOKEN_VARIABLE: {
+    AstTreeVariable *metadata = tree->metadata;
+    return getValue(metadata->value, helper);
+  }
+  case AST_TREE_TOKEN_FUNCTION_CALL: {
+    AstTree *value = runExpression(tree, helper.pages);
+    if (value == NULL) {
+      printError(tree->str_begin, tree->str_end, "Unknown error");
+    }
+    return value;
+  }
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_PLUS:
   case AST_TREE_TOKEN_OPERATOR_MINUS:
@@ -1997,7 +2014,19 @@ AstTree *getValue(AstTree *tree) {
   case AST_TREE_TOKEN_OPERATOR_GREATER:
   case AST_TREE_TOKEN_OPERATOR_SMALLER:
   case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL: {
+    AstTree *value = calcAstTreeValue(tree, helper.pages);
+    if (value == NULL) {
+      printError(tree->str_begin, tree->str_end, "Unknown error");
+    }
+    return value;
+  }
+  case AST_TREE_TOKEN_FUNCTION:
+  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_KEYWORD_RETURN:
+  case AST_TREE_TOKEN_KEYWORD_IF:
+  case AST_TREE_TOKEN_KEYWORD_WHILE:
+  case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_SCOPE:
   case AST_TREE_TOKEN_NONE:
   }
@@ -2090,8 +2119,12 @@ bool setAllTypesRoot(AstTreeRoot *root, AstTreeHelper *helper) {
     }
   }
 
+  RunnerVariablePages pages = initRootPages();
+
   AstTreeSetTypesHelper setTypesHelper = {
       .lookingType = NULL,
+      .treeHelper = helper,
+      .pages = &pages,
   };
 
   for (size_t i = 0; i < root->variables.size; ++i) {
@@ -2351,10 +2384,11 @@ bool setTypesFunction(AstTree *tree, AstTreeSetTypesHelper helper) {
 }
 
 bool setTypesPrintU64(AstTree *tree, AstTreeSetTypesHelper _helper) {
-  (void)(_helper);
   AstTreeSingleChild *metadata = tree->metadata;
   AstTreeSetTypesHelper helper = {
       .lookingType = &AST_TREE_U64_TYPE,
+      .treeHelper = _helper.treeHelper,
+      .pages = _helper.pages,
   };
   if (!setAllTypes(metadata, helper, NULL)) {
     return false;
@@ -2450,7 +2484,7 @@ bool setTypesOperatorAssign(AstTree *tree, AstTreeSetTypesHelper helper) {
   } else if (!typeIsEqual(infix->left.type, infix->right.type)) {
     printError(tree->str_begin, tree->str_end, "Type mismatch");
     return false;
-  } else if (isConst(&infix->left)) {
+  } else if (isConst(&infix->left, helper.treeHelper)) {
     printError(tree->str_begin, tree->str_end, "Constants can't be assigned");
     return false;
   } else {
@@ -2504,9 +2538,10 @@ bool setTypesVariableDefine(AstTree *tree, AstTreeSetTypesHelper helper) {
 
 bool setTypesAstVariable(AstTreeVariable *variable,
                          AstTreeSetTypesHelper _helper) {
-  (void)_helper;
   AstTreeSetTypesHelper helper = {
       .lookingType = &AST_TREE_TYPE_TYPE,
+      .treeHelper = _helper.treeHelper,
+      .pages = _helper.pages,
   };
 
   if (variable->type != NULL && !setAllTypes(variable->type, helper, NULL)) {
@@ -2515,7 +2550,10 @@ bool setTypesAstVariable(AstTreeVariable *variable,
 
   if (variable->type != NULL) {
     AstTree *type = variable->type;
-    variable->type = getValue(type);
+    variable->type = getValue(type, helper);
+    if (variable->type == NULL) {
+      return false;
+    }
     astTreeDelete(type);
   }
 
@@ -2614,25 +2652,32 @@ bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper helper) {
   }
   AstTreeSetTypesHelper newHelper = {
       .lookingType = infix->left.type,
+      .treeHelper = helper.treeHelper,
+      .pages = helper.pages,
   };
 
   return setAllTypes(&infix->right, newHelper, NULL);
 }
 
-bool astTreeCleanRoot(AstTreeRoot *root) {
+bool astTreeCleanRoot(AstTreeRoot *root, AstTreeHelper *_helper) {
+  AstTreeSetTypesHelper helper = {
+      .lookingType = NULL,
+      .treeHelper = _helper,
+      .pages = helper.pages,
+  };
   for (size_t i = 0; i < root->variables.size; ++i) {
-    astTreeClean(root->variables.data[i]->value);
-    astTreeClean(root->variables.data[i]->type);
+    astTreeClean(root->variables.data[i]->value, helper);
+    astTreeClean(root->variables.data[i]->type, helper);
   }
   return true;
 }
 
-bool astTreeClean(AstTree *tree) {
+bool astTreeClean(AstTree *tree, AstTreeSetTypesHelper helper) {
   switch (tree->token) {
   case AST_TREE_TOKEN_VARIABLE:
-    return astTreeCleanVariable(tree);
+    return astTreeCleanVariable(tree, helper);
   case AST_TREE_TOKEN_FUNCTION:
-    return astTreeCleanFunction(tree);
+    return astTreeCleanFunction(tree, helper);
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
   case AST_TREE_TOKEN_KEYWORD_IF:
@@ -2681,28 +2726,28 @@ bool astTreeClean(AstTree *tree) {
   UNREACHABLE;
 }
 
-bool astTreeCleanFunction(AstTree *tree) {
+bool astTreeCleanFunction(AstTree *tree, AstTreeSetTypesHelper helper) {
   AstTreeFunction *metadata = tree->metadata;
 
   for (size_t i = 0; i < metadata->arguments.size; ++i) {
     if (metadata->arguments.data[i]->value != NULL &&
-        !astTreeClean(metadata->arguments.data[i]->value)) {
+        !astTreeClean(metadata->arguments.data[i]->value, helper)) {
       return false;
     }
   }
 
-  if (!astTreeClean(metadata->returnType)) {
+  if (!astTreeClean(metadata->returnType, helper)) {
     return false;
   }
 
   for (size_t i = 0; i < metadata->scope.expressions_size; ++i) {
-    if (!astTreeClean(metadata->scope.expressions[i])) {
+    if (!astTreeClean(metadata->scope.expressions[i], helper)) {
       return false;
     }
   }
 
   for (size_t i = 0; i < metadata->scope.variables.size; ++i) {
-    if (!astTreeCleanAstVariable(metadata->scope.variables.data[i])) {
+    if (!astTreeCleanAstVariable(metadata->scope.variables.data[i], helper)) {
       return false;
     }
   }
@@ -2710,12 +2755,14 @@ bool astTreeCleanFunction(AstTree *tree) {
   return true;
 }
 
-bool astTreeCleanVariable(AstTree *tree) {
-  return astTreeCleanAstVariable(tree->metadata);
+bool astTreeCleanVariable(AstTree *tree, AstTreeSetTypesHelper helper) {
+  return astTreeCleanAstVariable(tree->metadata, helper);
 }
 
-bool astTreeCleanAstVariable(AstTreeVariable *variable) {
-  if (!astTreeClean(variable->value) || !astTreeClean(variable->type)) {
+bool astTreeCleanAstVariable(AstTreeVariable *variable,
+                             AstTreeSetTypesHelper helper) {
+  if (!astTreeClean(variable->value, helper) ||
+      !astTreeClean(variable->type, helper)) {
     return false;
   }
   AstTree *value = variable->value;
@@ -2734,7 +2781,7 @@ bool astTreeCleanAstVariable(AstTreeVariable *variable) {
     variable->value = copyAstTree(value);
   }
 
-  if (variable->isConst && !isConst(value)) {
+  if (variable->isConst && !isConst(value, helper.treeHelper)) {
     return false;
   }
 

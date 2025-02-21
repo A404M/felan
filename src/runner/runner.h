@@ -24,6 +24,9 @@ void runnerVariablePush(RunnerVariables *variables,AstTreeVariable *variable);
 void runnerVariableSetValue(RunnerVariablePages *pages,AstTreeVariable *variable,AstTree *value);
 AstTree* runnerVariableGetValue(RunnerVariablePages *pages,AstTreeVariable *variable);
 
+RunnerVariablePages initRootPages();
+void destroyRootPages(RunnerVariablePages pages);
+
 bool runAstTree(AstTreeRoot *root);
 
 AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,

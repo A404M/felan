@@ -191,11 +191,7 @@ AstTree *runnerVariableGetValue(RunnerVariablePages *pages,
   UNREACHABLE;
 }
 
-bool runAstTree(AstTreeRoot *root) {
-  constexpr char MAIN_STR[] = "main";
-  constexpr size_t MAIN_STR_SIZE =
-      (sizeof(MAIN_STR) / sizeof(*MAIN_STR)) - sizeof(*MAIN_STR);
-
+RunnerVariablePages initRootPages() {
   RunnerVariablePages pages = {
       .data = a404m_malloc(sizeof(*pages.data)),
       .size = 1,
@@ -205,6 +201,21 @@ bool runAstTree(AstTreeRoot *root) {
       a404m_malloc(sizeof(*pages.data[pages.size - 1]));
   pages.data[pages.size - 1]->data = a404m_malloc(0);
   pages.data[pages.size - 1]->size = 0;
+
+  return pages;
+}
+
+void destroyRootPages(RunnerVariablePages pages) {
+  runnerVariablesDelete(pages.data[pages.size - 1]);
+  free(pages.data);
+}
+
+bool runAstTree(AstTreeRoot *root) {
+  constexpr char MAIN_STR[] = "main";
+  constexpr size_t MAIN_STR_SIZE =
+      (sizeof(MAIN_STR) / sizeof(*MAIN_STR)) - sizeof(*MAIN_STR);
+
+  RunnerVariablePages pages = initRootPages();
 
   for (size_t i = 0; i < root->variables.size; ++i) {
     AstTreeVariable *variable = root->variables.data[i];
@@ -225,13 +236,11 @@ bool runAstTree(AstTreeRoot *root) {
 
       const bool ret =
           runAstTreeFunction(main, NULL, 0, &pages) == &AST_TREE_VOID_VALUE;
-      runnerVariablesDelete(pages.data[pages.size - 1]);
-      free(pages.data);
+      destroyRootPages(pages);
       return ret;
     }
   }
-  runnerVariablesDelete(pages.data[pages.size - 1]);
-  free(pages.data);
+  destroyRootPages(pages);
   printLog("main function is not found");
   return false;
 }
@@ -302,8 +311,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
     if (ret != &AST_TREE_VOID_VALUE) {
       astTreeDelete(ret);
     }
+    return ret;
   }
-    return NULL;
   case AST_TREE_TOKEN_OPERATOR_ASSIGN: {
     AstTreeInfix *metadata = expr->metadata;
     if (metadata->left.token == AST_TREE_TOKEN_VARIABLE) {
@@ -436,6 +445,22 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
 
 AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
   switch (tree->token) {
+  case AST_TREE_TOKEN_TYPE_TYPE:
+  case AST_TREE_TOKEN_TYPE_FUNCTION:
+  case AST_TREE_TOKEN_TYPE_VOID:
+  case AST_TREE_TOKEN_TYPE_BOOL:
+  case AST_TREE_TOKEN_TYPE_I8:
+  case AST_TREE_TOKEN_TYPE_U8:
+  case AST_TREE_TOKEN_TYPE_I16:
+  case AST_TREE_TOKEN_TYPE_U16:
+  case AST_TREE_TOKEN_TYPE_I32:
+  case AST_TREE_TOKEN_TYPE_U32:
+  case AST_TREE_TOKEN_TYPE_I64:
+  case AST_TREE_TOKEN_TYPE_U64:
+  case AST_TREE_TOKEN_TYPE_F16:
+  case AST_TREE_TOKEN_TYPE_F32:
+  case AST_TREE_TOKEN_TYPE_F64:
+  case AST_TREE_TOKEN_TYPE_F128:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_BOOL:
@@ -578,22 +603,6 @@ AstTree *calcAstTreeValue(AstTree *tree, RunnerVariablePages *pages) {
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
-  case AST_TREE_TOKEN_TYPE_TYPE:
-  case AST_TREE_TOKEN_TYPE_FUNCTION:
-  case AST_TREE_TOKEN_TYPE_VOID:
-  case AST_TREE_TOKEN_TYPE_BOOL:
-  case AST_TREE_TOKEN_TYPE_I8:
-  case AST_TREE_TOKEN_TYPE_U8:
-  case AST_TREE_TOKEN_TYPE_I16:
-  case AST_TREE_TOKEN_TYPE_U16:
-  case AST_TREE_TOKEN_TYPE_I32:
-  case AST_TREE_TOKEN_TYPE_U32:
-  case AST_TREE_TOKEN_TYPE_I64:
-  case AST_TREE_TOKEN_TYPE_U64:
-  case AST_TREE_TOKEN_TYPE_F16:
-  case AST_TREE_TOKEN_TYPE_F32:
-  case AST_TREE_TOKEN_TYPE_F64:
-  case AST_TREE_TOKEN_TYPE_F128:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_SCOPE:

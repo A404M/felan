@@ -1,9 +1,17 @@
-test :: ()->void;
-
-main : test : () -> void {
-  a := 10;
+main :: () -> void {
+  a :theType= 10;
   while a > 0 {
     print_u64 1;
     a = a -1;
   }
+};
+
+theType :: getType(u64,i64);
+signed :: true;
+
+getType :: (a:type,b:type)->type {
+  if signed
+    return a;
+  else
+    return b;
 };

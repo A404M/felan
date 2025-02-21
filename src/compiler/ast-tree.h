@@ -162,8 +162,12 @@ typedef struct AstTreeHelper {
   AstTreeVariables *globalDeps;
 } AstTreeHelper;
 
+struct RunnerVariablePages;
+
 typedef struct AstTreeSetTypesHelper {
   AstTree *lookingType;
+  AstTreeHelper *treeHelper;
+  struct RunnerVariablePages *pages;
 } AstTreeSetTypesHelper;
 
 void astTreePrint(const AstTree *tree, int indent);
@@ -210,10 +214,10 @@ AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
 AstTree *astTreeParseParenthesis(ParserNode *parserNode, AstTreeHelper *helper);
 
 AstTreeFunction *getFunction(AstTree *value);
-bool isConst(AstTree *value);
+bool isConst(AstTree *tree, AstTreeHelper *helper);
 AstTree *makeTypeOf(AstTree *value);
 bool typeIsEqual(const AstTree *type0, const AstTree *type1);
-AstTree *getValue(AstTree *tree);
+AstTree *getValue(AstTree *tree, AstTreeSetTypesHelper helper);
 
 bool isCircularDependencies(AstTreeHelper *helper, AstTreeVariable *variable,
                             AstTree *tree);
@@ -247,10 +251,11 @@ bool setTypesAstVariable(AstTreeVariable *variable,
                          AstTreeSetTypesHelper helper);
 bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper helper);
 
-bool astTreeCleanRoot(AstTreeRoot *root);
-bool astTreeClean(AstTree *tree);
-bool astTreeCleanFunction(AstTree *tree);
-bool astTreeCleanVariable(AstTree *tree);
-bool astTreeCleanAstVariable(AstTreeVariable *variable);
+bool astTreeCleanRoot(AstTreeRoot *root, AstTreeHelper *helper);
+bool astTreeClean(AstTree *tree, AstTreeSetTypesHelper helper);
+bool astTreeCleanFunction(AstTree *tree, AstTreeSetTypesHelper helper);
+bool astTreeCleanVariable(AstTree *tree, AstTreeSetTypesHelper helper);
+bool astTreeCleanAstVariable(AstTreeVariable *variable,
+                             AstTreeSetTypesHelper helper);
 
 size_t astTreeTypeSize(AstTree tree);
