@@ -164,6 +164,7 @@ void runnerVariableSetValue(RunnerVariablePages *pages,
     }
   }
 
+  printError(variable->name_begin,variable->name_end,"Variable not found");
   UNREACHABLE;
 }
 

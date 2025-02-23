@@ -2048,6 +2048,13 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
     if (type0_metadata->arguments_size != type1_metadata->arguments_size) {
       return false;
     }
+    for (size_t i = 0; i < type0_metadata->arguments_size; ++i) {
+      AstTree *p0 = type0_metadata->arguments[i];
+      AstTree *p1 = type1_metadata->arguments[i];
+      if (!typeIsEqual(p0, p1)) {
+        return false;
+      }
+    }
     return true;
   case AST_TREE_TOKEN_FUNCTION_CALL:
     printError(type0->str_begin, type0->str_end, "Not implemented yet");
@@ -2713,8 +2720,8 @@ bool setTypesIf(AstTree *tree, AstTreeSetTypesHelper helper,
   }
 
   if (metadata->elseBody != NULL &&
-      typeIsEqual(metadata->ifBody, metadata->elseBody)) {
-    tree->type = copyAstTree(metadata->ifBody);
+      typeIsEqual(metadata->ifBody->type, metadata->elseBody->type)) {
+    tree->type = copyAstTree(metadata->ifBody->type);
   } else {
     tree->type = &AST_TREE_VOID_TYPE;
   }
@@ -2745,8 +2752,6 @@ bool setTypesScope(AstTree *tree, AstTreeSetTypesHelper helper,
                    AstTreeFunction *function) {
   AstTreeScope *metadata = tree->metadata;
 
-  tree->type = &AST_TREE_VOID_TYPE;
-
   for (size_t i = 0; i < metadata->expressions_size; ++i) {
     if (!setAllTypes(metadata->expressions[i], helper, function)) {
       return false;
@@ -2757,6 +2762,13 @@ bool setTypesScope(AstTree *tree, AstTreeSetTypesHelper helper,
     if (!setTypesAstVariable(metadata->variables.data[i], helper)) {
       return false;
     }
+  }
+
+  if (metadata->expressions_size == 0) {
+    tree->type = &AST_TREE_VOID_VALUE;
+  } else {
+    tree->type = copyAstTree(
+        metadata->expressions[metadata->expressions_size - 1]->type);
   }
 
   return true;

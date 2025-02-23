@@ -1,16 +1,6 @@
 main :: () -> void {
-  a :getType(i64,u64)= 0;
-  while a < 10 {
-    print_u64 a;
-    a += 1;
-  }
+  a :u64= 2;
+  a += (if a == 2 1 else 2);
+  print_u64 a;
 };
 
-signed :: false;
-
-getType :: (a:type,b:type)->type {
-  if signed
-    return a;
-  else
-    return b;
-};
