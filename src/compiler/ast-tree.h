@@ -11,6 +11,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_KEYWORD_RETURN,
   AST_TREE_TOKEN_KEYWORD_IF,
   AST_TREE_TOKEN_KEYWORD_WHILE,
+  AST_TREE_TOKEN_KEYWORD_COMPTIME,
 
   AST_TREE_TOKEN_TYPE_FUNCTION,
   AST_TREE_TOKEN_TYPE_TYPE,
@@ -177,6 +178,7 @@ void astTreeDestroy(AstTree tree);
 void astTreeVariableDestroy(AstTreeVariable variable);
 void astTreeVariableDelete(AstTreeVariable *variable);
 void astTreeDelete(AstTree *tree);
+bool astTreeShouldDelete(AstTree *tree);
 void astTreeRootDelete(AstTreeRoot *root);
 
 AstTree *newAstTree(AstTreeToken token, void *metadata, AstTree *type,
@@ -211,6 +213,7 @@ bool astTreeParseConstant(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseVariable(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseIf(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseWhile(ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseComptime(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
                                   AstTreeHelper *helper);
 AstTree *astTreeParseParenthesis(ParserNode *parserNode, AstTreeHelper *helper);
@@ -248,9 +251,8 @@ bool setTypesWhile(AstTree *tree, AstTreeSetTypesHelper helper,
                    AstTreeFunction *function);
 bool setTypesScope(AstTree *tree, AstTreeSetTypesHelper helper,
                    AstTreeFunction *function);
+bool setTypesComptime(AstTree *tree, AstTreeSetTypesHelper helper);
 
 bool setTypesAstVariable(AstTreeVariable *variable,
                          AstTreeSetTypesHelper helper);
 bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper helper);
-
-size_t astTreeTypeSize(AstTree tree);

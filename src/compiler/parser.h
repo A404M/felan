@@ -35,6 +35,7 @@ typedef enum ParserToken {
   PARSER_TOKEN_KEYWORD_RETURN,
   PARSER_TOKEN_KEYWORD_IF,
   PARSER_TOKEN_KEYWORD_WHILE,
+  PARSER_TOKEN_KEYWORD_COMPTIME,
 
   PARSER_TOKEN_CONSTANT,
   PARSER_TOKEN_VARIABLE,
@@ -187,6 +188,7 @@ ParserNode *parserBinaryOrLeftOperator(LexerNode *node, LexerNode *begin,
                                        LexerToken laterToken);
 ParserNode *parserIf(LexerNode *node, LexerNode *end, ParserNode *parent);
 ParserNode *parserWhile(LexerNode *node, LexerNode *end, ParserNode *parent);
+ParserNode *parserComptime(LexerNode *node, LexerNode *end, ParserNode *parent);
 
 bool isAllArguments(const ParserNodeArray *nodes);
 

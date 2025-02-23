@@ -296,6 +296,10 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
     }
     return ret;
   }
+  case AST_TREE_TOKEN_KEYWORD_COMPTIME: {
+    AstTreeSingleChild *operand = expr->metadata;
+    return runExpression((AstTree *)operand, pages);
+  }
   case AST_TREE_TOKEN_SCOPE: {
     AstTreeScope *metadata = expr->metadata;
 
@@ -335,7 +339,6 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
     free(newPages.data);
     return ret;
   }
-    return NULL;
   case AST_TREE_TOKEN_OPERATOR_PLUS: {
     AstTreeSingleChild *operand = runExpression(expr->metadata, pages);
     if (operand->type == &AST_TREE_U64_TYPE) {

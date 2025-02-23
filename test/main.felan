@@ -1,5 +1,5 @@
 main :: () -> void {
-  test(u64,i64);
+  comptime test(u64,u64);
 };
 
 test :: (from:type, to:type) -> void {

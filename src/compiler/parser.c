@@ -39,6 +39,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_KEYWORD_RETURN",
     "PARSER_TOKEN_KEYWORD_IF",
     "PARSER_TOKEN_KEYWORD_WHILE",
+    "PARSER_TOKEN_KEYWORD_COMPTIME",
 
     "PARSER_TOKEN_CONSTANT",
     "PARSER_TOKEN_VARIABLE",
@@ -136,8 +137,8 @@ static constexpr ParserOrder PARSER_ORDER[] = {
     },
     {
         .ltr = true,
-        ORDER_ARRAY(LEXER_TOKEN_KEYWORD_RETURN,
-                    LEXER_TOKEN_KEYWORD_PRINT_U64, ),
+        ORDER_ARRAY(LEXER_TOKEN_KEYWORD_RETURN, LEXER_TOKEN_KEYWORD_PRINT_U64,
+                    LEXER_TOKEN_KEYWORD_COMPTIME, ),
     },
     {
         .ltr = true,
@@ -147,6 +148,7 @@ static constexpr ParserOrder PARSER_ORDER[] = {
         .ltr = true,
         ORDER_ARRAY(LEXER_TOKEN_KEYWORD_IF, LEXER_TOKEN_KEYWORD_WHILE, ),
     },
+
 };
 
 static constexpr size_t PARSER_ORDER_SIZE =
@@ -236,6 +238,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_OPERATOR_PLUS:
   case PARSER_TOKEN_OPERATOR_MINUS:
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
+  case PARSER_TOKEN_KEYWORD_COMPTIME:
   case PARSER_TOKEN_SYMBOL_COMMA:
   case PARSER_TOKEN_SYMBOL_EOL: {
     const ParserNodeSingleChildMetadata *metadata = node->metadata;
@@ -459,6 +462,7 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_PLUS:
   case PARSER_TOKEN_OPERATOR_MINUS:
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
+  case PARSER_TOKEN_KEYWORD_COMPTIME:
   case PARSER_TOKEN_SYMBOL_COMMA:
   case PARSER_TOKEN_SYMBOL_EOL: {
     ParserNodeSingleChildMetadata *metadata = node->metadata;
@@ -763,6 +767,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserIf(node, end, parent);
   case LEXER_TOKEN_KEYWORD_WHILE:
     return parserWhile(node, end, parent);
+  case LEXER_TOKEN_KEYWORD_COMPTIME:
+    return parserComptime(node, end, parent);
   case LEXER_TOKEN_KEYWORD_ELSE:
   case LEXER_TOKEN_SYMBOL:
   case LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS:
@@ -1180,6 +1186,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
       case PARSER_TOKEN_FUNCTION_DEFINITION:
       case PARSER_TOKEN_FUNCTION_CALL:
+      case PARSER_TOKEN_KEYWORD_COMPTIME:
         printError(bodyArray->data[i]->str_begin, bodyArray->data[i]->str_end,
                    "Maybe forgot a ; with %s",
                    PARSER_TOKEN_STRINGS[bodyArray->data[i]->token]);
@@ -1475,6 +1482,26 @@ ParserNode *parserWhile(LexerNode *node, LexerNode *end, ParserNode *parent) {
                            body->str_end, metadata, parent);
 }
 
+ParserNode *parserComptime(LexerNode *node, LexerNode *end,
+                           ParserNode *parent) {
+  LexerNode *next = node + 1;
+  if (next >= end) {
+    printError(node->str_begin, node->str_end, "Comptime has no operand");
+    return NULL;
+  }
+
+  ParserNode *operand = getUntilCommonParent(next->parserNode, parent);
+
+  if (operand == NULL) {
+    printError(node->str_begin, node->str_end, "Comptime has bad operand");
+    return NULL;
+  }
+
+  return operand->parent = node->parserNode = newParserNode(
+             PARSER_TOKEN_KEYWORD_COMPTIME, node->str_begin, operand->str_end,
+             (ParserNodeSingleChildMetadata *)operand, parent);
+}
+
 bool isAllArguments(const ParserNodeArray *nodes) {
   for (size_t i = 0; i < nodes->size; ++i) {
     const ParserNode *node = nodes->data[i];
@@ -1519,6 +1546,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_VALUE_BOOL:
   case PARSER_TOKEN_KEYWORD_IF:
   case PARSER_TOKEN_KEYWORD_WHILE:
+  case PARSER_TOKEN_KEYWORD_COMPTIME:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_TYPE_VOID:
@@ -1568,6 +1596,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
   case PARSER_TOKEN_FUNCTION_CALL:
   case PARSER_TOKEN_KEYWORD_IF:
+  case PARSER_TOKEN_KEYWORD_COMPTIME:
     return true;
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_VARIABLE:
@@ -1651,6 +1680,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_TYPE_F64:
   case PARSER_TOKEN_TYPE_F128:
   case PARSER_TOKEN_KEYWORD_IF:
+  case PARSER_TOKEN_KEYWORD_COMPTIME:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
     return true;
   case PARSER_TOKEN_CONSTANT:
