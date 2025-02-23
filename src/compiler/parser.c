@@ -371,6 +371,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
     for (int i = 0; i < indent; ++i)
       printf(" ");
   }
+    goto RETURN_SUCCESS;
   case PARSER_TOKEN_KEYWORD_WHILE: {
     ParserNodeIfMetadata *metadata = node->metadata;
     printf(",\n");
