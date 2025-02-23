@@ -47,12 +47,12 @@ f128 numberToFloat(char *str_begin, char *str_end, bool *success) {
       c = *str_begin++;
     }
     if (c >= '0' && c <= '9') {
-      if (!isPastPoint) {
-        left *= 10;
-        left += c - '0';
-      } else {
+      if (isPastPoint) {
         right += c - '0';
         right /= 10;
+      } else {
+        left *= 10;
+        left += c - '0';
       }
     } else if (c == '.' && !isPastPoint) {
       isPastPoint = true;

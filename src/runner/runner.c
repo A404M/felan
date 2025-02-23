@@ -364,6 +364,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
       doLeftOperationFloat(operand, +, AstTreeFloat, f16);
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
+      UNREACHABLE;
     }
     return operand;
   }
@@ -395,6 +396,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
       doLeftOperationFloat(operand, -, AstTreeFloat, f16);
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
+      UNREACHABLE;
     }
     return operand;
   }
@@ -440,6 +442,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
       doOperationFloat(left, right, +, AstTreeFloat, f16);
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
+      UNREACHABLE;
     }
     astTreeDelete(right);
     return left;
@@ -486,6 +489,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
       doOperationFloat(left, right, -, AstTreeFloat, f16);
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
+      UNREACHABLE;
     }
     astTreeDelete(right);
     return left;
@@ -532,6 +536,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
       doOperationFloat(left, right, *, AstTreeFloat, f16);
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
+      UNREACHABLE;
     }
     astTreeDelete(right);
     return left;
@@ -578,6 +583,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
       doOperationFloat(left, right, /, AstTreeFloat, f16);
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
+      UNREACHABLE;
     }
     astTreeDelete(right);
     return left;
@@ -612,6 +618,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
       doOperation(left, right, %, AstTreeInt, i8);
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
+      UNREACHABLE;
     }
     astTreeDelete(right);
     return left;
@@ -656,8 +663,15 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
     } else if (left->type == &AST_TREE_F16_TYPE &&
                right->type == &AST_TREE_F16_TYPE) {
       doOperationFloat(left, right, ==, AstTreeFloat, f16);
+    } else if (left->type == &AST_TREE_TYPE_TYPE) {
+      bool res = typeIsEqual(left, right);
+      astTreeDelete(left);
+      left = newAstTree(AST_TREE_TOKEN_VALUE_BOOL, (void *)(AstTreeBool)res,
+                        &AST_TREE_BOOL_TYPE, NULL, NULL);
+      left->token = AST_TREE_TOKEN_VALUE_BOOL;
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
+      UNREACHABLE;
     }
     astTreeDelete(right);
     return left;
@@ -702,8 +716,15 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
     } else if (left->type == &AST_TREE_F16_TYPE &&
                right->type == &AST_TREE_F16_TYPE) {
       doOperationFloat(left, right, !=, AstTreeFloat, f16);
+    } else if (left->type == &AST_TREE_TYPE_TYPE) {
+      bool res = !typeIsEqual(left, right);
+      astTreeDelete(left);
+      left = newAstTree(AST_TREE_TOKEN_VALUE_BOOL, (void *)(AstTreeBool)res,
+                        &AST_TREE_BOOL_TYPE, NULL, NULL);
+      left->token = AST_TREE_TOKEN_VALUE_BOOL;
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
+      UNREACHABLE;
     }
     astTreeDelete(right);
     return left;
@@ -750,6 +771,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
       doOperationFloat(left, right, >, AstTreeFloat, f16);
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
+      UNREACHABLE;
     }
     astTreeDelete(right);
     return left;
@@ -796,6 +818,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
       doOperationFloat(left, right, <, AstTreeFloat, f16);
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
+      UNREACHABLE;
     }
     astTreeDelete(right);
     return left;
@@ -842,6 +865,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
       doOperationFloat(left, right, >=, AstTreeFloat, f16);
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
+      UNREACHABLE;
     }
     astTreeDelete(right);
     return left;
@@ -888,6 +912,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
       doOperationFloat(left, right, <=, AstTreeFloat, f16);
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
+      UNREACHABLE;
     }
     astTreeDelete(right);
     return left;
