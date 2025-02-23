@@ -205,6 +205,8 @@ AstTree *astTreeParseBinaryOperator(ParserNode *parserNode,
                                     AstTreeHelper *helper, AstTreeToken token);
 AstTree *astTreeParseUnaryOperator(ParserNode *parserNode,
                                    AstTreeHelper *helper, AstTreeToken token);
+AstTree *astTreeParseOperateAssignOperator(ParserNode *parserNode,
+                                    AstTreeHelper *helper, AstTreeToken token);
 bool astTreeParseConstant(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseVariable(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseIf(ParserNode *parserNode, AstTreeHelper *helper);

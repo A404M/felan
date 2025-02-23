@@ -46,6 +46,11 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_FUNCTION_ARROW",
     "LEXER_TOKEN_SYMBOL_COLON",
     "LEXER_TOKEN_SYMBOL_ASSIGN",
+    "LEXER_TOKEN_SYMBOL_SUM_ASSIGN",
+    "LEXER_TOKEN_SYMBOL_SUB_ASSIGN",
+    "LEXER_TOKEN_SYMBOL_MULTIPLY_ASSIGN",
+    "LEXER_TOKEN_SYMBOL_DIVIDE_ASSIGN",
+    "LEXER_TOKEN_SYMBOL_MODULO_ASSIGN",
     "LEXER_TOKEN_SYMBOL_COMMA",
     "LEXER_TOKEN_SYMBOL_PLUS",
     "LEXER_TOKEN_SYMBOL_MINUS",
@@ -65,8 +70,8 @@ const char *LEXER_TOKEN_STRINGS[] = {
 };
 
 const char *LEXER_SYMBOL_STRINGS[] = {
-    ";", "(", ")", "{", "}",  "->", ":", "=",  ",", "+",
-    "-", "*", "/", "%", "==", "!=", ">", ">=", "<", "<=",
+    ";", "(", ")", "{", "}", "->", ":",  "=",  "+=", "-=", "*=", "/=", "%=",
+    ",", "+", "-", "*", "/", "%",  "==", "!=", ">",  ">=", "<",  "<=",
 };
 const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_EOL,
@@ -77,6 +82,11 @@ const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_FUNCTION_ARROW,
     LEXER_TOKEN_SYMBOL_COLON,
     LEXER_TOKEN_SYMBOL_ASSIGN,
+    LEXER_TOKEN_SYMBOL_SUM_ASSIGN,
+    LEXER_TOKEN_SYMBOL_SUB_ASSIGN,
+    LEXER_TOKEN_SYMBOL_MULTIPLY_ASSIGN,
+    LEXER_TOKEN_SYMBOL_DIVIDE_ASSIGN,
+    LEXER_TOKEN_SYMBOL_MODULO_ASSIGN,
     LEXER_TOKEN_SYMBOL_COMMA,
     LEXER_TOKEN_SYMBOL_PLUS,
     LEXER_TOKEN_SYMBOL_MINUS,

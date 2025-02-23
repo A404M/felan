@@ -1039,6 +1039,21 @@ AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper) {
   case PARSER_TOKEN_OPERATOR_ASSIGN:
     return astTreeParseBinaryOperator(parserNode, helper,
                                       AST_TREE_TOKEN_OPERATOR_ASSIGN);
+  case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:
+    return astTreeParseOperateAssignOperator(parserNode, helper,
+                                             AST_TREE_TOKEN_OPERATOR_SUM);
+  case PARSER_TOKEN_OPERATOR_SUB_ASSIGN:
+    return astTreeParseOperateAssignOperator(parserNode, helper,
+                                             AST_TREE_TOKEN_OPERATOR_SUB);
+  case PARSER_TOKEN_OPERATOR_MULTIPLY_ASSIGN:
+    return astTreeParseOperateAssignOperator(parserNode, helper,
+                                             AST_TREE_TOKEN_OPERATOR_MULTIPLY);
+  case PARSER_TOKEN_OPERATOR_DIVIDE_ASSIGN:
+    return astTreeParseOperateAssignOperator(parserNode, helper,
+                                             AST_TREE_TOKEN_OPERATOR_DIVIDE);
+  case PARSER_TOKEN_OPERATOR_MODULO_ASSIGN:
+    return astTreeParseOperateAssignOperator(parserNode, helper,
+                                             AST_TREE_TOKEN_OPERATOR_MODULO);
   case PARSER_TOKEN_OPERATOR_SUM:
     return astTreeParseBinaryOperator(parserNode, helper,
                                       AST_TREE_TOKEN_OPERATOR_SUM);
@@ -1447,6 +1462,44 @@ AstTree *astTreeParseUnaryOperator(ParserNode *parserNode,
 
   return newAstTree(token, metadata, NULL, parserNode->str_begin,
                     parserNode->str_end);
+}
+
+AstTree *astTreeParseOperateAssignOperator(ParserNode *parserNode,
+                                           AstTreeHelper *helper,
+                                           AstTreeToken token) {
+  ParserNodeInfixMetadata *node_metadata = parserNode->metadata;
+
+  AstTree *left = astTreeParse(node_metadata->left, helper);
+  if (left == NULL) {
+    return NULL;
+  }
+  AstTree *right = astTreeParse(node_metadata->right, helper);
+  if (right == NULL) {
+    return NULL;
+  }
+
+  AstTreeInfix *metadata = a404m_malloc(sizeof(*metadata));
+
+  metadata->left = *left;
+  metadata->right = *right;
+
+  free(left);
+  free(right);
+
+  AstTreeInfix *assignMetadata = a404m_malloc(sizeof(*assignMetadata));
+
+  AstTree *assignLeft = astTreeParse(node_metadata->left, helper);
+  AstTree *assignRight = newAstTree(token, metadata, NULL,
+                                    parserNode->str_begin, parserNode->str_end);
+
+  assignMetadata->left = *assignLeft;
+  assignMetadata->right = *assignRight;
+
+  free(assignLeft);
+  free(assignRight);
+
+  return newAstTree(AST_TREE_TOKEN_OPERATOR_ASSIGN, assignMetadata, NULL,
+                    parserNode->str_begin, parserNode->str_end);
 }
 
 bool astTreeParseConstant(ParserNode *parserNode, AstTreeHelper *helper) {
