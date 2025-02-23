@@ -992,7 +992,7 @@ ParserNode *parserParenthesis(LexerNode *closing, LexerNode *begin,
       ParserNode *pNode =
           getUntilCommonParents(iter->parserNode, parent, parserNode);
       if (pNode == NULL) {
-        printLog("Bad node", pNode->str_begin, pNode->str_end);
+        printLog(pNode->str_begin, pNode->str_end, "Bad node");
         return NULL;
       } else {
         pNode->parent = parserNode;
@@ -1063,7 +1063,7 @@ ParserNode *parserCurlyBrackets(LexerNode *closing, LexerNode *begin,
       ParserNode *pNode =
           getUntilCommonParents(iter->parserNode, parent, parserNode);
       if (pNode == NULL) {
-        printLog(iter->str_begin, iter->str_end, "Bad node");
+        printError(iter->str_begin, iter->str_end, "Bad node");
         return NULL;
       } else {
         pNode->parent = parserNode;

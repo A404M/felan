@@ -1,6 +1,7 @@
 main :: () -> void {
-  a :u64= 2;
-  a += (if a == 2 1 else 2);
-  print_u64 a;
+  a := 2.3;
+  if a == 2.3
+    print_u64 1;
+  else
+    print_u64 2;
 };
-

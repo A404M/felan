@@ -2084,7 +2084,8 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
 
 AstTree *getValue(AstTree *tree, AstTreeSetTypesHelper helper) {
   if (!isConst(tree, helper.treeHelper)) {
-    printLog("Can't get value at compile time because it is not const");
+    printError(tree->str_begin, tree->str_end,
+               "Can't get value at compile time because it is not const");
     return NULL;
   }
   switch (tree->token) {
@@ -2446,7 +2447,7 @@ bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_F32_TYPE;
-  } else if (helper.lookingType == &AST_TREE_F64_TYPE) {
+  } else if (helper.lookingType == &AST_TREE_F64_TYPE || helper.lookingType == NULL) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeFloat value = *(AstTreeFloat *)tree->metadata;
     f64 newValue = value;

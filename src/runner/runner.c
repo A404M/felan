@@ -22,8 +22,9 @@
     bool res = (bool)(((_type)(originalType)(op0)->metadata) operator(         \
         (_type)(originalType)(op1)->metadata));                                \
     astTreeDestroy(*(op0));                                                    \
-    (op0)->metadata = (void *)(u64)res;                                        \
+    (op0)->metadata = (void *)(bool)res;                                       \
     (op0)->type = &AST_TREE_BOOL_TYPE;                                         \
+    (op0)->token = AST_TREE_TOKEN_VALUE_BOOL;                                  \
   }
 
 #define doLogicalOperationFloat(op0, op1, operator, originalType, _type)       \
@@ -31,8 +32,9 @@
     bool res = (bool)(((_type) * ((originalType *)(op0)->metadata)) operator(  \
         (_type) * ((originalType *)(op1)->metadata)));                         \
     astTreeDestroy(*(op0));                                                    \
-    (op0)->metadata = (void *)(u64)res;                                        \
+    (op0)->metadata = (void *)(bool)res;                                       \
     (op0)->type = &AST_TREE_BOOL_TYPE;                                         \
+    (op0)->token = AST_TREE_TOKEN_VALUE_BOOL;                                  \
   }
 
 #define doLeftOperation(op0, operator, originalType, type)                     \
@@ -164,7 +166,7 @@ void runnerVariableSetValue(RunnerVariablePages *pages,
     }
   }
 
-  printError(variable->name_begin,variable->name_end,"Variable not found");
+  printError(variable->name_begin, variable->name_end, "Variable not found");
   UNREACHABLE;
 }
 
@@ -187,7 +189,7 @@ AstTree *runnerVariableGetValue(RunnerVariablePages *pages,
     }
   }
 
-  printError(variable->name_begin,variable->name_end,"Variable not found");
+  printError(variable->name_begin, variable->name_end, "Variable not found");
   UNREACHABLE;
 }
 
@@ -343,14 +345,16 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
     return NULL;
   case AST_TREE_TOKEN_KEYWORD_IF: {
     AstTreeIf *metadata = expr->metadata;
-    AstTree *tree = runExpression(metadata->condition, pages);
+    AstTree *condition = runExpression(metadata->condition, pages);
     AstTree *ret;
-    if ((AstTreeBool)tree->metadata) {
+    if ((AstTreeBool)condition->metadata) {
       ret = runExpression(metadata->ifBody, pages);
-    } else {
+    } else if (metadata->elseBody != NULL) {
       ret = runExpression(metadata->elseBody, pages);
+    } else {
+      ret = NULL;
     }
-    astTreeDelete(tree);
+    astTreeDelete(condition);
     return ret;
   }
   case AST_TREE_TOKEN_KEYWORD_WHILE: {
