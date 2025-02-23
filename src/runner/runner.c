@@ -19,10 +19,8 @@
 
 #define doLogicalOperation(op0, op1, operator, originalType, _type)            \
   {                                                                            \
-    bool res = (bool)((_type)(originalType)(op0)                               \
-                          ->metadata                                           \
-                          operator(_type)(originalType)(op1)                   \
-                          ->metadata);                                         \
+    bool res = (bool)(((_type)(originalType)(op0)->metadata) operator(         \
+        (_type)(originalType)(op1)->metadata));                                \
     astTreeDestroy(*(op0));                                                    \
     (op0)->metadata = (void *)(u64)res;                                        \
     (op0)->type = &AST_TREE_BOOL_TYPE;                                         \
@@ -188,6 +186,7 @@ AstTree *runnerVariableGetValue(RunnerVariablePages *pages,
     }
   }
 
+  printError(variable->name_begin,variable->name_end,"Variable not found");
   UNREACHABLE;
 }
 

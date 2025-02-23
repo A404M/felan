@@ -86,8 +86,8 @@ const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_EQUAL,
     LEXER_TOKEN_SYMBOL_NOT_EQUAL,
     LEXER_TOKEN_SYMBOL_GREATER,
-    LEXER_TOKEN_SYMBOL_SMALLER,
     LEXER_TOKEN_SYMBOL_GREATER_OR_EQUAL,
+    LEXER_TOKEN_SYMBOL_SMALLER,
     LEXER_TOKEN_SYMBOL_SMALLER_OR_EQUAL,
 };
 const size_t LEXER_SYMBOL_SIZE =
@@ -314,12 +314,14 @@ bool isSymbol(char c) {
   switch (c) {
   case '-':
   case '>':
+  case '<':
   case '.':
   case '+':
   case '*':
   case '/':
   case '%':
   case '=':
+  case '!':
     return true;
   default:
     return false;
