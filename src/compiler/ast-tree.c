@@ -2447,7 +2447,8 @@ bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_F32_TYPE;
-  } else if (helper.lookingType == &AST_TREE_F64_TYPE || helper.lookingType == NULL) {
+  } else if (helper.lookingType == &AST_TREE_F64_TYPE ||
+             helper.lookingType == NULL) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeFloat value = *(AstTreeFloat *)tree->metadata;
     f64 newValue = value;

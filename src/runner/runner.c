@@ -13,9 +13,9 @@
                                       ->metadata)
 
 #define doOperationFloat(op0, op1, operator, originalType, type)               \
-  (op0)->metadata =                                                            \
-      (void *)(u64)((type) * (originalType *)(op0)->metadata operator(type) *  \
-                    (originalType *)(op1)->metadata)
+  *((originalType *)(op0)->metadata) =                                         \
+      (originalType)((type) * (originalType *)(op0)->metadata operator(type) * \
+                     (originalType *)(op1)->metadata)
 
 #define doLogicalOperation(op0, op1, operator, originalType, _type)            \
   {                                                                            \
@@ -43,81 +43,6 @@
 #define doLeftOperationFloat(op0, operator, originalType, type)                \
   *((originalType *)(op0)->metadata) = operator(                               \
       (type) * (originalType *)(op0)->metadata)
-
-#define doAllOperationsInt(op0, op1, operator, originalType, type)             \
-  switch (operator) {                                                          \
-  case AST_TREE_TOKEN_OPERATOR_SUM:                                            \
-    doOperation(op0, op1, +, originalType, type);                              \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_SUB:                                            \
-    doOperation(op0, op1, -, originalType, type);                              \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:                                       \
-    doOperation(op0, op1, *, originalType, type);                              \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_DIVIDE:                                         \
-    doOperation(op0, op1, /, originalType, type);                              \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_MODULO:                                         \
-    doOperation(op0, op1, %, originalType, type);                              \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_EQUAL:                                          \
-    doLogicalOperation(op0, op1, ==, originalType, type);                      \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:                                      \
-    doLogicalOperation(op0, op1, !=, originalType, type);                      \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_GREATER:                                        \
-    doLogicalOperation(op0, op1, >, originalType, type);                       \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:                               \
-    doLogicalOperation(op0, op1, >=, originalType, type);                      \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_SMALLER:                                        \
-    doLogicalOperation(op0, op1, <, originalType, type);                       \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:                               \
-    doLogicalOperation(op0, op1, <=, originalType, type);                      \
-    break;                                                                     \
-  default:                                                                     \
-    UNREACHABLE;                                                               \
-  }
-
-#define doAllOperationsFloat(op0, op1, operator, originalType, type)           \
-  switch (operator) {                                                          \
-  case AST_TREE_TOKEN_OPERATOR_SUM:                                            \
-    doOperationFloat(op0, op1, +, originalType, type);                         \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_SUB:                                            \
-    doOperationFloat(op0, op1, -, originalType, type);                         \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:                                       \
-    doOperationFloat(op0, op1, *, originalType, type);                         \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_DIVIDE:                                         \
-    doOperationFloat(op0, op1, /, originalType, type);                         \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_EQUAL:                                          \
-    doLogicalOperationFloat(op0, op1, ==, originalType, type);                 \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:                                      \
-    doLogicalOperationFloat(op0, op1, !=, originalType, type);                 \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_GREATER:                                        \
-    doLogicalOperationFloat(op0, op1, >, originalType, type);                  \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:                               \
-    doLogicalOperationFloat(op0, op1, >=, originalType, type);                 \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_SMALLER:                                        \
-    doLogicalOperationFloat(op0, op1, <, originalType, type);                  \
-    break;                                                                     \
-  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:                               \
-    doLogicalOperationFloat(op0, op1, <=, originalType, type);                 \
-    break;                                                                     \
-  default:                                                                     \
-    UNREACHABLE;                                                               \
-  }
 
 void runnerVariablesDelete(RunnerVariables *variables) {
   for (size_t i = 0; i < variables->size; ++i) {
@@ -438,7 +363,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
     } else if (operand->type == &AST_TREE_F16_TYPE) {
       doLeftOperationFloat(operand, +, AstTreeFloat, f16);
     } else {
-      UNREACHABLE;
+      printError(expr->str_begin, expr->str_end, "Not supported");
     }
     return operand;
   }
@@ -469,62 +394,500 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
     } else if (operand->type == &AST_TREE_F16_TYPE) {
       doLeftOperationFloat(operand, -, AstTreeFloat, f16);
     } else {
-      UNREACHABLE;
+      printError(expr->str_begin, expr->str_end, "Not supported");
     }
     return operand;
   }
-  case AST_TREE_TOKEN_OPERATOR_SUM:
-  case AST_TREE_TOKEN_OPERATOR_SUB:
-  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
-  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
-  case AST_TREE_TOKEN_OPERATOR_MODULO:
-  case AST_TREE_TOKEN_OPERATOR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_GREATER:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER:
-  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_SUM: {
+    AstTreeInfix *metadata = expr->metadata;
+    AstTree *left = runExpression(&metadata->left, pages);
+    AstTree *right = runExpression(&metadata->right, pages);
+
+    if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
+      doOperation(left, right, +, AstTreeInt, u64);
+    } else if (left->type == &AST_TREE_I64_TYPE &&
+               right->type == &AST_TREE_I64_TYPE) {
+      doOperation(left, right, +, AstTreeInt, i64);
+    } else if (left->type == &AST_TREE_U32_TYPE &&
+               right->type == &AST_TREE_U32_TYPE) {
+      doOperation(left, right, +, AstTreeInt, u32);
+    } else if (left->type == &AST_TREE_I32_TYPE &&
+               right->type == &AST_TREE_I32_TYPE) {
+      doOperation(left, right, +, AstTreeInt, i32);
+    } else if (left->type == &AST_TREE_U16_TYPE &&
+               right->type == &AST_TREE_U16_TYPE) {
+      doOperation(left, right, +, AstTreeInt, u16);
+    } else if (left->type == &AST_TREE_I16_TYPE &&
+               right->type == &AST_TREE_I16_TYPE) {
+      doOperation(left, right, +, AstTreeInt, i16);
+    } else if (left->type == &AST_TREE_U8_TYPE &&
+               right->type == &AST_TREE_U8_TYPE) {
+      doOperation(left, right, +, AstTreeInt, u8);
+    } else if (left->type == &AST_TREE_I8_TYPE &&
+               right->type == &AST_TREE_I8_TYPE) {
+      doOperation(left, right, +, AstTreeInt, i8);
+    } else if (left->type == &AST_TREE_F128_TYPE &&
+               right->type == &AST_TREE_F128_TYPE) {
+      doOperationFloat(left, right, +, AstTreeFloat, f128);
+    } else if (left->type == &AST_TREE_F64_TYPE &&
+               right->type == &AST_TREE_F64_TYPE) {
+      doOperationFloat(left, right, +, AstTreeFloat, f64);
+    } else if (left->type == &AST_TREE_F32_TYPE &&
+               right->type == &AST_TREE_F32_TYPE) {
+      doOperationFloat(left, right, +, AstTreeFloat, f32);
+    } else if (left->type == &AST_TREE_F16_TYPE &&
+               right->type == &AST_TREE_F16_TYPE) {
+      doOperationFloat(left, right, +, AstTreeFloat, f16);
+    } else {
+      printError(expr->str_begin, expr->str_end, "Not supported");
+    }
+    astTreeDelete(right);
+    return left;
+  }
+  case AST_TREE_TOKEN_OPERATOR_SUB: {
+    AstTreeInfix *metadata = expr->metadata;
+    AstTree *left = runExpression(&metadata->left, pages);
+    AstTree *right = runExpression(&metadata->right, pages);
+
+    if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
+      doOperation(left, right, -, AstTreeInt, u64);
+    } else if (left->type == &AST_TREE_I64_TYPE &&
+               right->type == &AST_TREE_I64_TYPE) {
+      doOperation(left, right, -, AstTreeInt, i64);
+    } else if (left->type == &AST_TREE_U32_TYPE &&
+               right->type == &AST_TREE_U32_TYPE) {
+      doOperation(left, right, -, AstTreeInt, u32);
+    } else if (left->type == &AST_TREE_I32_TYPE &&
+               right->type == &AST_TREE_I32_TYPE) {
+      doOperation(left, right, -, AstTreeInt, i32);
+    } else if (left->type == &AST_TREE_U16_TYPE &&
+               right->type == &AST_TREE_U16_TYPE) {
+      doOperation(left, right, -, AstTreeInt, u16);
+    } else if (left->type == &AST_TREE_I16_TYPE &&
+               right->type == &AST_TREE_I16_TYPE) {
+      doOperation(left, right, -, AstTreeInt, i16);
+    } else if (left->type == &AST_TREE_U8_TYPE &&
+               right->type == &AST_TREE_U8_TYPE) {
+      doOperation(left, right, -, AstTreeInt, u8);
+    } else if (left->type == &AST_TREE_I8_TYPE &&
+               right->type == &AST_TREE_I8_TYPE) {
+      doOperation(left, right, -, AstTreeInt, i8);
+    } else if (left->type == &AST_TREE_F128_TYPE &&
+               right->type == &AST_TREE_F128_TYPE) {
+      doOperationFloat(left, right, -, AstTreeFloat, f128);
+    } else if (left->type == &AST_TREE_F64_TYPE &&
+               right->type == &AST_TREE_F64_TYPE) {
+      doOperationFloat(left, right, -, AstTreeFloat, f64);
+    } else if (left->type == &AST_TREE_F32_TYPE &&
+               right->type == &AST_TREE_F32_TYPE) {
+      doOperationFloat(left, right, -, AstTreeFloat, f32);
+    } else if (left->type == &AST_TREE_F16_TYPE &&
+               right->type == &AST_TREE_F16_TYPE) {
+      doOperationFloat(left, right, -, AstTreeFloat, f16);
+    } else {
+      printError(expr->str_begin, expr->str_end, "Not supported");
+    }
+    astTreeDelete(right);
+    return left;
+  }
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY: {
+    AstTreeInfix *metadata = expr->metadata;
+    AstTree *left = runExpression(&metadata->left, pages);
+    AstTree *right = runExpression(&metadata->right, pages);
+
+    if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
+      doOperation(left, right, *, AstTreeInt, u64);
+    } else if (left->type == &AST_TREE_I64_TYPE &&
+               right->type == &AST_TREE_I64_TYPE) {
+      doOperation(left, right, *, AstTreeInt, i64);
+    } else if (left->type == &AST_TREE_U32_TYPE &&
+               right->type == &AST_TREE_U32_TYPE) {
+      doOperation(left, right, *, AstTreeInt, u32);
+    } else if (left->type == &AST_TREE_I32_TYPE &&
+               right->type == &AST_TREE_I32_TYPE) {
+      doOperation(left, right, *, AstTreeInt, i32);
+    } else if (left->type == &AST_TREE_U16_TYPE &&
+               right->type == &AST_TREE_U16_TYPE) {
+      doOperation(left, right, *, AstTreeInt, u16);
+    } else if (left->type == &AST_TREE_I16_TYPE &&
+               right->type == &AST_TREE_I16_TYPE) {
+      doOperation(left, right, *, AstTreeInt, i16);
+    } else if (left->type == &AST_TREE_U8_TYPE &&
+               right->type == &AST_TREE_U8_TYPE) {
+      doOperation(left, right, *, AstTreeInt, u8);
+    } else if (left->type == &AST_TREE_I8_TYPE &&
+               right->type == &AST_TREE_I8_TYPE) {
+      doOperation(left, right, *, AstTreeInt, i8);
+    } else if (left->type == &AST_TREE_F128_TYPE &&
+               right->type == &AST_TREE_F128_TYPE) {
+      doOperationFloat(left, right, *, AstTreeFloat, f128);
+    } else if (left->type == &AST_TREE_F64_TYPE &&
+               right->type == &AST_TREE_F64_TYPE) {
+      doOperationFloat(left, right, *, AstTreeFloat, f64);
+    } else if (left->type == &AST_TREE_F32_TYPE &&
+               right->type == &AST_TREE_F32_TYPE) {
+      doOperationFloat(left, right, *, AstTreeFloat, f32);
+    } else if (left->type == &AST_TREE_F16_TYPE &&
+               right->type == &AST_TREE_F16_TYPE) {
+      doOperationFloat(left, right, *, AstTreeFloat, f16);
+    } else {
+      printError(expr->str_begin, expr->str_end, "Not supported");
+    }
+    astTreeDelete(right);
+    return left;
+  }
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE: {
+    AstTreeInfix *metadata = expr->metadata;
+    AstTree *left = runExpression(&metadata->left, pages);
+    AstTree *right = runExpression(&metadata->right, pages);
+
+    if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
+      doOperation(left, right, /, AstTreeInt, u64);
+    } else if (left->type == &AST_TREE_I64_TYPE &&
+               right->type == &AST_TREE_I64_TYPE) {
+      doOperation(left, right, /, AstTreeInt, i64);
+    } else if (left->type == &AST_TREE_U32_TYPE &&
+               right->type == &AST_TREE_U32_TYPE) {
+      doOperation(left, right, /, AstTreeInt, u32);
+    } else if (left->type == &AST_TREE_I32_TYPE &&
+               right->type == &AST_TREE_I32_TYPE) {
+      doOperation(left, right, /, AstTreeInt, i32);
+    } else if (left->type == &AST_TREE_U16_TYPE &&
+               right->type == &AST_TREE_U16_TYPE) {
+      doOperation(left, right, /, AstTreeInt, u16);
+    } else if (left->type == &AST_TREE_I16_TYPE &&
+               right->type == &AST_TREE_I16_TYPE) {
+      doOperation(left, right, /, AstTreeInt, i16);
+    } else if (left->type == &AST_TREE_U8_TYPE &&
+               right->type == &AST_TREE_U8_TYPE) {
+      doOperation(left, right, /, AstTreeInt, u8);
+    } else if (left->type == &AST_TREE_I8_TYPE &&
+               right->type == &AST_TREE_I8_TYPE) {
+      doOperation(left, right, /, AstTreeInt, i8);
+    } else if (left->type == &AST_TREE_F128_TYPE &&
+               right->type == &AST_TREE_F128_TYPE) {
+      doOperationFloat(left, right, /, AstTreeFloat, f128);
+    } else if (left->type == &AST_TREE_F64_TYPE &&
+               right->type == &AST_TREE_F64_TYPE) {
+      doOperationFloat(left, right, /, AstTreeFloat, f64);
+    } else if (left->type == &AST_TREE_F32_TYPE &&
+               right->type == &AST_TREE_F32_TYPE) {
+      doOperationFloat(left, right, /, AstTreeFloat, f32);
+    } else if (left->type == &AST_TREE_F16_TYPE &&
+               right->type == &AST_TREE_F16_TYPE) {
+      doOperationFloat(left, right, /, AstTreeFloat, f16);
+    } else {
+      printError(expr->str_begin, expr->str_end, "Not supported");
+    }
+    astTreeDelete(right);
+    return left;
+  }
+  case AST_TREE_TOKEN_OPERATOR_MODULO: {
+    AstTreeInfix *metadata = expr->metadata;
+    AstTree *left = runExpression(&metadata->left, pages);
+    AstTree *right = runExpression(&metadata->right, pages);
+
+    if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
+      doOperation(left, right, %, AstTreeInt, u64);
+    } else if (left->type == &AST_TREE_I64_TYPE &&
+               right->type == &AST_TREE_I64_TYPE) {
+      doOperation(left, right, %, AstTreeInt, i64);
+    } else if (left->type == &AST_TREE_U32_TYPE &&
+               right->type == &AST_TREE_U32_TYPE) {
+      doOperation(left, right, %, AstTreeInt, u32);
+    } else if (left->type == &AST_TREE_I32_TYPE &&
+               right->type == &AST_TREE_I32_TYPE) {
+      doOperation(left, right, %, AstTreeInt, i32);
+    } else if (left->type == &AST_TREE_U16_TYPE &&
+               right->type == &AST_TREE_U16_TYPE) {
+      doOperation(left, right, %, AstTreeInt, u16);
+    } else if (left->type == &AST_TREE_I16_TYPE &&
+               right->type == &AST_TREE_I16_TYPE) {
+      doOperation(left, right, %, AstTreeInt, i16);
+    } else if (left->type == &AST_TREE_U8_TYPE &&
+               right->type == &AST_TREE_U8_TYPE) {
+      doOperation(left, right, %, AstTreeInt, u8);
+    } else if (left->type == &AST_TREE_I8_TYPE &&
+               right->type == &AST_TREE_I8_TYPE) {
+      doOperation(left, right, %, AstTreeInt, i8);
+    } else {
+      printError(expr->str_begin, expr->str_end, "Not supported");
+    }
+    astTreeDelete(right);
+    return left;
+  }
+  case AST_TREE_TOKEN_OPERATOR_EQUAL: {
+    AstTreeInfix *metadata = expr->metadata;
+    AstTree *left = runExpression(&metadata->left, pages);
+    AstTree *right = runExpression(&metadata->right, pages);
+
+    if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
+      doOperation(left, right, ==, AstTreeInt, u64);
+    } else if (left->type == &AST_TREE_I64_TYPE &&
+               right->type == &AST_TREE_I64_TYPE) {
+      doOperation(left, right, ==, AstTreeInt, i64);
+    } else if (left->type == &AST_TREE_U32_TYPE &&
+               right->type == &AST_TREE_U32_TYPE) {
+      doOperation(left, right, ==, AstTreeInt, u32);
+    } else if (left->type == &AST_TREE_I32_TYPE &&
+               right->type == &AST_TREE_I32_TYPE) {
+      doOperation(left, right, ==, AstTreeInt, i32);
+    } else if (left->type == &AST_TREE_U16_TYPE &&
+               right->type == &AST_TREE_U16_TYPE) {
+      doOperation(left, right, ==, AstTreeInt, u16);
+    } else if (left->type == &AST_TREE_I16_TYPE &&
+               right->type == &AST_TREE_I16_TYPE) {
+      doOperation(left, right, ==, AstTreeInt, i16);
+    } else if (left->type == &AST_TREE_U8_TYPE &&
+               right->type == &AST_TREE_U8_TYPE) {
+      doOperation(left, right, ==, AstTreeInt, u8);
+    } else if (left->type == &AST_TREE_I8_TYPE &&
+               right->type == &AST_TREE_I8_TYPE) {
+      doOperation(left, right, ==, AstTreeInt, i8);
+    } else if (left->type == &AST_TREE_F128_TYPE &&
+               right->type == &AST_TREE_F128_TYPE) {
+      doOperationFloat(left, right, ==, AstTreeFloat, f128);
+    } else if (left->type == &AST_TREE_F64_TYPE &&
+               right->type == &AST_TREE_F64_TYPE) {
+      doOperationFloat(left, right, ==, AstTreeFloat, f64);
+    } else if (left->type == &AST_TREE_F32_TYPE &&
+               right->type == &AST_TREE_F32_TYPE) {
+      doOperationFloat(left, right, ==, AstTreeFloat, f32);
+    } else if (left->type == &AST_TREE_F16_TYPE &&
+               right->type == &AST_TREE_F16_TYPE) {
+      doOperationFloat(left, right, ==, AstTreeFloat, f16);
+    } else {
+      printError(expr->str_begin, expr->str_end, "Not supported");
+    }
+    astTreeDelete(right);
+    return left;
+  }
+  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL: {
+    AstTreeInfix *metadata = expr->metadata;
+    AstTree *left = runExpression(&metadata->left, pages);
+    AstTree *right = runExpression(&metadata->right, pages);
+
+    if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
+      doOperation(left, right, !=, AstTreeInt, u64);
+    } else if (left->type == &AST_TREE_I64_TYPE &&
+               right->type == &AST_TREE_I64_TYPE) {
+      doOperation(left, right, !=, AstTreeInt, i64);
+    } else if (left->type == &AST_TREE_U32_TYPE &&
+               right->type == &AST_TREE_U32_TYPE) {
+      doOperation(left, right, !=, AstTreeInt, u32);
+    } else if (left->type == &AST_TREE_I32_TYPE &&
+               right->type == &AST_TREE_I32_TYPE) {
+      doOperation(left, right, !=, AstTreeInt, i32);
+    } else if (left->type == &AST_TREE_U16_TYPE &&
+               right->type == &AST_TREE_U16_TYPE) {
+      doOperation(left, right, !=, AstTreeInt, u16);
+    } else if (left->type == &AST_TREE_I16_TYPE &&
+               right->type == &AST_TREE_I16_TYPE) {
+      doOperation(left, right, !=, AstTreeInt, i16);
+    } else if (left->type == &AST_TREE_U8_TYPE &&
+               right->type == &AST_TREE_U8_TYPE) {
+      doOperation(left, right, !=, AstTreeInt, u8);
+    } else if (left->type == &AST_TREE_I8_TYPE &&
+               right->type == &AST_TREE_I8_TYPE) {
+      doOperation(left, right, !=, AstTreeInt, i8);
+    } else if (left->type == &AST_TREE_F128_TYPE &&
+               right->type == &AST_TREE_F128_TYPE) {
+      doOperationFloat(left, right, !=, AstTreeFloat, f128);
+    } else if (left->type == &AST_TREE_F64_TYPE &&
+               right->type == &AST_TREE_F64_TYPE) {
+      doOperationFloat(left, right, !=, AstTreeFloat, f64);
+    } else if (left->type == &AST_TREE_F32_TYPE &&
+               right->type == &AST_TREE_F32_TYPE) {
+      doOperationFloat(left, right, !=, AstTreeFloat, f32);
+    } else if (left->type == &AST_TREE_F16_TYPE &&
+               right->type == &AST_TREE_F16_TYPE) {
+      doOperationFloat(left, right, !=, AstTreeFloat, f16);
+    } else {
+      printError(expr->str_begin, expr->str_end, "Not supported");
+    }
+    astTreeDelete(right);
+    return left;
+  }
+  case AST_TREE_TOKEN_OPERATOR_GREATER: {
+    AstTreeInfix *metadata = expr->metadata;
+    AstTree *left = runExpression(&metadata->left, pages);
+    AstTree *right = runExpression(&metadata->right, pages);
+
+    if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
+      doOperation(left, right, >, AstTreeInt, u64);
+    } else if (left->type == &AST_TREE_I64_TYPE &&
+               right->type == &AST_TREE_I64_TYPE) {
+      doOperation(left, right, >, AstTreeInt, i64);
+    } else if (left->type == &AST_TREE_U32_TYPE &&
+               right->type == &AST_TREE_U32_TYPE) {
+      doOperation(left, right, >, AstTreeInt, u32);
+    } else if (left->type == &AST_TREE_I32_TYPE &&
+               right->type == &AST_TREE_I32_TYPE) {
+      doOperation(left, right, >, AstTreeInt, i32);
+    } else if (left->type == &AST_TREE_U16_TYPE &&
+               right->type == &AST_TREE_U16_TYPE) {
+      doOperation(left, right, >, AstTreeInt, u16);
+    } else if (left->type == &AST_TREE_I16_TYPE &&
+               right->type == &AST_TREE_I16_TYPE) {
+      doOperation(left, right, >, AstTreeInt, i16);
+    } else if (left->type == &AST_TREE_U8_TYPE &&
+               right->type == &AST_TREE_U8_TYPE) {
+      doOperation(left, right, >, AstTreeInt, u8);
+    } else if (left->type == &AST_TREE_I8_TYPE &&
+               right->type == &AST_TREE_I8_TYPE) {
+      doOperation(left, right, >, AstTreeInt, i8);
+    } else if (left->type == &AST_TREE_F128_TYPE &&
+               right->type == &AST_TREE_F128_TYPE) {
+      doOperationFloat(left, right, >, AstTreeFloat, f128);
+    } else if (left->type == &AST_TREE_F64_TYPE &&
+               right->type == &AST_TREE_F64_TYPE) {
+      doOperationFloat(left, right, >, AstTreeFloat, f64);
+    } else if (left->type == &AST_TREE_F32_TYPE &&
+               right->type == &AST_TREE_F32_TYPE) {
+      doOperationFloat(left, right, >, AstTreeFloat, f32);
+    } else if (left->type == &AST_TREE_F16_TYPE &&
+               right->type == &AST_TREE_F16_TYPE) {
+      doOperationFloat(left, right, >, AstTreeFloat, f16);
+    } else {
+      printError(expr->str_begin, expr->str_end, "Not supported");
+    }
+    astTreeDelete(right);
+    return left;
+  }
+  case AST_TREE_TOKEN_OPERATOR_SMALLER: {
+    AstTreeInfix *metadata = expr->metadata;
+    AstTree *left = runExpression(&metadata->left, pages);
+    AstTree *right = runExpression(&metadata->right, pages);
+
+    if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
+      doOperation(left, right, <, AstTreeInt, u64);
+    } else if (left->type == &AST_TREE_I64_TYPE &&
+               right->type == &AST_TREE_I64_TYPE) {
+      doOperation(left, right, <, AstTreeInt, i64);
+    } else if (left->type == &AST_TREE_U32_TYPE &&
+               right->type == &AST_TREE_U32_TYPE) {
+      doOperation(left, right, <, AstTreeInt, u32);
+    } else if (left->type == &AST_TREE_I32_TYPE &&
+               right->type == &AST_TREE_I32_TYPE) {
+      doOperation(left, right, <, AstTreeInt, i32);
+    } else if (left->type == &AST_TREE_U16_TYPE &&
+               right->type == &AST_TREE_U16_TYPE) {
+      doOperation(left, right, <, AstTreeInt, u16);
+    } else if (left->type == &AST_TREE_I16_TYPE &&
+               right->type == &AST_TREE_I16_TYPE) {
+      doOperation(left, right, <, AstTreeInt, i16);
+    } else if (left->type == &AST_TREE_U8_TYPE &&
+               right->type == &AST_TREE_U8_TYPE) {
+      doOperation(left, right, <, AstTreeInt, u8);
+    } else if (left->type == &AST_TREE_I8_TYPE &&
+               right->type == &AST_TREE_I8_TYPE) {
+      doOperation(left, right, <, AstTreeInt, i8);
+    } else if (left->type == &AST_TREE_F128_TYPE &&
+               right->type == &AST_TREE_F128_TYPE) {
+      doOperationFloat(left, right, <, AstTreeFloat, f128);
+    } else if (left->type == &AST_TREE_F64_TYPE &&
+               right->type == &AST_TREE_F64_TYPE) {
+      doOperationFloat(left, right, <, AstTreeFloat, f64);
+    } else if (left->type == &AST_TREE_F32_TYPE &&
+               right->type == &AST_TREE_F32_TYPE) {
+      doOperationFloat(left, right, <, AstTreeFloat, f32);
+    } else if (left->type == &AST_TREE_F16_TYPE &&
+               right->type == &AST_TREE_F16_TYPE) {
+      doOperationFloat(left, right, <, AstTreeFloat, f16);
+    } else {
+      printError(expr->str_begin, expr->str_end, "Not supported");
+    }
+    astTreeDelete(right);
+    return left;
+  }
+  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL: {
+    AstTreeInfix *metadata = expr->metadata;
+    AstTree *left = runExpression(&metadata->left, pages);
+    AstTree *right = runExpression(&metadata->right, pages);
+
+    if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
+      doOperation(left, right, >=, AstTreeInt, u64);
+    } else if (left->type == &AST_TREE_I64_TYPE &&
+               right->type == &AST_TREE_I64_TYPE) {
+      doOperation(left, right, >=, AstTreeInt, i64);
+    } else if (left->type == &AST_TREE_U32_TYPE &&
+               right->type == &AST_TREE_U32_TYPE) {
+      doOperation(left, right, >=, AstTreeInt, u32);
+    } else if (left->type == &AST_TREE_I32_TYPE &&
+               right->type == &AST_TREE_I32_TYPE) {
+      doOperation(left, right, >=, AstTreeInt, i32);
+    } else if (left->type == &AST_TREE_U16_TYPE &&
+               right->type == &AST_TREE_U16_TYPE) {
+      doOperation(left, right, >=, AstTreeInt, u16);
+    } else if (left->type == &AST_TREE_I16_TYPE &&
+               right->type == &AST_TREE_I16_TYPE) {
+      doOperation(left, right, >=, AstTreeInt, i16);
+    } else if (left->type == &AST_TREE_U8_TYPE &&
+               right->type == &AST_TREE_U8_TYPE) {
+      doOperation(left, right, >=, AstTreeInt, u8);
+    } else if (left->type == &AST_TREE_I8_TYPE &&
+               right->type == &AST_TREE_I8_TYPE) {
+      doOperation(left, right, >=, AstTreeInt, i8);
+    } else if (left->type == &AST_TREE_F128_TYPE &&
+               right->type == &AST_TREE_F128_TYPE) {
+      doOperationFloat(left, right, >=, AstTreeFloat, f128);
+    } else if (left->type == &AST_TREE_F64_TYPE &&
+               right->type == &AST_TREE_F64_TYPE) {
+      doOperationFloat(left, right, >=, AstTreeFloat, f64);
+    } else if (left->type == &AST_TREE_F32_TYPE &&
+               right->type == &AST_TREE_F32_TYPE) {
+      doOperationFloat(left, right, >=, AstTreeFloat, f32);
+    } else if (left->type == &AST_TREE_F16_TYPE &&
+               right->type == &AST_TREE_F16_TYPE) {
+      doOperationFloat(left, right, >=, AstTreeFloat, f16);
+    } else {
+      printError(expr->str_begin, expr->str_end, "Not supported");
+    }
+    astTreeDelete(right);
+    return left;
+  }
   case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL: {
     AstTreeInfix *metadata = expr->metadata;
     AstTree *left = runExpression(&metadata->left, pages);
     AstTree *right = runExpression(&metadata->right, pages);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
-      doAllOperationsInt(left, right, expr->token, AstTreeInt, u64);
+      doOperation(left, right, <=, AstTreeInt, u64);
     } else if (left->type == &AST_TREE_I64_TYPE &&
                right->type == &AST_TREE_I64_TYPE) {
-      doAllOperationsInt(left, right, expr->token, AstTreeInt, i64);
+      doOperation(left, right, <=, AstTreeInt, i64);
     } else if (left->type == &AST_TREE_U32_TYPE &&
                right->type == &AST_TREE_U32_TYPE) {
-      doAllOperationsInt(left, right, expr->token, AstTreeInt, u32);
+      doOperation(left, right, <=, AstTreeInt, u32);
     } else if (left->type == &AST_TREE_I32_TYPE &&
                right->type == &AST_TREE_I32_TYPE) {
-      doAllOperationsInt(left, right, expr->token, AstTreeInt, i32);
+      doOperation(left, right, <=, AstTreeInt, i32);
     } else if (left->type == &AST_TREE_U16_TYPE &&
                right->type == &AST_TREE_U16_TYPE) {
-      doAllOperationsInt(left, right, expr->token, AstTreeInt, u16);
+      doOperation(left, right, <=, AstTreeInt, u16);
     } else if (left->type == &AST_TREE_I16_TYPE &&
                right->type == &AST_TREE_I16_TYPE) {
-      doAllOperationsInt(left, right, expr->token, AstTreeInt, i16);
+      doOperation(left, right, <=, AstTreeInt, i16);
     } else if (left->type == &AST_TREE_U8_TYPE &&
                right->type == &AST_TREE_U8_TYPE) {
-      doAllOperationsInt(left, right, expr->token, AstTreeInt, u8);
+      doOperation(left, right, <=, AstTreeInt, u8);
     } else if (left->type == &AST_TREE_I8_TYPE &&
                right->type == &AST_TREE_I8_TYPE) {
-      doAllOperationsInt(left, right, expr->token, AstTreeInt, i8);
+      doOperation(left, right, <=, AstTreeInt, i8);
     } else if (left->type == &AST_TREE_F128_TYPE &&
                right->type == &AST_TREE_F128_TYPE) {
-      doAllOperationsFloat(left, right, expr->token, AstTreeFloat, f128);
+      doOperationFloat(left, right, <=, AstTreeFloat, f128);
     } else if (left->type == &AST_TREE_F64_TYPE &&
                right->type == &AST_TREE_F64_TYPE) {
-      doAllOperationsFloat(left, right, expr->token, AstTreeFloat, f64);
+      doOperationFloat(left, right, <=, AstTreeFloat, f64);
     } else if (left->type == &AST_TREE_F32_TYPE &&
                right->type == &AST_TREE_F32_TYPE) {
-      doAllOperationsFloat(left, right, expr->token, AstTreeFloat, f32);
+      doOperationFloat(left, right, <=, AstTreeFloat, f32);
     } else if (left->type == &AST_TREE_F16_TYPE &&
                right->type == &AST_TREE_F16_TYPE) {
-      doAllOperationsFloat(left, right, expr->token, AstTreeFloat, f16);
+      doOperationFloat(left, right, <=, AstTreeFloat, f16);
     } else {
-      UNREACHABLE;
+      printError(expr->str_begin, expr->str_end, "Not supported");
     }
     astTreeDelete(right);
     return left;
@@ -552,7 +915,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
     return copyAstTree(expr);
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *variable = expr->metadata;
-    return runExpression(runnerVariableGetValue(pages, variable), pages);
+    AstTree *value = runnerVariableGetValue(pages, variable);
+    return runExpression(value, pages);
   }
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_NONE:

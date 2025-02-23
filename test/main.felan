@@ -1,7 +1,18 @@
 main :: () -> void {
   a := 2.3;
-  if a == 2.3
-    print_u64 1;
+  a /= 2.5;
+ print_u64 (if a == 1.15
+    1
   else
-    print_u64 2;
+    2);
+  // test(u64,i64);
 };
+
+/*
+test :: (from:type, to:type) -> void {
+  if from == to
+    print_u64 1234;
+  else
+    print_u64 4321;
+};
+*/

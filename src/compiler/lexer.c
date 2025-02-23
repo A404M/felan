@@ -180,6 +180,7 @@ LexerNodeArray lexer(char *str) {
             goto RETURN_ERROR;
           }
         }
+        continue;
       } else {
         --iter;
         c = *iter;
