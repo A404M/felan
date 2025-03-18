@@ -20,9 +20,11 @@ typedef struct RunnerVariablePages {
 
 void runnerVariablesDelete(RunnerVariables *variables);
 
-void runnerVariablePush(RunnerVariables *variables,AstTreeVariable *variable);
-void runnerVariableSetValue(RunnerVariablePages *pages,AstTreeVariable *variable,AstTree *value);
-AstTree* runnerVariableGetValue(RunnerVariablePages *pages,AstTreeVariable *variable);
+void runnerVariablePush(RunnerVariables *variables, AstTreeVariable *variable);
+void runnerVariableSetValue(RunnerVariablePages *pages,
+                            AstTreeVariable *variable, AstTree *value);
+AstTree *runnerVariableGetValue(RunnerVariablePages *pages,
+                                AstTreeVariable *variable);
 
 RunnerVariablePages initRootPages();
 void destroyRootPages(RunnerVariablePages pages);
@@ -30,6 +32,7 @@ void destroyRootPages(RunnerVariablePages pages);
 bool runAstTree(AstTreeRoot *root);
 
 AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
-                            size_t arguments_size,RunnerVariablePages *pages);
+                            size_t arguments_size, RunnerVariablePages *pages);
 
-AstTree* runExpression(AstTree *expr,RunnerVariablePages *pages);
+AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages,
+                       bool *shouldRet);

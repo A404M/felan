@@ -1898,6 +1898,7 @@ bool isConst(AstTree *tree, AstTreeHelper *helper) {
   case AST_TREE_TOKEN_VALUE_FLOAT:
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_KEYWORD_COMPTIME:
+  case AST_TREE_TOKEN_SCOPE:
     return true;
   case AST_TREE_TOKEN_KEYWORD_IF: {
     AstTreeIf *metadata = tree->metadata;
@@ -1935,7 +1936,6 @@ bool isConst(AstTree *tree, AstTreeHelper *helper) {
   case AST_TREE_TOKEN_OPERATOR_SMALLER:
   case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
   case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
-  case AST_TREE_TOKEN_SCOPE:
     return false;
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *metadata = tree->metadata;
@@ -2157,7 +2157,8 @@ AstTree *getValue(AstTree *tree, AstTreeSetTypesHelper helper) {
   case AST_TREE_TOKEN_KEYWORD_WHILE:
   case AST_TREE_TOKEN_KEYWORD_COMPTIME:
   case AST_TREE_TOKEN_SCOPE: {
-    AstTree *value = runExpression(tree, helper.pages);
+    bool shouldRet = false;
+    AstTree *value = runExpression(tree, helper.pages, &shouldRet);
     if (value == NULL) {
       printError(tree->str_begin, tree->str_end, "Unknown error");
     }
@@ -2174,8 +2175,20 @@ AstTree *getValue(AstTree *tree, AstTreeSetTypesHelper helper) {
   UNREACHABLE;
 }
 
-bool isCircularDependencies(AstTreeHelper *helper, AstTreeVariable *variable,
-                            AstTree *tree) {
+bool isCircularDependencies(AstTreeHelper *helper, AstTreeVariable *variable) {
+  AstTreeVariables checkedVariables = {
+      .data = a404m_malloc(0),
+      .size = 0,
+  };
+  bool ret = isCircularDependenciesBack(helper, variable, variable->value,
+                                        &checkedVariables);
+  free(checkedVariables.data);
+  return ret;
+}
+
+bool isCircularDependenciesBack(AstTreeHelper *helper,
+                                AstTreeVariable *variable, AstTree *tree,
+                                AstTreeVariables *checkedVariables) {
   switch (tree->token) {
   case AST_TREE_TOKEN_SCOPE:
   case AST_TREE_TOKEN_TYPE_TYPE:
@@ -2203,7 +2216,8 @@ bool isCircularDependencies(AstTreeHelper *helper, AstTreeVariable *variable,
   case AST_TREE_TOKEN_OPERATOR_PLUS:
   case AST_TREE_TOKEN_OPERATOR_MINUS: {
     AstTreeSingleChild *metadata = tree->metadata;
-    return isCircularDependencies(helper, variable, metadata);
+    return isCircularDependenciesBack(helper, variable, metadata,
+                                      checkedVariables);
   }
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_SUM:
@@ -2218,24 +2232,31 @@ bool isCircularDependencies(AstTreeHelper *helper, AstTreeVariable *variable,
   case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
   case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL: {
     AstTreeInfix *metadata = tree->metadata;
-    return isCircularDependencies(helper, variable, &metadata->left) ||
-           isCircularDependencies(helper, variable, &metadata->right);
+    return isCircularDependenciesBack(helper, variable, &metadata->left,
+                                      checkedVariables) ||
+           isCircularDependenciesBack(helper, variable, &metadata->right,
+                                      checkedVariables);
   }
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = tree->metadata;
     for (size_t i = 0; i < metadata->parameters_size; ++i) {
-      if (isCircularDependencies(helper, variable, metadata->parameters[i])) {
+      if (isCircularDependenciesBack(helper, variable, metadata->parameters[i],
+                                     checkedVariables)) {
         return true;
       }
     }
-    return isCircularDependencies(helper, variable, metadata->function);
+    return isCircularDependenciesBack(helper, variable, metadata->function,
+                                      checkedVariables);
   }
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *metadata = tree->metadata;
     for (size_t index = 0; index < helper->variables[0]->size; ++index) {
       if (helper->variables[0]->data[index] == metadata) {
         for (size_t i = 0; i < helper->globalDeps[index].size; ++i) {
-          if (helper->globalDeps[index].data[i] == variable) {
+          AstTreeVariable *currentVariable = helper->globalDeps[index].data[i];
+          if (currentVariable == variable ||
+              isCircularDependenciesVariable(helper, variable, currentVariable,
+                                             checkedVariables)) {
             return true;
           }
         }
@@ -2257,10 +2278,46 @@ bool isCircularDependencies(AstTreeHelper *helper, AstTreeVariable *variable,
   UNREACHABLE;
 }
 
+bool isCircularDependenciesVariable(AstTreeHelper *helper,
+                                    AstTreeVariable *toBeFound,
+                                    AstTreeVariable *currentVariable,
+                                    AstTreeVariables *checkedVariables) {
+  for (size_t i = 0; i < checkedVariables->size; ++i) {
+    if (currentVariable == checkedVariables->data[i]) {
+      return false;
+    }
+  }
+
+  const size_t capacity = a404m_malloc_usable_size(checkedVariables->data) /
+                          sizeof(*checkedVariables->data);
+
+  if (capacity == checkedVariables->size) {
+    checkedVariables->data = a404m_realloc(checkedVariables->data,
+                                           (capacity + capacity / 2 + 1) *
+                                               sizeof(*checkedVariables->data));
+  }
+  checkedVariables->data[checkedVariables->size] = currentVariable;
+  checkedVariables->size += 1;
+
+  for (size_t index = 0; index < helper->variables[0]->size; ++index) {
+    if (helper->variables[0]->data[index] == currentVariable) {
+      for (size_t i = 0; i < helper->globalDeps[index].size; ++i) {
+        AstTreeVariable *var = helper->globalDeps[index].data[i];
+        if (var == toBeFound || isCircularDependenciesVariable(
+                                    helper, toBeFound, var, checkedVariables)) {
+          return true;
+        }
+      }
+      break;
+    }
+  }
+  return false;
+}
+
 bool setAllTypesRoot(AstTreeRoot *root, AstTreeHelper *helper) {
   for (size_t i = 0; i < root->variables.size; ++i) {
     AstTreeVariable *variable = root->variables.data[i];
-    if (isCircularDependencies(helper, variable, variable->value)) {
+    if (isCircularDependencies(helper, variable)) {
       printError(variable->name_begin, variable->name_end,
                  "Circular dependecies");
       return false;

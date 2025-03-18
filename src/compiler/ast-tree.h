@@ -224,8 +224,11 @@ AstTree *makeTypeOf(AstTree *value);
 bool typeIsEqual(const AstTree *type0, const AstTree *type1);
 AstTree *getValue(AstTree *tree, AstTreeSetTypesHelper helper);
 
-bool isCircularDependencies(AstTreeHelper *helper, AstTreeVariable *variable,
-                            AstTree *tree);
+bool isCircularDependencies(AstTreeHelper *helper, AstTreeVariable *variable);
+bool isCircularDependenciesBack(AstTreeHelper *helper, AstTreeVariable *variable,
+                            AstTree *tree,AstTreeVariables *checkedVariables);
+bool isCircularDependenciesVariable(AstTreeHelper *helper, AstTreeVariable *toBeFound,
+                            AstTreeVariable *currentVariable,AstTreeVariables *checkedVariables);
 
 bool setAllTypesRoot(AstTreeRoot *root, AstTreeHelper *helper);
 bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,

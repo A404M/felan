@@ -136,7 +136,7 @@ static constexpr ParserOrder PARSER_ORDER[] = {
                     LEXER_TOKEN_SYMBOL_MODULO_ASSIGN, ),
     },
     {
-        .ltr = true,
+        .ltr = false,
         ORDER_ARRAY(LEXER_TOKEN_KEYWORD_RETURN, LEXER_TOKEN_KEYWORD_PRINT_U64,
                     LEXER_TOKEN_KEYWORD_COMPTIME, ),
     },
@@ -145,10 +145,9 @@ static constexpr ParserOrder PARSER_ORDER[] = {
         ORDER_ARRAY(LEXER_TOKEN_SYMBOL_EOL, LEXER_TOKEN_SYMBOL_COMMA, ),
     },
     {
-        .ltr = true,
-        ORDER_ARRAY(LEXER_TOKEN_KEYWORD_IF, LEXER_TOKEN_KEYWORD_WHILE, ),
+        .ltr = false,
+        ORDER_ARRAY(LEXER_TOKEN_KEYWORD_IF,LEXER_TOKEN_KEYWORD_WHILE, ),
     },
-
 };
 
 static constexpr size_t PARSER_ORDER_SIZE =

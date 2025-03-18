@@ -191,12 +191,16 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
   pages.data[pages.size - 1]->data = a404m_malloc(0);
   pages.data[pages.size - 1]->size = 0;
 
+  bool shouldRet = false;
+
   for (size_t i = 0; i < arguments_size; ++i) {
     AstTreeVariable *variable = function->arguments.data[i];
-    AstTree *value = runExpression(arguments[i], &pages);
+    AstTree *value = runExpression(arguments[i], &pages, &shouldRet);
     runnerVariablePush(pages.data[pages.size - 1], variable);
     runnerVariableSetValue(&pages, variable, value);
   }
+
+  shouldRet = false;
 
   for (size_t i = arguments_size; i < function->arguments.size; ++i) {
     AstTreeVariable *variable = function->arguments.data[i];
@@ -211,8 +215,8 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
   AstTree *ret = &AST_TREE_VOID_VALUE;
 
   for (size_t i = 0; i < function->scope.expressions_size; ++i) {
-    AstTree *r = runExpression(function->scope.expressions[i], &pages);
-    if (r) {
+    AstTree *r = runExpression(function->scope.expressions[i], &pages, &shouldRet);
+    if (shouldRet) {
       ret = r;
       break;
     }
@@ -224,15 +228,16 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
   return ret;
 }
 
-AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
+AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages,
+                       bool *shouldRet) {
   switch (expr->token) {
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64: {
     AstTreeSingleChild *metadata = expr->metadata;
-    AstTree *tree = runExpression(metadata, pages);
+    AstTree *tree = runExpression(metadata, pages, shouldRet);
     printf("%lu", (AstTreeInt)tree->metadata);
     astTreeDelete(tree);
+    return &AST_TREE_VOID_VALUE;
   }
-    return NULL;
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = expr->metadata;
     if (metadata->function->token == AST_TREE_TOKEN_VARIABLE) {
@@ -249,16 +254,17 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
     if (metadata->left.token == AST_TREE_TOKEN_VARIABLE) {
       AstTreeVariable *left = metadata->left.metadata;
       runnerVariableSetValue(pages, left,
-                             runExpression(&metadata->right, pages));
+                             runExpression(&metadata->right, pages, shouldRet));
+      return copyAstTree(left->value);
     } else {
       UNREACHABLE;
     }
   }
-    return NULL;
   case AST_TREE_TOKEN_KEYWORD_RETURN: {
     AstTreeReturn *metadata = expr->metadata;
+    *shouldRet = true;
     if (metadata->value != NULL) {
-      return runExpression(metadata->value, pages);
+      return runExpression(metadata->value, pages, shouldRet);
     } else {
       return &AST_TREE_VOID_VALUE;
     }
@@ -266,18 +272,18 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   case AST_TREE_TOKEN_VARIABLE_DEFINE: {
     AstTreeVariable *variable = expr->metadata;
     runnerVariableSetValue(pages, variable, copyAstTree(variable->value));
+    return &AST_TREE_VOID_VALUE;
   }
-    return NULL;
   case AST_TREE_TOKEN_KEYWORD_IF: {
     AstTreeIf *metadata = expr->metadata;
-    AstTree *condition = runExpression(metadata->condition, pages);
+    AstTree *condition = runExpression(metadata->condition, pages, shouldRet);
     AstTree *ret;
     if ((AstTreeBool)condition->metadata) {
-      ret = runExpression(metadata->ifBody, pages);
+      ret = runExpression(metadata->ifBody, pages, shouldRet);
     } else if (metadata->elseBody != NULL) {
-      ret = runExpression(metadata->elseBody, pages);
+      ret = runExpression(metadata->elseBody, pages, shouldRet);
     } else {
-      ret = NULL;
+      ret = &AST_TREE_VOID_VALUE;
     }
     astTreeDelete(condition);
     return ret;
@@ -285,20 +291,20 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   case AST_TREE_TOKEN_KEYWORD_WHILE: {
     AstTreeWhile *metadata = expr->metadata;
     AstTree *ret = NULL;
-    while (true) {
-      AstTree *tree = runExpression(metadata->condition, pages);
+    while (!*shouldRet) {
+      AstTree *tree = runExpression(metadata->condition, pages, shouldRet);
       bool conti = (AstTreeBool)tree->metadata;
       astTreeDelete(tree);
       if (!conti) {
         break;
       }
-      ret = runExpression(metadata->body, pages);
+      ret = runExpression(metadata->body, pages, shouldRet);
     }
     return ret;
   }
   case AST_TREE_TOKEN_KEYWORD_COMPTIME: {
     AstTreeSingleChild *operand = expr->metadata;
-    return runExpression((AstTree *)operand, pages);
+    return runExpression((AstTree *)operand, pages, shouldRet);
   }
   case AST_TREE_TOKEN_SCOPE: {
     AstTreeScope *metadata = expr->metadata;
@@ -324,9 +330,9 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
       runnerVariablePush(newPages.data[newPages.size - 1], variable);
     }
 
-    AstTree *ret = NULL;
-    for (size_t i = 0; i < metadata->expressions_size; ++i) {
-      ret = runExpression(metadata->expressions[i], &newPages);
+    AstTree *ret = &AST_TREE_VOID_VALUE;
+    for (size_t i = 0; i < metadata->expressions_size && !*shouldRet; ++i) {
+      ret = runExpression(metadata->expressions[i], &newPages, shouldRet);
     }
     for (size_t i = 0; i < newPages.data[pages->size]->size; ++i) {
       if (newPages.data[pages->size]->data[i]->value) {
@@ -340,7 +346,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
     return ret;
   }
   case AST_TREE_TOKEN_OPERATOR_PLUS: {
-    AstTreeSingleChild *operand = runExpression(expr->metadata, pages);
+    AstTreeSingleChild *operand =
+        runExpression(expr->metadata, pages, shouldRet);
     if (operand->type == &AST_TREE_U64_TYPE) {
       doLeftOperation(operand, +, AstTreeInt, u64);
     } else if (operand->type == &AST_TREE_I64_TYPE) {
@@ -372,7 +379,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
     return operand;
   }
   case AST_TREE_TOKEN_OPERATOR_MINUS: {
-    AstTreeSingleChild *operand = runExpression(expr->metadata, pages);
+    AstTreeSingleChild *operand =
+        runExpression(expr->metadata, pages, shouldRet);
     if (operand->type == &AST_TREE_U64_TYPE) {
       doLeftOperation(operand, -, AstTreeInt, u64);
     } else if (operand->type == &AST_TREE_I64_TYPE) {
@@ -405,8 +413,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   }
   case AST_TREE_TOKEN_OPERATOR_SUM: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, pages);
-    AstTree *right = runExpression(&metadata->right, pages);
+    AstTree *left = runExpression(&metadata->left, pages, shouldRet);
+    AstTree *right = runExpression(&metadata->right, pages, shouldRet);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doOperation(left, right, +, AstTreeInt, u64);
@@ -452,8 +460,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   }
   case AST_TREE_TOKEN_OPERATOR_SUB: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, pages);
-    AstTree *right = runExpression(&metadata->right, pages);
+    AstTree *left = runExpression(&metadata->left, pages, shouldRet);
+    AstTree *right = runExpression(&metadata->right, pages, shouldRet);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doOperation(left, right, -, AstTreeInt, u64);
@@ -499,8 +507,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   }
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, pages);
-    AstTree *right = runExpression(&metadata->right, pages);
+    AstTree *left = runExpression(&metadata->left, pages, shouldRet);
+    AstTree *right = runExpression(&metadata->right, pages, shouldRet);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doOperation(left, right, *, AstTreeInt, u64);
@@ -546,8 +554,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   }
   case AST_TREE_TOKEN_OPERATOR_DIVIDE: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, pages);
-    AstTree *right = runExpression(&metadata->right, pages);
+    AstTree *left = runExpression(&metadata->left, pages, shouldRet);
+    AstTree *right = runExpression(&metadata->right, pages, shouldRet);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doOperation(left, right, /, AstTreeInt, u64);
@@ -593,8 +601,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   }
   case AST_TREE_TOKEN_OPERATOR_MODULO: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, pages);
-    AstTree *right = runExpression(&metadata->right, pages);
+    AstTree *left = runExpression(&metadata->left, pages, shouldRet);
+    AstTree *right = runExpression(&metadata->right, pages, shouldRet);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doOperation(left, right, %, AstTreeInt, u64);
@@ -628,8 +636,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   }
   case AST_TREE_TOKEN_OPERATOR_EQUAL: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, pages);
-    AstTree *right = runExpression(&metadata->right, pages);
+    AstTree *left = runExpression(&metadata->left, pages, shouldRet);
+    AstTree *right = runExpression(&metadata->right, pages, shouldRet);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doOperation(left, right, ==, AstTreeInt, u64);
@@ -681,8 +689,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   }
   case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, pages);
-    AstTree *right = runExpression(&metadata->right, pages);
+    AstTree *left = runExpression(&metadata->left, pages, shouldRet);
+    AstTree *right = runExpression(&metadata->right, pages, shouldRet);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doOperation(left, right, !=, AstTreeInt, u64);
@@ -734,8 +742,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   }
   case AST_TREE_TOKEN_OPERATOR_GREATER: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, pages);
-    AstTree *right = runExpression(&metadata->right, pages);
+    AstTree *left = runExpression(&metadata->left, pages, shouldRet);
+    AstTree *right = runExpression(&metadata->right, pages, shouldRet);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doOperation(left, right, >, AstTreeInt, u64);
@@ -781,8 +789,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   }
   case AST_TREE_TOKEN_OPERATOR_SMALLER: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, pages);
-    AstTree *right = runExpression(&metadata->right, pages);
+    AstTree *left = runExpression(&metadata->left, pages, shouldRet);
+    AstTree *right = runExpression(&metadata->right, pages, shouldRet);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doOperation(left, right, <, AstTreeInt, u64);
@@ -828,8 +836,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   }
   case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, pages);
-    AstTree *right = runExpression(&metadata->right, pages);
+    AstTree *left = runExpression(&metadata->left, pages, shouldRet);
+    AstTree *right = runExpression(&metadata->right, pages, shouldRet);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doOperation(left, right, >=, AstTreeInt, u64);
@@ -875,8 +883,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   }
   case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, pages);
-    AstTree *right = runExpression(&metadata->right, pages);
+    AstTree *left = runExpression(&metadata->left, pages, shouldRet);
+    AstTree *right = runExpression(&metadata->right, pages, shouldRet);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doOperation(left, right, <=, AstTreeInt, u64);
@@ -944,7 +952,7 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages) {
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *variable = expr->metadata;
     AstTree *value = runnerVariableGetValue(pages, variable);
-    return runExpression(value, pages);
+    return runExpression(value, pages, shouldRet);
   }
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_NONE:

@@ -1,10 +1,22 @@
 main :: () -> void {
-  comptime test(u64,u64);
+  print_u64 a;
 };
 
-test :: (from:type, to:type) -> void {
-  if from == to
-    print_u64 1234;
+a :: f();
+
+f :: ()->u64{
+  b :u64= 2;
+  r := 2;
+  if r % 2 == 0
+    return b;
   else
-    print_u64 4321;
+    return d();
+};
+
+d :: ()->u64{
+  return c();
+};
+
+c :: ()->u64{
+  return d();
 };
