@@ -215,7 +215,8 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
   AstTree *ret = &AST_TREE_VOID_VALUE;
 
   for (size_t i = 0; i < function->scope.expressions_size; ++i) {
-    AstTree *r = runExpression(function->scope.expressions[i], &pages, &shouldRet);
+    AstTree *r =
+        runExpression(function->scope.expressions[i], &pages, &shouldRet);
     if (shouldRet) {
       ret = r;
       break;

@@ -2611,13 +2611,19 @@ bool setTypesPrintU64(AstTree *tree, AstTreeSetTypesHelper _helper) {
   }
 }
 
-bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper helper,
+bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper _helper,
                     AstTreeFunction *function) {
   if (function == NULL) {
     printError(tree->str_begin, tree->str_end, "Return can't be here");
   }
+
   AstTreeReturn *metadata = tree->metadata;
   if (metadata->value != NULL) {
+    AstTreeSetTypesHelper helper = {
+        .lookingType = getValue(function->returnType, _helper),
+        .treeHelper = _helper.treeHelper,
+        .pages = _helper.pages,
+    };
     if (!setAllTypes(metadata->value, helper, NULL)) {
       return false;
     } else if (!typeIsEqual(metadata->value->type, function->returnType)) {
@@ -2651,12 +2657,6 @@ bool setTypesTypeFunction(AstTree *tree, AstTreeSetTypesHelper helper) {
 bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper) {
   AstTreeFunctionCall *metadata = tree->metadata;
 
-  for (size_t i = 0; i < metadata->parameters_size; ++i) {
-    if (!setAllTypes(metadata->parameters[i], helper, NULL)) {
-      return false;
-    }
-  }
-
   if (metadata->function->token != AST_TREE_TOKEN_VARIABLE) {
     printError(tree->str_begin, tree->str_end, "Not yet supported");
     return false;
@@ -2671,6 +2671,23 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper) {
                "Arguments doesn't match %ld != %ld", function->arguments.size,
                metadata->parameters_size);
     return NULL;
+  }
+
+  for (size_t i = 0; i < metadata->parameters_size; ++i) {
+    AstTreeVariable *arg = function->arguments.data[i];
+    AstTree *param = metadata->parameters[i];
+
+    AstTreeSetTypesHelper newHelper = {
+        .lookingType = arg->type,
+        .pages = helper.pages,
+        .treeHelper = helper.treeHelper,
+    };
+
+    if (!setAllTypes(param, newHelper, NULL)) {
+      return false;
+    }
+  }
+  for (size_t i = 0; i < function->arguments.size; ++i) {
   }
 
   tree->type = copyAstTree(function->returnType);
@@ -2781,27 +2798,31 @@ bool setTypesAstVariable(AstTreeVariable *variable,
 
   if (variable->type == NULL) {
     return false;
-  } else if (variable->value != NULL &&
-             !typeIsEqual(variable->value->type, variable->type)) {
-    printError(variable->name_begin, variable->name_end, "Type mismatch %s",
-               AST_TREE_TOKEN_STRINGS[variable->value->token]);
-    return false;
-  }
-
-  if (variable->value != NULL && variable->isConst) {
-    if (!isConst(variable->value, helper.treeHelper)) {
-      printError(variable->value->str_begin, variable->value->str_end,
-                 "Can't initialize constant with non constant value");
+  } else if (variable->value != NULL) {
+    if (!typeIsEqual(variable->value->type, variable->type)) {
+      printError(variable->name_begin, variable->name_end,
+                 "Type mismatch value = %s but type = %s",
+                 AST_TREE_TOKEN_STRINGS[variable->value->type->token],
+                 AST_TREE_TOKEN_STRINGS[variable->type->token]);
       return false;
-    }
-    AstTree *value = variable->value;
-    variable->value = getValue(value, helper);
-    if (variable->value != value) {
-      astTreeDelete(value);
-    }
+    } else if (variable->isConst) {
+      if (!isConst(variable->value, helper.treeHelper)) {
+        printError(variable->value->str_begin, variable->value->str_end,
+                   "Can't initialize constant with non constant value");
+        return false;
+      }
+      AstTree *value = variable->value;
+      variable->value = getValue(value, helper);
+      if (variable->value == NULL) {
+        return false;
+      }
+      if (variable->value != value) {
+        astTreeDelete(value);
+      }
 
-    if (variable->value == NULL) {
-      return false;
+      if (variable->value == NULL) {
+        return false;
+      }
     }
   }
 

@@ -2,21 +2,9 @@ main :: () -> void {
   print_u64 a;
 };
 
-a :: f();
+a :: f(2);
 
-f :: ()->u64{
-  b :u64= 2;
-  r := 2;
-  if r % 2 == 0
-    return b;
-  else
-    return d();
-};
-
-d :: ()->u64{
-  return c();
-};
-
-c :: ()->u64{
-  return d();
+f :: (arg:u64)->u64{
+  b:=arg;
+  return b;
 };
