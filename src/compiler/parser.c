@@ -912,7 +912,7 @@ ParserNode *parserNumber(LexerNode *node, ParserNode *parent) {
     // fall through
   default: {
     bool success;
-    uint64_t value = decimalToU64(node->str_begin, node->str_end, &success);
+    u64 value = decimalToU64(node->str_begin, node->str_end, &success);
     if (success) {
       parserNode =
           newParserNode(PARSER_TOKEN_VALUE_INT, node->str_begin, node->str_end,

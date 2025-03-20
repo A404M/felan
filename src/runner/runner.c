@@ -172,7 +172,7 @@ bool runAstTree(AstTreeRoot *root) {
   return false;
 }
 
-AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
+AstTree *runAstTreeFunction(AstTree *tree, AstTreeFunctionCallParam *arguments,
                             size_t arguments_size,
                             RunnerVariablePages *_pages) {
   AstTreeFunction *function = tree->metadata;
@@ -193,11 +193,67 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
 
   bool shouldRet = false;
 
+  bool initedArguments[function->arguments.size];
+  size_t initedArguments_size = function->arguments.size;
+
+  for (size_t i = 0; i < initedArguments_size; ++i) {
+    initedArguments[i] = false;
+  }
+
   for (size_t i = 0; i < arguments_size; ++i) {
-    AstTreeVariable *variable = function->arguments.data[i];
-    AstTree *value = runExpression(arguments[i], &pages, &shouldRet);
-    runnerVariablePush(pages.data[pages.size - 1], variable);
-    runnerVariableSetValue(&pages, variable, value);
+    AstTreeFunctionCallParam param = arguments[i];
+    if (param.nameBegin != param.nameEnd) {
+      const size_t param_name_size = param.nameEnd - param.nameBegin;
+      for (size_t j = 0; j < function->arguments.size; ++j) {
+        AstTreeVariable *arg = function->arguments.data[j];
+        if ((size_t)(arg->name_end - arg->name_begin) == param_name_size &&
+            strncmp(arg->name_begin, param.nameBegin, param_name_size) == 0) {
+          initedArguments[j] = true;
+
+          AstTree *value = runExpression(param.value, &pages, &shouldRet);
+          runnerVariablePush(pages.data[pages.size - 1], arg);
+          runnerVariableSetValue(&pages, arg, value);
+          goto END_OF_NAMED_FOR;
+        }
+      }
+      printError(param.value->str_begin, param.value->str_end,
+                 "Argument not found");
+      UNREACHABLE;
+    }
+  END_OF_NAMED_FOR:
+  }
+
+  for (size_t i = 0; i < arguments_size; ++i) {
+    AstTreeFunctionCallParam param = arguments[i];
+    if (param.nameBegin == param.nameEnd) {
+      for (size_t j = 0; j < function->arguments.size; ++j) {
+        AstTreeVariable *arg = function->arguments.data[j];
+        if (!initedArguments[j]) {
+          initedArguments[j] = true;
+
+          AstTree *value = runExpression(param.value, &pages, &shouldRet);
+          runnerVariablePush(pages.data[pages.size - 1], arg);
+          runnerVariableSetValue(&pages, arg, value);
+          goto END_OF_UNNAMED_FOR;
+        }
+      }
+      printError(param.value->str_begin, param.value->str_end,
+                 "Too many arguments");
+      UNREACHABLE;
+    }
+  END_OF_UNNAMED_FOR:
+  }
+
+  for (size_t i = 0; i < function->arguments.size; ++i) {
+    AstTreeVariable *arg = function->arguments.data[i];
+    if (!initedArguments[i]) {
+      if (arg->value == NULL) {
+        printError(arg->name_begin, arg->name_end,
+                   "Argument is not initialized");
+      } else {
+        runnerVariablePush(pages.data[pages.size - 1], arg);
+      }
+    }
   }
 
   shouldRet = false;

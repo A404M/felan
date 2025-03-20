@@ -31,7 +31,7 @@ void destroyRootPages(RunnerVariablePages pages);
 
 bool runAstTree(AstTreeRoot *root);
 
-AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
+AstTree *runAstTreeFunction(AstTree *tree, AstTreeFunctionCallParam *arguments,
                             size_t arguments_size, RunnerVariablePages *pages);
 
 AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages,

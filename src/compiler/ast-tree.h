@@ -122,9 +122,15 @@ typedef struct AstTreeTypeFunction {
   AstTree *returnType;
 } AstTreeTypeFunction;
 
+typedef struct AstTreeFunctionCallParam {
+  char *nameBegin;
+  char *nameEnd;
+  AstTree *value;
+} AstTreeFunctionCallParam;
+
 typedef struct AstTreeFunctionCall {
   AstTree *function;
-  AstTree **parameters;
+  AstTreeFunctionCallParam *parameters;
   size_t parameters_size;
 } AstTreeFunctionCall;
 
