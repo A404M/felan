@@ -18,9 +18,9 @@ NC := \033[0m
 INC_DIRS := $(SRC_DIR)
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
-# CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -O3
+CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -O3
 # CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -Oz
-CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -g
+# CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -g
 
 EXEC_FILE := $(BUILD_DIR)/$(PROJECT_NAME)
 
@@ -51,17 +51,25 @@ gdb-run: $(EXEC_FILE)
 
 .PHONY: test
 test: $(EXEC_FILE)
-	$(EXEC_FILE) test/main.felan build/out
+	$(EXEC_FILE) code/main.felan build/out
 
 val-test: $(EXEC_FILE)
-	valgrind --log-file="val.log" --leak-check=full --track-origins=yes --show-leak-kinds=all -s $(EXEC_FILE) test/main.felan build/out
+	valgrind --log-file="val.log" --leak-check=full --track-origins=yes --show-leak-kinds=all -s $(EXEC_FILE) code/main.felan build/out
 
 gdb-test: $(EXEC_FILE)
-	gdb $(EXEC_FILE) test/main.felan build/out
+	gdb $(EXEC_FILE) code/main.felan build/out
 
-test-all: $(EXEC_FILE)
-	$(EXEC_FILE) test/main.felan
-	$(EXEC_FILE) test/one_million.felan
+test-all: $(EXEC_FILE) test/big.felan
+	$(EXEC_FILE) test/big.felan
+
+test/big.felan: Makefile
+	mkdir -p test
+	echo "main :: () -> void {" > $@
+	for((n = 0;n < 100000;n++)); do echo "  print(1);" >> $@; done
+	echo "};" >> $@
+	echo "print :: (value:u64) -> void {" >> $@
+	echo "  print_u64 value;" >> $@
+	echo "};" >> $@
 
 # $@ = left hand of :
 # $< = right hand of : first one of them

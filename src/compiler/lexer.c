@@ -211,7 +211,7 @@ LexerNodeArray lexer(char *str) {
     } else {
     RETURN_ERROR:
       free(result.data);
-      printError(iter, iter + 1, "Unexpected character '%c'", c);
+      printError(iter, iter + 1, "Unexpected character '%c' with code = %d at index %ld", c, c,iter-str);
       return LEXER_NODE_ARRAY_ERROR;
     }
   }

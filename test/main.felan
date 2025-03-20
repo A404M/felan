@@ -1,9 +1,0 @@
-main :: () -> void {
-  print_u64 a;
-};
-
-a :: f(b=4,a=5);
-
-f :: (a:u64,b:u64)->u64{
-  return a-b;
-};

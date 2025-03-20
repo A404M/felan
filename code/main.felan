@@ -1,0 +1,3 @@
+main :: () -> void {
+  print_u64 2;
+};
