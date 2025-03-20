@@ -18,9 +18,9 @@ NC := \033[0m
 INC_DIRS := $(SRC_DIR)
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
-CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -O3
+# CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -O3
 # CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -Oz
-# CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -g
+CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -g
 
 EXEC_FILE := $(BUILD_DIR)/$(PROJECT_NAME)
 

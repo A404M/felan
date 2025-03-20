@@ -1,3 +1,7 @@
 main :: () -> void {
-  print_u64 2;
+  f(3);
+};
+
+f :(u64)->void: (a:u64)->void{
+  print_u64 a;
 };

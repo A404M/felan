@@ -1329,22 +1329,30 @@ AstTree *astTreeParseTypeFunction(ParserNode *parserNode,
   typeFunction->arguments_size = 0;
 
   for (size_t i = 0; i < node_arguments->size; ++i) {
-    ParserNode *argument = node_arguments->data[i];
+    ParserNode *node_argument = node_arguments->data[i];
 
-    if (argument->token == PARSER_TOKEN_SYMBOL_COMMA) {
-      argument = (ParserNodeSingleChildMetadata *)argument->metadata;
+    if (node_argument->token == PARSER_TOKEN_SYMBOL_COMMA) {
+      node_argument = (ParserNodeSingleChildMetadata *)node_argument->metadata;
     }
 
-    ParserNodeVariableMetadata *arg_metadata = argument->metadata;
-    if (arg_metadata->value != NULL) {
-      printError(argument->str_begin, argument->str_end,
-                 "arguments can't have default values (for now)");
-      goto RETURN_ERROR;
-    }
+    AstTree *argument;
 
-    AstTree *type = astTreeParse(arg_metadata->type, helper);
-    if (type == NULL) {
-      goto RETURN_ERROR;
+    if (node_argument->token == PARSER_TOKEN_VARIABLE) {
+      argument = NULL;
+      printError(node_argument->str_begin, node_argument->str_end,
+                 "Not yet supported");
+      UNREACHABLE;
+    } else {
+      argument = astTreeParse(node_argument, helper);
+      if (argument == NULL) {
+        return NULL;
+      }
+
+      if (!typeIsEqual(argument->type, &AST_TREE_TYPE_TYPE)) {
+        printError(argument->str_begin, argument->str_end,
+                   "Not yet supported");
+        return NULL;
+      }
     }
 
     if (typeFunction->arguments_size == arguments_size) {
@@ -1354,7 +1362,7 @@ AstTree *astTreeParseTypeFunction(ParserNode *parserNode,
                         arguments_size * sizeof(*typeFunction->arguments));
     }
 
-    typeFunction->arguments[typeFunction->arguments_size] = type;
+    typeFunction->arguments[typeFunction->arguments_size] = argument;
     typeFunction->arguments_size += 1;
   }
 
@@ -2662,8 +2670,13 @@ bool setTypesTypeFunction(AstTree *tree, AstTreeSetTypesHelper helper) {
   AstTreeTypeFunction *metadata = tree->metadata;
 
   for (size_t i = 0; i < metadata->arguments_size; ++i) {
-    printError(tree->str_begin, tree->str_end, "Not yet supported");
-    return false;
+    AstTree *arg = metadata->arguments[i];
+    if (!setAllTypes(arg, helper, NULL)) {
+      return false;
+    } else if (!typeIsEqual(arg->type, &AST_TREE_TYPE_TYPE)) {
+      printError(arg->str_begin, arg->str_end, "Expected a type");
+      return false;
+    }
   }
 
   if (!setAllTypes(metadata->returnType, helper, NULL)) {
@@ -2680,10 +2693,7 @@ bool setTypesTypeFunction(AstTree *tree, AstTreeSetTypesHelper helper) {
 bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper) {
   AstTreeFunctionCall *metadata = tree->metadata;
 
-  if (metadata->function->token != AST_TREE_TOKEN_VARIABLE) {
-    printError(tree->str_begin, tree->str_end, "Not yet supported");
-    return false;
-  } else if (!setAllTypes(metadata->function, helper, NULL)) {
+  if (!setAllTypes(metadata->function, helper, NULL)) {
     return false;
   }
 
