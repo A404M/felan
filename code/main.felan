@@ -1,7 +1,17 @@
 main :: () -> void {
-  f(3);
+  a := f(b = 4,2);
+  if a == 0
+    print_u64 10;
+  else if a == 1
+    print_u64 11;
+  else if a == 2
+    print_u64 12;
+  else if a == 3
+    print_u64 13;
+  else
+    print_u64 14;
 };
 
-f :(u64)->void: (a:u64)->void{
-  print_u64 a;
+f :: (a:u64,b:u64)->u64{
+  return b-a;
 };

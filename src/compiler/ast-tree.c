@@ -1176,11 +1176,6 @@ AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *p_helper) {
       .globalDeps = p_helper->globalDeps,
   };
 
-  if ((function->returnType =
-           astTreeParse(node_metadata->returnType, &helper)) == NULL) {
-    goto RETURN_ERROR;
-  }
-
   for (size_t i = 0; i < node_arguments->size; ++i) {
     ParserNode *arg = node_arguments->data[i];
     if (arg->token == PARSER_TOKEN_SYMBOL_COMMA) {
@@ -1210,6 +1205,11 @@ AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *p_helper) {
       astTreeVariableDelete(argument);
       goto RETURN_ERROR;
     }
+  }
+
+  if ((function->returnType =
+           astTreeParse(node_metadata->returnType, &helper)) == NULL) {
+    goto RETURN_ERROR;
   }
 
   for (size_t i = 0; i < body->size; ++i) {

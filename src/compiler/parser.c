@@ -146,7 +146,7 @@ static constexpr ParserOrder PARSER_ORDER[] = {
     },
     {
         .ltr = false,
-        ORDER_ARRAY(LEXER_TOKEN_KEYWORD_IF,LEXER_TOKEN_KEYWORD_WHILE, ),
+        ORDER_ARRAY(LEXER_TOKEN_KEYWORD_IF, LEXER_TOKEN_KEYWORD_WHILE, ),
     },
 };
 
