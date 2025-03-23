@@ -2450,11 +2450,11 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
 }
 
 bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
-  if (helper.lookingType == NULL || helper.lookingType == &AST_TREE_I64_TYPE) {
+  if (helper.lookingType == NULL || typeIsEqual(helper.lookingType,&AST_TREE_I64_TYPE)) {
     tree->type = &AST_TREE_I64_TYPE;
-  } else if (helper.lookingType == &AST_TREE_U64_TYPE) {
+  } else if (typeIsEqual(helper.lookingType,&AST_TREE_U64_TYPE)) {
     tree->type = &AST_TREE_U64_TYPE;
-  } else if (helper.lookingType == &AST_TREE_I32_TYPE) {
+  } else if (typeIsEqual(helper.lookingType,&AST_TREE_I32_TYPE)) {
     AstTreeInt value = (AstTreeInt)tree->metadata;
     i32 newValue = value;
     tree->metadata = (void *)(u64)newValue;
@@ -2462,7 +2462,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_I32_TYPE;
-  } else if (helper.lookingType == &AST_TREE_U32_TYPE) {
+  } else if (typeIsEqual(helper.lookingType,&AST_TREE_U32_TYPE)) {
     AstTreeInt value = (AstTreeInt)tree->metadata;
     u32 newValue = value;
     tree->metadata = (void *)(u64)newValue;
@@ -2470,7 +2470,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_U32_TYPE;
-  } else if (helper.lookingType == &AST_TREE_I16_TYPE) {
+  } else if (typeIsEqual(helper.lookingType,&AST_TREE_I16_TYPE)) {
     AstTreeInt value = (AstTreeInt)tree->metadata;
     i16 newValue = value;
     tree->metadata = (void *)(u64)newValue;
@@ -2478,7 +2478,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_I16_TYPE;
-  } else if (helper.lookingType == &AST_TREE_U16_TYPE) {
+  } else if (typeIsEqual(helper.lookingType,&AST_TREE_U16_TYPE)) {
     AstTreeInt value = (AstTreeInt)tree->metadata;
     u16 newValue = value;
     tree->metadata = (void *)(u64)newValue;
@@ -2486,7 +2486,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_U16_TYPE;
-  } else if (helper.lookingType == &AST_TREE_I8_TYPE) {
+  } else if (typeIsEqual(helper.lookingType,&AST_TREE_I8_TYPE)) {
     AstTreeInt value = (AstTreeInt)tree->metadata;
     i8 newValue = value;
     tree->metadata = (void *)(u64)newValue;
@@ -2494,7 +2494,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_I8_TYPE;
-  } else if (helper.lookingType == &AST_TREE_U8_TYPE) {
+  } else if (typeIsEqual(helper.lookingType,&AST_TREE_U8_TYPE)) {
     AstTreeInt value = (AstTreeInt)tree->metadata;
     u8 newValue = value;
     tree->metadata = (void *)(u64)newValue;
@@ -2502,7 +2502,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_U8_TYPE;
-  } else if (helper.lookingType == &AST_TREE_F16_TYPE) {
+  } else if (typeIsEqual(helper.lookingType,&AST_TREE_F16_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeInt value = (AstTreeInt)tree->metadata;
     f16 newValue = value;
@@ -2512,7 +2512,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_F16_TYPE;
-  } else if (helper.lookingType == &AST_TREE_F32_TYPE) {
+  } else if (typeIsEqual(helper.lookingType,&AST_TREE_F32_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeInt value = (AstTreeInt)tree->metadata;
     f32 newValue = value;
@@ -2522,7 +2522,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_F32_TYPE;
-  } else if (helper.lookingType == &AST_TREE_F64_TYPE) {
+  } else if (typeIsEqual(helper.lookingType,&AST_TREE_F64_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeInt value = (AstTreeInt)tree->metadata;
     f64 newValue = value;
@@ -2532,7 +2532,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_F64_TYPE;
-  } else if (helper.lookingType == &AST_TREE_F128_TYPE) {
+  } else if (typeIsEqual(helper.lookingType,&AST_TREE_F128_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeInt value = (AstTreeInt)tree->metadata;
     f128 newValue = value;
@@ -2549,7 +2549,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
 }
 
 bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
-  if (helper.lookingType == &AST_TREE_F16_TYPE) {
+  if (typeIsEqual(helper.lookingType,&AST_TREE_F16_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeFloat value = *(AstTreeFloat *)tree->metadata;
     f16 newValue = value;
@@ -2558,7 +2558,7 @@ bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_F16_TYPE;
-  } else if (helper.lookingType == &AST_TREE_F32_TYPE) {
+  } else if (typeIsEqual(helper.lookingType,&AST_TREE_F32_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeFloat value = *(AstTreeFloat *)tree->metadata;
     f32 newValue = value;
@@ -2567,7 +2567,7 @@ bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_F32_TYPE;
-  } else if (helper.lookingType == &AST_TREE_F64_TYPE ||
+  } else if (typeIsEqual(helper.lookingType,&AST_TREE_F64_TYPE) ||
              helper.lookingType == NULL) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeFloat value = *(AstTreeFloat *)tree->metadata;
@@ -2577,7 +2577,7 @@ bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_F64_TYPE;
-  } else if (helper.lookingType == &AST_TREE_F128_TYPE) {
+  } else if (typeIsEqual(helper.lookingType,&AST_TREE_F128_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeFloat value = *(AstTreeFloat *)tree->metadata;
     f128 newValue = value;
