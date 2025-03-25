@@ -77,7 +77,7 @@ void runnerVariableSetValue(RunnerVariablePages *pages,
                "Can't assign to const");
     exit(1);
   }
-  for (size_t i = 0; i < pages->size; ++i) {
+  for (size_t i = pages->size - 1; i != (size_t)-1ULL; --i) {
     RunnerVariables *variables = pages->data[i];
     for (size_t j = 0; j < variables->size; ++j) {
       RunnerVariable *var = variables->data[j];
@@ -100,7 +100,7 @@ AstTree *runnerVariableGetValue(RunnerVariablePages *pages,
   if (variable->isConst) {
     return variable->value;
   }
-  for (size_t i = 0; i < pages->size; ++i) {
+  for (size_t i = pages->size - 1; i != (size_t)-1ULL; --i) {
     RunnerVariables *variables = pages->data[i];
     for (size_t j = 0; j < variables->size; ++j) {
       RunnerVariable *var = variables->data[j];
