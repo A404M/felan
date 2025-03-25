@@ -68,13 +68,14 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_GREATER_OR_EQUAL",
     "LEXER_TOKEN_SYMBOL_SMALLER_OR_EQUAL",
     "LEXER_TOKEN_SYMBOL_POINTER",
+    "LEXER_TOKEN_SYMBOL_ADDRESS",
 
     "LEXER_TOKEN_NONE",
 };
 
 const char *LEXER_SYMBOL_STRINGS[] = {
     ";", "(", ")", "{", "}", "->", ":",  "=",  "+=", "-=", "*=", "/=", "%=",
-    ",", "+", "-", "*", "/", "%",  "==", "!=", ">",  ">=", "<",  "<=",
+    ",", "+", "-", "*", "/", "%",  "==", "!=", ">",  ">=", "<",  "<=", "&",
 };
 const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_EOL,
@@ -102,6 +103,7 @@ const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_GREATER_OR_EQUAL,
     LEXER_TOKEN_SYMBOL_SMALLER,
     LEXER_TOKEN_SYMBOL_SMALLER_OR_EQUAL,
+    LEXER_TOKEN_SYMBOL_ADDRESS,
 };
 const size_t LEXER_SYMBOL_SIZE =
     sizeof(LEXER_SYMBOL_TOKENS) / sizeof(*LEXER_SYMBOL_TOKENS);
@@ -305,6 +307,7 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_SYMBOL_GREATER_OR_EQUAL:
   case LEXER_TOKEN_SYMBOL_SMALLER_OR_EQUAL:
   case LEXER_TOKEN_SYMBOL_POINTER:
+  case LEXER_TOKEN_SYMBOL_ADDRESS:
     if (*array_size == array->size) {
       *array_size += 1 + *array_size / 2;
       array->data =
@@ -347,6 +350,7 @@ bool isSymbol(char c) {
   case '%':
   case '=':
   case '!':
+  case '&':
     return true;
   default:
     return false;

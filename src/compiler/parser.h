@@ -66,6 +66,7 @@ typedef enum ParserToken {
   PARSER_TOKEN_OPERATOR_GREATER_OR_EQUAL,
   PARSER_TOKEN_OPERATOR_SMALLER_OR_EQUAL,
   PARSER_TOKEN_OPERATOR_POINTER,
+  PARSER_TOKEN_OPERATOR_ADDRESS,
 
   PARSER_TOKEN_FUNCTION_DEFINITION,
 
@@ -188,6 +189,8 @@ ParserNode *parserBinaryOrLeftOperator(LexerNode *node, LexerNode *begin,
                                        LexerNode *end, ParserNode *parent,
                                        ParserToken token,
                                        LexerToken laterToken);
+ParserNode *parserLeftOperator(LexerNode *node, LexerNode *end,
+                               ParserNode *parent, ParserToken token);
 ParserNode *parserIf(LexerNode *node, LexerNode *end, ParserNode *parent);
 ParserNode *parserWhile(LexerNode *node, LexerNode *end, ParserNode *parent);
 ParserNode *parserComptime(LexerNode *node, LexerNode *end, ParserNode *parent);

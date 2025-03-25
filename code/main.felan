@@ -1,3 +1,4 @@
 main :: () -> void {
-  b : *u64 = null;
+  a :u64= 2;
+  b : *u64 = &a;
 };

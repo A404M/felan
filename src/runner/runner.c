@@ -1009,6 +1009,11 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages,
   case AST_TREE_TOKEN_VALUE_FLOAT:
   case AST_TREE_TOKEN_OPERATOR_POINTER:
     return copyAstTree(expr);
+  case AST_TREE_TOKEN_OPERATOR_ADDRESS: {
+    AstTreeSingleChild *metadata = expr->metadata;
+    return newAstTree(AST_TREE_TOKEN_VARIABLE, metadata->metadata,
+                      copyAstTree(expr->type), expr->str_begin, expr->str_end);
+  }
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *variable = expr->metadata;
     AstTree *value = runnerVariableGetValue(pages, variable);
