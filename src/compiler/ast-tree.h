@@ -30,12 +30,13 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_TYPE_F64,
   AST_TREE_TOKEN_TYPE_F128,
   AST_TREE_TOKEN_TYPE_BOOL,
-  AST_TREE_TOKEN_STATIC_VARS_END = AST_TREE_TOKEN_TYPE_BOOL,
+  AST_TREE_TOKEN_VALUE_VOID,
+  AST_TREE_TOKEN_STATIC_VARS_END = AST_TREE_TOKEN_VALUE_VOID,
 
   AST_TREE_TOKEN_FUNCTION_CALL,
   AST_TREE_TOKEN_VARIABLE,
   AST_TREE_TOKEN_VARIABLE_DEFINE,
-  AST_TREE_TOKEN_VALUE_VOID,
+  AST_TREE_TOKEN_VALUE_NULL,
   AST_TREE_TOKEN_VALUE_INT,
   AST_TREE_TOKEN_VALUE_FLOAT,
   AST_TREE_TOKEN_VALUE_BOOL,
@@ -54,6 +55,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_OPERATOR_SMALLER,
   AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL,
   AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL,
+  AST_TREE_TOKEN_OPERATOR_POINTER,
 
   AST_TREE_TOKEN_SCOPE,
 
@@ -207,6 +209,7 @@ AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
                                   AstTreeHelper *helper);
 AstTree *astTreeParseIdentifier(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseFloat(ParserNode *parserNode);
+AstTree *astTreeParseKeyword(ParserNode *parserNode,AstTreeToken token);
 AstTree *astTreeParsePrintU64(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseReturn(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseBinaryOperator(ParserNode *parserNode,
@@ -241,6 +244,7 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
                  AstTreeFunction *function);
 bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesValueNull(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesFunction(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesPrintU64(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper helper,
@@ -253,6 +257,7 @@ bool setTypesOperatorInfix(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorInfixWithRet(AstTree *tree, AstTree *retType,
                                   AstTreeSetTypesHelper helper);
 bool setTypesOperatorUnary(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesOperatorIndirection(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesVariableDefine(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesIf(AstTree *tree, AstTreeSetTypesHelper helper,
                 AstTreeFunction *function);

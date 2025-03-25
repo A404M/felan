@@ -1001,10 +1001,12 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages,
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
+  case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VALUE_FLOAT:
+  case AST_TREE_TOKEN_OPERATOR_POINTER:
     return copyAstTree(expr);
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *variable = expr->metadata;

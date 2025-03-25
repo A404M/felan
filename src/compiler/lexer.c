@@ -35,6 +35,7 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_KEYWORD_ELSE",
     "LEXER_TOKEN_KEYWORD_WHILE",
     "LEXER_TOKEN_KEYWORD_COMPTIME",
+    "LEXER_TOKEN_KEYWORD_NULL",
 
     "LEXER_TOKEN_NUMBER",
 
@@ -66,6 +67,7 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_SMALLER",
     "LEXER_TOKEN_SYMBOL_GREATER_OR_EQUAL",
     "LEXER_TOKEN_SYMBOL_SMALLER_OR_EQUAL",
+    "LEXER_TOKEN_SYMBOL_POINTER",
 
     "LEXER_TOKEN_NONE",
 };
@@ -91,7 +93,7 @@ const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_COMMA,
     LEXER_TOKEN_SYMBOL_PLUS,
     LEXER_TOKEN_SYMBOL_MINUS,
-    LEXER_TOKEN_SYMBOL_MULTIPLY,
+    LEXER_TOKEN_SYMBOL_POINTER,
     LEXER_TOKEN_SYMBOL_DIVIDE,
     LEXER_TOKEN_SYMBOL_MODULO,
     LEXER_TOKEN_SYMBOL_EQUAL,
@@ -107,7 +109,7 @@ const size_t LEXER_SYMBOL_SIZE =
 const char *LEXER_KEYWORD_STRINGS[] = {
     "type",   "void", "i8",    "u8",  "i16",  "u16",   "i32",      "u32",
     "i64",    "u64",  "f16",   "f32", "f64",  "f128",  "bool",     "print_u64",
-    "return", "true", "false", "if",  "else", "while", "comptime",
+    "return", "true", "false", "if",  "else", "while", "comptime", "null",
 };
 const LexerToken LEXER_KEYWORD_TOKENS[] = {
     LEXER_TOKEN_KEYWORD_TYPE,     LEXER_TOKEN_KEYWORD_VOID,
@@ -121,7 +123,7 @@ const LexerToken LEXER_KEYWORD_TOKENS[] = {
     LEXER_TOKEN_KEYWORD_RETURN,   LEXER_TOKEN_KEYWORD_TRUE,
     LEXER_TOKEN_KEYWORD_FALSE,    LEXER_TOKEN_KEYWORD_IF,
     LEXER_TOKEN_KEYWORD_ELSE,     LEXER_TOKEN_KEYWORD_WHILE,
-    LEXER_TOKEN_KEYWORD_COMPTIME,
+    LEXER_TOKEN_KEYWORD_COMPTIME, LEXER_TOKEN_KEYWORD_NULL,
 };
 const size_t LEXER_KEYWORD_SIZE =
     sizeof(LEXER_KEYWORD_TOKENS) / sizeof(*LEXER_KEYWORD_TOKENS);
@@ -211,7 +213,9 @@ LexerNodeArray lexer(char *str) {
     } else {
     RETURN_ERROR:
       free(result.data);
-      printError(iter, iter + 1, "Unexpected character '%c' with code = %d at index %ld", c, c,iter-str);
+      printError(iter, iter + 1,
+                 "Unexpected character '%c' with code = %d at index %ld", c, c,
+                 iter - str);
       return LEXER_NODE_ARRAY_ERROR;
     }
   }
@@ -271,6 +275,7 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_KEYWORD_ELSE:
   case LEXER_TOKEN_KEYWORD_WHILE:
   case LEXER_TOKEN_KEYWORD_COMPTIME:
+  case LEXER_TOKEN_KEYWORD_NULL:
   case LEXER_TOKEN_NUMBER:
   case LEXER_TOKEN_SYMBOL_EOL:
   case LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS:
@@ -299,6 +304,7 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_SYMBOL_SMALLER:
   case LEXER_TOKEN_SYMBOL_GREATER_OR_EQUAL:
   case LEXER_TOKEN_SYMBOL_SMALLER_OR_EQUAL:
+  case LEXER_TOKEN_SYMBOL_POINTER:
     if (*array_size == array->size) {
       *array_size += 1 + *array_size / 2;
       array->data =

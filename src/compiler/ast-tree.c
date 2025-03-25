@@ -129,11 +129,12 @@ const char *AST_TREE_TOKEN_STRINGS[] = {
     "AST_TREE_TOKEN_TYPE_F64",
     "AST_TREE_TOKEN_TYPE_F128",
     "AST_TREE_TOKEN_TYPE_BOOL",
+    "AST_TREE_TOKEN_VALUE_VOID",
 
     "AST_TREE_TOKEN_FUNCTION_CALL",
     "AST_TREE_TOKEN_VARIABLE",
     "AST_TREE_TOKEN_VARIABLE_DEFINE",
-    "AST_TREE_TOKEN_VALUE_VOID",
+    "AST_TREE_TOKEN_VALUE_NULL",
     "AST_TREE_TOKEN_VALUE_INT",
     "AST_TREE_TOKEN_VALUE_FLOAT",
     "AST_TREE_TOKEN_VALUE_BOOL",
@@ -152,6 +153,7 @@ const char *AST_TREE_TOKEN_STRINGS[] = {
     "AST_TREE_TOKEN_OPERATOR_SMALLER",
     "AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL",
     "AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL",
+    "AST_TREE_TOKEN_OPERATOR_POINTER",
 
     "AST_TREE_TOKEN_SCOPE",
 
@@ -216,8 +218,10 @@ void astTreePrint(const AstTree *tree, int indent) {
   case AST_TREE_TOKEN_TYPE_F128:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_VOID:
+  case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
     goto RETURN_SUCCESS;
+  case AST_TREE_TOKEN_OPERATOR_POINTER:
   case AST_TREE_TOKEN_OPERATOR_PLUS:
   case AST_TREE_TOKEN_OPERATOR_MINUS:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
@@ -447,6 +451,7 @@ void astTreeDestroy(AstTree tree) {
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
   case AST_TREE_TOKEN_TYPE_BOOL:
+  case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_BOOL:
@@ -457,6 +462,7 @@ void astTreeDestroy(AstTree tree) {
     free(metadata);
     return;
   }
+  case AST_TREE_TOKEN_OPERATOR_POINTER:
   case AST_TREE_TOKEN_OPERATOR_PLUS:
   case AST_TREE_TOKEN_OPERATOR_MINUS:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
@@ -614,6 +620,7 @@ AstTree *copyAstTree(AstTree *tree) {
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
+  case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_VOID:
     return tree;
   case AST_TREE_TOKEN_VALUE_INT:
@@ -689,6 +696,7 @@ AstTree *copyAstTree(AstTree *tree) {
     return newAstTree(tree->token, new_metadata, copyAstTree(tree->type),
                       tree->str_begin, tree->str_end);
   }
+  case AST_TREE_TOKEN_OPERATOR_POINTER:
   case AST_TREE_TOKEN_OPERATOR_PLUS:
   case AST_TREE_TOKEN_OPERATOR_MINUS:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
@@ -836,6 +844,7 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
     }
 
     switch (node_metadata->value->token) {
+    case PARSER_TOKEN_KEYWORD_NULL:
     case PARSER_TOKEN_VALUE_BOOL:
     case PARSER_TOKEN_VALUE_INT:
     case PARSER_TOKEN_VALUE_FLOAT:
@@ -881,6 +890,7 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
     case PARSER_TOKEN_TYPE_F64:
     case PARSER_TOKEN_TYPE_F128:
     case PARSER_TOKEN_TYPE_BOOL:
+    case PARSER_TOKEN_OPERATOR_POINTER:
       goto AFTER_SWITCH;
     case PARSER_TOKEN_ROOT:
     case PARSER_TOKEN_KEYWORD_PRINT_U64:
@@ -1056,6 +1066,8 @@ AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper) {
         AST_TREE_TOKEN_VALUE_BOOL,
         (void *)(AstTreeBool)(ParserNodeBoolMetadata)parserNode->metadata,
         &AST_TREE_BOOL_TYPE, parserNode->str_begin, parserNode->str_end);
+  case PARSER_TOKEN_KEYWORD_NULL:
+    return astTreeParseKeyword(parserNode, AST_TREE_TOKEN_VALUE_NULL);
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
     return astTreeParsePrintU64(parserNode, helper);
   case PARSER_TOKEN_KEYWORD_RETURN:
@@ -1117,6 +1129,9 @@ AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper) {
   case PARSER_TOKEN_OPERATOR_MINUS:
     return astTreeParseUnaryOperator(parserNode, helper,
                                      AST_TREE_TOKEN_OPERATOR_MINUS);
+  case PARSER_TOKEN_OPERATOR_POINTER:
+    return astTreeParseUnaryOperator(parserNode, helper,
+                                     AST_TREE_TOKEN_OPERATOR_POINTER);
   case PARSER_TOKEN_VARIABLE:
     return astTreeParseVariable(parserNode, helper);
   case PARSER_TOKEN_KEYWORD_IF:
@@ -1271,6 +1286,8 @@ AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *p_helper) {
     case PARSER_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
     case PARSER_TOKEN_FUNCTION_DEFINITION:
     case PARSER_TOKEN_FUNCTION_CALL:
+    case PARSER_TOKEN_KEYWORD_NULL:
+    case PARSER_TOKEN_OPERATOR_POINTER:
       printError(node->str_begin, node->str_end, "Unexpected %s",
                  PARSER_TOKEN_STRINGS[node->token]);
       goto RETURN_ERROR;
@@ -1349,8 +1366,7 @@ AstTree *astTreeParseTypeFunction(ParserNode *parserNode,
       }
 
       if (!typeIsEqual(argument->type, &AST_TREE_TYPE_TYPE)) {
-        printError(argument->str_begin, argument->str_end,
-                   "Not yet supported");
+        printError(argument->str_begin, argument->str_end, "Not yet supported");
         return NULL;
       }
     }
@@ -1444,6 +1460,11 @@ AstTree *astTreeParseFloat(ParserNode *parserNode) {
 
   return newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, metadata, NULL,
                     parserNode->str_begin, parserNode->str_end);
+}
+
+AstTree *astTreeParseKeyword(ParserNode *parserNode, AstTreeToken token) {
+  return newAstTree(token, NULL, NULL, parserNode->str_begin,
+                    parserNode->str_end);
 }
 
 AstTree *astTreeParsePrintU64(ParserNode *parserNode, AstTreeHelper *helper) {
@@ -1788,6 +1809,8 @@ AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
     case PARSER_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
     case PARSER_TOKEN_FUNCTION_DEFINITION:
     case PARSER_TOKEN_FUNCTION_CALL:
+    case PARSER_TOKEN_KEYWORD_NULL:
+    case PARSER_TOKEN_OPERATOR_POINTER:
       printError(node->str_begin, node->str_end, "Unexpected %s",
                  PARSER_TOKEN_STRINGS[node->token]);
       goto RETURN_ERROR;
@@ -1883,6 +1906,7 @@ AstTreeFunction *getFunction(AstTree *value) {
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
+  case AST_TREE_TOKEN_OPERATOR_POINTER:
   case AST_TREE_TOKEN_OPERATOR_PLUS:
   case AST_TREE_TOKEN_OPERATOR_MINUS:
   case AST_TREE_TOKEN_OPERATOR_SUM:
@@ -1899,6 +1923,7 @@ AstTreeFunction *getFunction(AstTree *value) {
   case AST_TREE_TOKEN_SCOPE:
   case AST_TREE_TOKEN_KEYWORD_WHILE:
   case AST_TREE_TOKEN_VALUE_FLOAT:
+  case AST_TREE_TOKEN_VALUE_NULL:
     return NULL;
   case AST_TREE_TOKEN_NONE:
   }
@@ -1923,6 +1948,7 @@ bool isConst(AstTree *tree, AstTreeHelper *helper) {
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
   case AST_TREE_TOKEN_TYPE_BOOL:
+  case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_FLOAT:
@@ -1971,6 +1997,10 @@ bool isConst(AstTree *tree, AstTreeHelper *helper) {
     AstTreeVariable *metadata = tree->metadata;
     return metadata->isConst;
   }
+  case AST_TREE_TOKEN_OPERATOR_POINTER: {
+    AstTreeSingleChild *metadata = tree->metadata;
+    return isConst(metadata, helper);
+  }
   case AST_TREE_TOKEN_NONE:
   }
   UNREACHABLE;
@@ -1994,6 +2024,7 @@ AstTree *makeTypeOf(AstTree *value) {
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
   case AST_TREE_TOKEN_TYPE_BOOL:
+  case AST_TREE_TOKEN_OPERATOR_POINTER:
     return &AST_TREE_TYPE_TYPE;
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = value->metadata;
@@ -2071,6 +2102,7 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
   case AST_TREE_TOKEN_KEYWORD_IF:
   case AST_TREE_TOKEN_KEYWORD_WHILE:
   case AST_TREE_TOKEN_KEYWORD_COMPTIME:
+  case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_FLOAT:
@@ -2108,6 +2140,14 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
     return type1->token == type0->token;
+  case AST_TREE_TOKEN_OPERATOR_POINTER: {
+    if (type1->token != AST_TREE_TOKEN_OPERATOR_POINTER) {
+      return false;
+    }
+    AstTreeSingleChild *type0_metadata = type0->metadata;
+    AstTreeSingleChild *type1_metadata = type1->metadata;
+    return typeIsEqual(type0_metadata, type1_metadata);
+  }
   case AST_TREE_TOKEN_TYPE_FUNCTION:
     if (type1->token != AST_TREE_TOKEN_TYPE_FUNCTION) {
       return false;
@@ -2115,10 +2155,8 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
     AstTreeTypeFunction *type0_metadata = type0->metadata;
     AstTreeTypeFunction *type1_metadata = type1->metadata;
     if (!typeIsEqual(type0_metadata->returnType->type,
-                     type1_metadata->returnType->type)) {
-      return false;
-    }
-    if (type0_metadata->arguments_size != type1_metadata->arguments_size) {
+                     type1_metadata->returnType->type) ||
+        type0_metadata->arguments_size != type1_metadata->arguments_size) {
       return false;
     }
     for (size_t i = 0; i < type0_metadata->arguments_size; ++i) {
@@ -2163,6 +2201,7 @@ AstTree *getValue(AstTree *tree, AstTreeSetTypesHelper helper) {
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
   case AST_TREE_TOKEN_TYPE_BOOL:
+  case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_FLOAT:
@@ -2183,6 +2222,7 @@ AstTree *getValue(AstTree *tree, AstTreeSetTypesHelper helper) {
   case AST_TREE_TOKEN_OPERATOR_SMALLER:
   case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
   case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_POINTER:
   case AST_TREE_TOKEN_KEYWORD_IF:
   case AST_TREE_TOKEN_KEYWORD_WHILE:
   case AST_TREE_TOKEN_KEYWORD_COMPTIME:
@@ -2237,11 +2277,13 @@ bool isCircularDependenciesBack(AstTreeHelper *helper,
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
   case AST_TREE_TOKEN_TYPE_BOOL:
+  case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_FLOAT:
   case AST_TREE_TOKEN_VALUE_BOOL:
     return false;
+  case AST_TREE_TOKEN_OPERATOR_POINTER:
   case AST_TREE_TOKEN_KEYWORD_COMPTIME:
   case AST_TREE_TOKEN_OPERATOR_PLUS:
   case AST_TREE_TOKEN_OPERATOR_MINUS: {
@@ -2403,6 +2445,8 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
     return setTypesValueInt(tree, helper);
   case AST_TREE_TOKEN_VALUE_FLOAT:
     return setTypesValueFloat(tree, helper);
+  case AST_TREE_TOKEN_VALUE_NULL:
+    return setTypesValueNull(tree, helper);
   case AST_TREE_TOKEN_FUNCTION:
     return setTypesFunction(tree, helper);
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
@@ -2433,6 +2477,8 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
   case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
   case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
     return setTypesOperatorInfixWithRet(tree, &AST_TREE_BOOL_TYPE, helper);
+  case AST_TREE_TOKEN_OPERATOR_POINTER:
+    return setTypesOperatorIndirection(tree, helper);
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
     return setTypesVariableDefine(tree, helper);
   case AST_TREE_TOKEN_KEYWORD_IF:
@@ -2446,15 +2492,17 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
   case AST_TREE_TOKEN_NONE:
     break;
   }
+  printError(tree->str_begin, tree->str_end, "Unknown token %d", tree->token);
   UNREACHABLE;
 }
 
 bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
-  if (helper.lookingType == NULL || typeIsEqual(helper.lookingType,&AST_TREE_I64_TYPE)) {
+  if (helper.lookingType == NULL ||
+      typeIsEqual(helper.lookingType, &AST_TREE_I64_TYPE)) {
     tree->type = &AST_TREE_I64_TYPE;
-  } else if (typeIsEqual(helper.lookingType,&AST_TREE_U64_TYPE)) {
+  } else if (typeIsEqual(helper.lookingType, &AST_TREE_U64_TYPE)) {
     tree->type = &AST_TREE_U64_TYPE;
-  } else if (typeIsEqual(helper.lookingType,&AST_TREE_I32_TYPE)) {
+  } else if (typeIsEqual(helper.lookingType, &AST_TREE_I32_TYPE)) {
     AstTreeInt value = (AstTreeInt)tree->metadata;
     i32 newValue = value;
     tree->metadata = (void *)(u64)newValue;
@@ -2462,7 +2510,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_I32_TYPE;
-  } else if (typeIsEqual(helper.lookingType,&AST_TREE_U32_TYPE)) {
+  } else if (typeIsEqual(helper.lookingType, &AST_TREE_U32_TYPE)) {
     AstTreeInt value = (AstTreeInt)tree->metadata;
     u32 newValue = value;
     tree->metadata = (void *)(u64)newValue;
@@ -2470,7 +2518,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_U32_TYPE;
-  } else if (typeIsEqual(helper.lookingType,&AST_TREE_I16_TYPE)) {
+  } else if (typeIsEqual(helper.lookingType, &AST_TREE_I16_TYPE)) {
     AstTreeInt value = (AstTreeInt)tree->metadata;
     i16 newValue = value;
     tree->metadata = (void *)(u64)newValue;
@@ -2478,7 +2526,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_I16_TYPE;
-  } else if (typeIsEqual(helper.lookingType,&AST_TREE_U16_TYPE)) {
+  } else if (typeIsEqual(helper.lookingType, &AST_TREE_U16_TYPE)) {
     AstTreeInt value = (AstTreeInt)tree->metadata;
     u16 newValue = value;
     tree->metadata = (void *)(u64)newValue;
@@ -2486,7 +2534,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_U16_TYPE;
-  } else if (typeIsEqual(helper.lookingType,&AST_TREE_I8_TYPE)) {
+  } else if (typeIsEqual(helper.lookingType, &AST_TREE_I8_TYPE)) {
     AstTreeInt value = (AstTreeInt)tree->metadata;
     i8 newValue = value;
     tree->metadata = (void *)(u64)newValue;
@@ -2494,7 +2542,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_I8_TYPE;
-  } else if (typeIsEqual(helper.lookingType,&AST_TREE_U8_TYPE)) {
+  } else if (typeIsEqual(helper.lookingType, &AST_TREE_U8_TYPE)) {
     AstTreeInt value = (AstTreeInt)tree->metadata;
     u8 newValue = value;
     tree->metadata = (void *)(u64)newValue;
@@ -2502,7 +2550,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_U8_TYPE;
-  } else if (typeIsEqual(helper.lookingType,&AST_TREE_F16_TYPE)) {
+  } else if (typeIsEqual(helper.lookingType, &AST_TREE_F16_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeInt value = (AstTreeInt)tree->metadata;
     f16 newValue = value;
@@ -2512,7 +2560,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_F16_TYPE;
-  } else if (typeIsEqual(helper.lookingType,&AST_TREE_F32_TYPE)) {
+  } else if (typeIsEqual(helper.lookingType, &AST_TREE_F32_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeInt value = (AstTreeInt)tree->metadata;
     f32 newValue = value;
@@ -2522,7 +2570,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_F32_TYPE;
-  } else if (typeIsEqual(helper.lookingType,&AST_TREE_F64_TYPE)) {
+  } else if (typeIsEqual(helper.lookingType, &AST_TREE_F64_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeInt value = (AstTreeInt)tree->metadata;
     f64 newValue = value;
@@ -2532,7 +2580,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_F64_TYPE;
-  } else if (typeIsEqual(helper.lookingType,&AST_TREE_F128_TYPE)) {
+  } else if (typeIsEqual(helper.lookingType, &AST_TREE_F128_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeInt value = (AstTreeInt)tree->metadata;
     f128 newValue = value;
@@ -2549,7 +2597,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
 }
 
 bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
-  if (typeIsEqual(helper.lookingType,&AST_TREE_F16_TYPE)) {
+  if (typeIsEqual(helper.lookingType, &AST_TREE_F16_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeFloat value = *(AstTreeFloat *)tree->metadata;
     f16 newValue = value;
@@ -2558,7 +2606,7 @@ bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_F16_TYPE;
-  } else if (typeIsEqual(helper.lookingType,&AST_TREE_F32_TYPE)) {
+  } else if (typeIsEqual(helper.lookingType, &AST_TREE_F32_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeFloat value = *(AstTreeFloat *)tree->metadata;
     f32 newValue = value;
@@ -2567,7 +2615,7 @@ bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_F32_TYPE;
-  } else if (typeIsEqual(helper.lookingType,&AST_TREE_F64_TYPE) ||
+  } else if (typeIsEqual(helper.lookingType, &AST_TREE_F64_TYPE) ||
              helper.lookingType == NULL) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeFloat value = *(AstTreeFloat *)tree->metadata;
@@ -2577,7 +2625,7 @@ bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
     tree->type = &AST_TREE_F64_TYPE;
-  } else if (typeIsEqual(helper.lookingType,&AST_TREE_F128_TYPE)) {
+  } else if (typeIsEqual(helper.lookingType, &AST_TREE_F128_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
     AstTreeFloat value = *(AstTreeFloat *)tree->metadata;
     f128 newValue = value;
@@ -2591,6 +2639,14 @@ bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
   }
 
   return true;
+}
+
+bool setTypesValueNull(AstTree *tree, AstTreeSetTypesHelper helper) {
+  if (helper.lookingType == NULL) {
+    return false;
+  }
+  tree->type = getValue(helper.lookingType, helper);
+  return tree->type != NULL;
 }
 
 bool setTypesFunction(AstTree *tree, AstTreeSetTypesHelper helper) {
@@ -2840,6 +2896,18 @@ bool setTypesOperatorUnary(AstTree *tree, AstTreeSetTypesHelper helper) {
     tree->type = copyAstTree(operand->type);
     return true;
   }
+}
+
+bool setTypesOperatorIndirection(AstTree *tree, AstTreeSetTypesHelper helper) {
+  AstTreeSingleChild *metadata = tree->metadata;
+  if (!setAllTypes(metadata, helper, NULL)) {
+    return false;
+  } else if (!typeIsEqual(metadata->type, &AST_TREE_TYPE_TYPE)) {
+    UNREACHABLE;
+  }
+
+  tree->type = &AST_TREE_TYPE_TYPE;
+  return true;
 }
 
 bool setTypesVariableDefine(AstTree *tree, AstTreeSetTypesHelper helper) {

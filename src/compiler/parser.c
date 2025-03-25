@@ -40,6 +40,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_KEYWORD_IF",
     "PARSER_TOKEN_KEYWORD_WHILE",
     "PARSER_TOKEN_KEYWORD_COMPTIME",
+    "PARSER_TOKEN_KEYWORD_NULL",
 
     "PARSER_TOKEN_CONSTANT",
     "PARSER_TOKEN_VARIABLE",
@@ -68,6 +69,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_OPERATOR_SMALLER",
     "PARSER_TOKEN_OPERATOR_GREATER_OR_EQUAL",
     "PARSER_TOKEN_OPERATOR_SMALLER_OR_EQUAL",
+    "PARSER_TOKEN_OPERATOR_POINTER",
 
     "PARSER_TOKEN_FUNCTION_DEFINITION",
 
@@ -97,7 +99,7 @@ static constexpr ParserOrder PARSER_ORDER[] = {
                     LEXER_TOKEN_KEYWORD_F64, LEXER_TOKEN_KEYWORD_F128,
                     LEXER_TOKEN_KEYWORD_U64, LEXER_TOKEN_KEYWORD_BOOL,
                     LEXER_TOKEN_KEYWORD_TRUE, LEXER_TOKEN_KEYWORD_FALSE,
-                    LEXER_TOKEN_NUMBER, ),
+                    LEXER_TOKEN_KEYWORD_NULL, LEXER_TOKEN_NUMBER, ),
     },
     {
         .ltr = false,
@@ -105,7 +107,8 @@ static constexpr ParserOrder PARSER_ORDER[] = {
     },
     {
         .ltr = true,
-        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_PLUS, LEXER_TOKEN_SYMBOL_MINUS, ),
+        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_PLUS, LEXER_TOKEN_SYMBOL_MINUS,
+                    LEXER_TOKEN_SYMBOL_POINTER, ),
     },
     {
         .ltr = true,
@@ -195,6 +198,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_TYPE_F32:
   case PARSER_TOKEN_TYPE_F64:
   case PARSER_TOKEN_TYPE_F128:
+  case PARSER_TOKEN_KEYWORD_NULL:
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_VALUE_INT: {
     ParserNodeIntMetadata metadata = (ParserNodeIntMetadata)node->metadata;
@@ -234,6 +238,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
       printf(" ");
   }
     goto RETURN_SUCCESS;
+  case PARSER_TOKEN_OPERATOR_POINTER:
   case PARSER_TOKEN_OPERATOR_PLUS:
   case PARSER_TOKEN_OPERATOR_MINUS:
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
@@ -443,6 +448,7 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_TYPE_F128:
   case PARSER_TOKEN_VALUE_INT:
   case PARSER_TOKEN_VALUE_BOOL:
+  case PARSER_TOKEN_KEYWORD_NULL:
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_VALUE_FLOAT: {
     ParserNodeFloatMetadata *metadata = node->metadata;
@@ -458,6 +464,7 @@ void parserNodeDelete(ParserNode *node) {
     free(metadata);
   }
     goto RETURN_SUCCESS;
+  case PARSER_TOKEN_OPERATOR_POINTER:
   case PARSER_TOKEN_OPERATOR_PLUS:
   case PARSER_TOKEN_OPERATOR_MINUS:
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
@@ -676,6 +683,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_F64);
   case LEXER_TOKEN_KEYWORD_F128:
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_F128);
+  case LEXER_TOKEN_KEYWORD_NULL:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_KEYWORD_NULL);
   case LEXER_TOKEN_KEYWORD_PRINT_U64:
     return parserPrintU64(node, end, parent);
   case LEXER_TOKEN_KEYWORD_RETURN:
@@ -759,6 +768,13 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     ParserNode *result = parserBinaryOrLeftOperator(node, begin, end, parent,
                                                     PARSER_TOKEN_OPERATOR_MINUS,
                                                     LEXER_TOKEN_SYMBOL_SUB);
+    *conti = result == NULL;
+    return result;
+  }
+  case LEXER_TOKEN_SYMBOL_POINTER: {
+    ParserNode *result = parserBinaryOrLeftOperator(
+        node, begin, end, parent, PARSER_TOKEN_OPERATOR_POINTER,
+        LEXER_TOKEN_SYMBOL_MULTIPLY);
     *conti = result == NULL;
     return result;
   }
@@ -1157,6 +1173,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_TYPE_F32:
       case PARSER_TOKEN_TYPE_F64:
       case PARSER_TOKEN_TYPE_F128:
+  case PARSER_TOKEN_KEYWORD_NULL:
       case PARSER_TOKEN_KEYWORD_PRINT_U64:
       case PARSER_TOKEN_KEYWORD_RETURN:
       case PARSER_TOKEN_CONSTANT:
@@ -1170,6 +1187,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_OPERATOR_MULTIPLY_ASSIGN:
       case PARSER_TOKEN_OPERATOR_DIVIDE_ASSIGN:
       case PARSER_TOKEN_OPERATOR_MODULO_ASSIGN:
+      case PARSER_TOKEN_OPERATOR_POINTER:
       case PARSER_TOKEN_OPERATOR_PLUS:
       case PARSER_TOKEN_OPERATOR_MINUS:
       case PARSER_TOKEN_OPERATOR_SUM:
@@ -1527,6 +1545,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_MULTIPLY_ASSIGN:
   case PARSER_TOKEN_OPERATOR_DIVIDE_ASSIGN:
   case PARSER_TOKEN_OPERATOR_MODULO_ASSIGN:
+  case PARSER_TOKEN_OPERATOR_POINTER:
   case PARSER_TOKEN_OPERATOR_PLUS:
   case PARSER_TOKEN_OPERATOR_MINUS:
   case PARSER_TOKEN_OPERATOR_SUM:
@@ -1562,6 +1581,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_TYPE_F32:
   case PARSER_TOKEN_TYPE_F64:
   case PARSER_TOKEN_TYPE_F128:
+  case PARSER_TOKEN_KEYWORD_NULL:
     return true;
   case PARSER_TOKEN_ROOT:
   case PARSER_TOKEN_SYMBOL_EOL:
@@ -1596,7 +1616,9 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_FUNCTION_CALL:
   case PARSER_TOKEN_KEYWORD_IF:
   case PARSER_TOKEN_KEYWORD_COMPTIME:
+  case PARSER_TOKEN_OPERATOR_POINTER:
     return true;
+  case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_VARIABLE:
   case PARSER_TOKEN_FUNCTION_DEFINITION:
@@ -1649,6 +1671,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_MULTIPLY_ASSIGN:
   case PARSER_TOKEN_OPERATOR_DIVIDE_ASSIGN:
   case PARSER_TOKEN_OPERATOR_MODULO_ASSIGN:
+  case PARSER_TOKEN_OPERATOR_POINTER:
   case PARSER_TOKEN_OPERATOR_PLUS:
   case PARSER_TOKEN_OPERATOR_MINUS:
   case PARSER_TOKEN_OPERATOR_SUM:
@@ -1678,6 +1701,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_TYPE_F32:
   case PARSER_TOKEN_TYPE_F64:
   case PARSER_TOKEN_TYPE_F128:
+  case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_KEYWORD_IF:
   case PARSER_TOKEN_KEYWORD_COMPTIME:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
