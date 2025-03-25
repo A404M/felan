@@ -257,7 +257,7 @@ bool setTypesOperatorInfix(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorInfixWithRet(AstTree *tree, AstTree *retType,
                                   AstTreeSetTypesHelper helper);
 bool setTypesOperatorUnary(AstTree *tree, AstTreeSetTypesHelper helper);
-bool setTypesOperatorIndirection(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesOperatorPointer(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesVariableDefine(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesIf(AstTree *tree, AstTreeSetTypesHelper helper,
                 AstTreeFunction *function);

@@ -579,9 +579,8 @@ void astTreeDelete(AstTree *tree) {
 }
 
 bool astTreeShouldDelete(AstTree *tree) {
-  return (AST_TREE_TOKEN_STATIC_VARS_BEGIN > tree->token ||
-          tree->token > AST_TREE_TOKEN_STATIC_VARS_END) &&
-         tree != &AST_TREE_VOID_VALUE;
+  return AST_TREE_TOKEN_STATIC_VARS_BEGIN > tree->token ||
+         tree->token > AST_TREE_TOKEN_STATIC_VARS_END;
 }
 
 void astTreeRootDelete(AstTreeRoot *root) {
@@ -620,9 +619,11 @@ AstTree *copyAstTree(AstTree *tree) {
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
-  case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_VOID:
     return tree;
+  case AST_TREE_TOKEN_VALUE_NULL:
+    return newAstTree(tree->token, NULL, copyAstTree(tree->type), tree->str_begin,
+                      tree->str_end);
   case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_BOOL:
     return newAstTree(tree->token, tree->metadata, tree->type, tree->str_begin,
@@ -2089,6 +2090,7 @@ AstTree *makeTypeOf(AstTree *value) {
   case AST_TREE_TOKEN_KEYWORD_IF:
   case AST_TREE_TOKEN_KEYWORD_WHILE:
   case AST_TREE_TOKEN_SCOPE:
+  case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_NONE:
   }
   UNREACHABLE;
@@ -2478,7 +2480,7 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
   case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
     return setTypesOperatorInfixWithRet(tree, &AST_TREE_BOOL_TYPE, helper);
   case AST_TREE_TOKEN_OPERATOR_POINTER:
-    return setTypesOperatorIndirection(tree, helper);
+    return setTypesOperatorPointer(tree, helper);
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
     return setTypesVariableDefine(tree, helper);
   case AST_TREE_TOKEN_KEYWORD_IF:
@@ -2643,10 +2645,11 @@ bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper) {
 
 bool setTypesValueNull(AstTree *tree, AstTreeSetTypesHelper helper) {
   if (helper.lookingType == NULL) {
+    printError(tree->str_begin, tree->str_end, "Can't find type of null");
     return false;
   }
-  tree->type = getValue(helper.lookingType, helper);
-  return tree->type != NULL;
+  tree->type = copyAstTree(helper.lookingType);
+  return true;
 }
 
 bool setTypesFunction(AstTree *tree, AstTreeSetTypesHelper helper) {
@@ -2898,11 +2901,13 @@ bool setTypesOperatorUnary(AstTree *tree, AstTreeSetTypesHelper helper) {
   }
 }
 
-bool setTypesOperatorIndirection(AstTree *tree, AstTreeSetTypesHelper helper) {
+bool setTypesOperatorPointer(AstTree *tree, AstTreeSetTypesHelper helper) {
   AstTreeSingleChild *metadata = tree->metadata;
   if (!setAllTypes(metadata, helper, NULL)) {
     return false;
   } else if (!typeIsEqual(metadata->type, &AST_TREE_TYPE_TYPE)) {
+    printError(tree->str_begin, tree->str_end, "Pointer type needs a type");
+    return false;
     UNREACHABLE;
   }
 

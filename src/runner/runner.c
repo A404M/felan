@@ -328,7 +328,8 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages,
   }
   case AST_TREE_TOKEN_VARIABLE_DEFINE: {
     AstTreeVariable *variable = expr->metadata;
-    runnerVariableSetValue(pages, variable, copyAstTree(variable->value));
+    runnerVariableSetValue(pages, variable,
+                           runExpression(variable->value, pages, shouldRet));
     return &AST_TREE_VOID_VALUE;
   }
   case AST_TREE_TOKEN_KEYWORD_IF: {
