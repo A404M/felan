@@ -172,12 +172,9 @@ typedef struct AstTreeHelper {
   AstTreeVariables *globalDeps;
 } AstTreeHelper;
 
-struct RunnerVariablePages;
-
 typedef struct AstTreeSetTypesHelper {
   AstTree *lookingType;
   AstTreeHelper *treeHelper;
-  struct RunnerVariablePages *pages;
 } AstTreeSetTypesHelper;
 
 void astTreePrint(const AstTree *tree, int indent);

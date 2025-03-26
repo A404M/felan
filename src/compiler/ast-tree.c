@@ -2374,7 +2374,7 @@ AstTree *getValue(AstTree *tree, AstTreeSetTypesHelper helper) {
   case AST_TREE_TOKEN_KEYWORD_COMPTIME:
   case AST_TREE_TOKEN_SCOPE: {
     bool shouldRet = false;
-    AstTree *value = runExpression(tree, helper.pages, &shouldRet);
+    AstTree *value = runExpression(tree,  &shouldRet);
     if (value == NULL) {
       printError(tree->str_begin, tree->str_end, "Unknown error");
     }
@@ -2544,23 +2544,18 @@ bool setAllTypesRoot(AstTreeRoot *root, AstTreeHelper *helper) {
     }
   }
 
-  RunnerVariablePages pages = initRootPages();
-
   AstTreeSetTypesHelper setTypesHelper = {
       .lookingType = NULL,
       .treeHelper = helper,
-      .pages = &pages,
   };
 
   for (size_t i = 0; i < root->variables.size; ++i) {
     AstTreeVariable *variable = root->variables.data[i];
     if (!setTypesAstVariable(variable, setTypesHelper)) {
-      destroyRootPages(pages);
       return false;
     }
   }
 
-  destroyRootPages(pages);
   return true;
 }
 
@@ -2835,7 +2830,6 @@ bool setTypesPrintU64(AstTree *tree, AstTreeSetTypesHelper _helper) {
   AstTreeSetTypesHelper helper = {
       .lookingType = &AST_TREE_U64_TYPE,
       .treeHelper = _helper.treeHelper,
-      .pages = _helper.pages,
   };
   if (!setAllTypes(metadata, helper, NULL)) {
     return false;
@@ -2859,7 +2853,6 @@ bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper _helper,
     AstTreeSetTypesHelper helper = {
         .lookingType = getValue(function->returnType, _helper),
         .treeHelper = _helper.treeHelper,
-        .pages = _helper.pages,
     };
     if (!setAllTypes(metadata->value, helper, NULL)) {
       return false;
@@ -2930,7 +2923,6 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper) {
           initedArguments[j] = true;
           AstTreeSetTypesHelper newHelper = {
               .lookingType = arg->type,
-              .pages = helper.pages,
               .treeHelper = helper.treeHelper,
           };
 
@@ -2956,7 +2948,6 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper) {
           initedArguments[j] = true;
           AstTreeSetTypesHelper newHelper = {
               .lookingType = arg->type,
-              .pages = helper.pages,
               .treeHelper = helper.treeHelper,
           };
 
@@ -3090,7 +3081,6 @@ bool setTypesAstVariable(AstTreeVariable *variable,
   AstTreeSetTypesHelper helper = {
       .lookingType = &AST_TREE_TYPE_TYPE,
       .treeHelper = _helper.treeHelper,
-      .pages = _helper.pages,
   };
 
   if (variable->type != NULL && !setAllTypes(variable->type, helper, NULL)) {
@@ -3249,7 +3239,6 @@ bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper helper) {
   AstTreeSetTypesHelper newHelper = {
       .lookingType = infix->left.type,
       .treeHelper = helper.treeHelper,
-      .pages = helper.pages,
   };
 
   return setAllTypes(&infix->right, newHelper, NULL);
