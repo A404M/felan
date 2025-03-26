@@ -1,4 +1,14 @@
 main :: () -> void {
   a :u64= 2;
-  b : *u64 = &a;
+  f(a);
+};
+
+f :: (a: u64)->u64{
+  b :u64= 1;
+  print_u64 b;
+  if a == 0
+    b = 2;
+  else
+    f(a-1);
+  print_u64 b;
 };

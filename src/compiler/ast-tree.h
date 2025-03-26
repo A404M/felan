@@ -193,7 +193,13 @@ void astTreeRootDelete(AstTreeRoot *root);
 AstTree *newAstTree(AstTreeToken token, void *metadata, AstTree *type,
                     char *str_begin, char *str_end);
 AstTree *copyAstTree(AstTree *tree);
-AstTreeVariables copyAstTreeVariables(AstTreeVariables variables);
+AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
+                         AstTreeVariables newVariables[],
+                         size_t variables_size);
+AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
+                                      AstTreeVariables oldVariables[],
+                                      AstTreeVariables newVariables[],
+                                      size_t variables_size);
 
 AstTreeRoot *makeAstTree(ParserNode *parsedRoot);
 
@@ -210,7 +216,7 @@ AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
                                   AstTreeHelper *helper);
 AstTree *astTreeParseIdentifier(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseFloat(ParserNode *parserNode);
-AstTree *astTreeParseKeyword(ParserNode *parserNode,AstTreeToken token);
+AstTree *astTreeParseKeyword(ParserNode *parserNode, AstTreeToken token);
 AstTree *astTreeParsePrintU64(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseReturn(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseBinaryOperator(ParserNode *parserNode,
@@ -218,7 +224,8 @@ AstTree *astTreeParseBinaryOperator(ParserNode *parserNode,
 AstTree *astTreeParseUnaryOperator(ParserNode *parserNode,
                                    AstTreeHelper *helper, AstTreeToken token);
 AstTree *astTreeParseOperateAssignOperator(ParserNode *parserNode,
-                                    AstTreeHelper *helper, AstTreeToken token);
+                                           AstTreeHelper *helper,
+                                           AstTreeToken token);
 bool astTreeParseConstant(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseVariable(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseIf(ParserNode *parserNode, AstTreeHelper *helper);
@@ -235,10 +242,13 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1);
 AstTree *getValue(AstTree *tree, AstTreeSetTypesHelper helper);
 
 bool isCircularDependencies(AstTreeHelper *helper, AstTreeVariable *variable);
-bool isCircularDependenciesBack(AstTreeHelper *helper, AstTreeVariable *variable,
-                            AstTree *tree,AstTreeVariables *checkedVariables);
-bool isCircularDependenciesVariable(AstTreeHelper *helper, AstTreeVariable *toBeFound,
-                            AstTreeVariable *currentVariable,AstTreeVariables *checkedVariables);
+bool isCircularDependenciesBack(AstTreeHelper *helper,
+                                AstTreeVariable *variable, AstTree *tree,
+                                AstTreeVariables *checkedVariables);
+bool isCircularDependenciesVariable(AstTreeHelper *helper,
+                                    AstTreeVariable *toBeFound,
+                                    AstTreeVariable *currentVariable,
+                                    AstTreeVariables *checkedVariables);
 
 bool setAllTypesRoot(AstTreeRoot *root, AstTreeHelper *helper);
 bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,

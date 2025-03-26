@@ -159,10 +159,11 @@ bool runAstTree(AstTreeRoot *root) {
         strncmp(variable->name_begin, MAIN_STR, MAIN_STR_SIZE) == 0 &&
         variable_value->token == AST_TREE_TOKEN_FUNCTION) {
 
-      AstTree *main = variable_value;
+      AstTree *main = copyAstTree(variable_value);
 
       const bool ret =
           runAstTreeFunction(main, NULL, 0, &pages) == &AST_TREE_VOID_VALUE;
+      astTreeDelete(main);
       destroyRootPages(pages);
       return ret;
     }
@@ -299,9 +300,11 @@ AstTree *runExpression(AstTree *expr, RunnerVariablePages *pages,
     AstTreeFunctionCall *metadata = expr->metadata;
     if (metadata->function->token == AST_TREE_TOKEN_VARIABLE) {
       AstTreeVariable *variable = metadata->function->metadata;
-      return runAstTreeFunction(runnerVariableGetValue(pages, variable),
-                                metadata->parameters, metadata->parameters_size,
-                                pages);
+      AstTree *function = copyAstTree(runnerVariableGetValue(pages, variable));
+      AstTree *result = runAstTreeFunction(function, metadata->parameters,
+                                           metadata->parameters_size, pages);
+      astTreeDelete(function);
+      return result;
     } else {
       UNREACHABLE;
     }

@@ -606,6 +606,12 @@ AstTree *newAstTree(AstTreeToken token, void *metadata, AstTree *type,
 }
 
 AstTree *copyAstTree(AstTree *tree) {
+  return copyAstTreeBack(tree, NULL, NULL, 0);
+}
+
+AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
+                         AstTreeVariables newVariables[],
+                         size_t variables_size) {
   switch (tree->token) {
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_VOID:
@@ -625,8 +631,10 @@ AstTree *copyAstTree(AstTree *tree) {
   case AST_TREE_TOKEN_VALUE_VOID:
     return tree;
   case AST_TREE_TOKEN_VALUE_NULL:
-    return newAstTree(tree->token, NULL, copyAstTree(tree->type),
-                      tree->str_begin, tree->str_end);
+    return newAstTree(
+        tree->token, NULL,
+        copyAstTreeBack(tree->type, oldVariables, newVariables, variables_size),
+        tree->str_begin, tree->str_end);
   case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_BOOL:
     return newAstTree(tree->token, tree->metadata, tree->type, tree->str_begin,
@@ -639,19 +647,32 @@ AstTree *copyAstTree(AstTree *tree) {
                       tree->str_end);
   }
   case AST_TREE_TOKEN_VARIABLE:
-  case AST_TREE_TOKEN_VARIABLE_DEFINE:
-    return newAstTree(tree->token, tree->metadata, copyAstTree(tree->type),
-                      tree->str_begin, tree->str_end);
+  case AST_TREE_TOKEN_VARIABLE_DEFINE: {
+    AstTreeVariable *variable = tree->metadata;
+    for (size_t i = 0; i < variables_size; ++i) {
+      for (size_t j = 0; j < oldVariables[i].size; ++j) {
+        if (oldVariables[i].data[j] == variable) {
+          variable = newVariables[i].data[j];
+        }
+      }
+    }
+    return newAstTree(
+        tree->token, variable,
+        copyAstTreeBack(tree->type, oldVariables, newVariables, variables_size),
+        tree->str_begin, tree->str_end);
+  }
   case AST_TREE_TOKEN_TYPE_FUNCTION: {
     AstTreeTypeFunction *metadata = tree->metadata;
     AstTreeTypeFunction *new_metadata = a404m_malloc(sizeof(*new_metadata));
-    new_metadata->returnType = copyAstTree(metadata->returnType);
     new_metadata->arguments_size = metadata->arguments_size;
     new_metadata->arguments =
         a404m_malloc(sizeof(*new_metadata) * new_metadata->arguments_size);
     for (size_t i = 0; i < metadata->arguments_size; ++i) {
-      new_metadata->arguments[i] = copyAstTree(metadata->arguments[i]);
+      new_metadata->arguments[i] = copyAstTreeBack(
+          metadata->arguments[i], oldVariables, newVariables, variables_size);
     }
+    new_metadata->returnType = copyAstTreeBack(
+        metadata->returnType, oldVariables, newVariables, variables_size);
     return newAstTree(tree->token, new_metadata, &AST_TREE_TYPE_TYPE,
                       tree->str_begin, tree->str_end);
   }
@@ -669,35 +690,65 @@ AstTree *copyAstTree(AstTree *tree) {
   case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL: {
     AstTreeInfix *metadata = tree->metadata;
     AstTreeInfix *new_metadata = a404m_malloc(sizeof(*new_metadata));
-    AstTree *left = copyAstTree(&metadata->left);
-    AstTree *right = copyAstTree(&metadata->right);
+    AstTree *left = copyAstTreeBack(&metadata->left, oldVariables, newVariables,
+                                    variables_size);
+    AstTree *right = copyAstTreeBack(&metadata->right, oldVariables,
+                                     newVariables, variables_size);
     new_metadata->left = *left;
     new_metadata->right = *right;
     free(left);
     free(right);
-    return newAstTree(tree->token, new_metadata, copyAstTree(tree->type),
-                      tree->str_begin, tree->str_end);
+    return newAstTree(
+        tree->token, new_metadata,
+        copyAstTreeBack(tree->type, oldVariables, newVariables, variables_size),
+        tree->str_begin, tree->str_end);
   }
   case AST_TREE_TOKEN_FUNCTION: {
     AstTreeFunction *metadata = tree->metadata;
     AstTreeFunction *new_metadata = a404m_malloc(sizeof(*new_metadata));
 
+    new_metadata->arguments = copyAstTreeVariables(
+        metadata->arguments, oldVariables, newVariables, variables_size);
+
+    size_t new_variables_size = variables_size + 2;
+    AstTreeVariables new_oldVariables[new_variables_size];
+    AstTreeVariables new_newVariables[new_variables_size];
+    for (size_t i = 0; i < variables_size; ++i) {
+      new_oldVariables[i] = oldVariables[i];
+      new_newVariables[i] = newVariables[i];
+    }
+    new_oldVariables[new_variables_size - 2] = metadata->arguments;
+    new_newVariables[new_variables_size - 2] = new_metadata->arguments;
+
+    new_oldVariables[new_variables_size - 1].data = NULL;
+    new_oldVariables[new_variables_size - 1].size = 0;
+    new_newVariables[new_variables_size - 1].data = NULL;
+    new_newVariables[new_variables_size - 1].size = 0;
+
+    new_metadata->returnType =
+        copyAstTreeBack(metadata->returnType, new_oldVariables,
+                        new_newVariables, new_variables_size);
+
     new_metadata->scope.variables =
-        copyAstTreeVariables(metadata->scope.variables);
+        copyAstTreeVariables(metadata->scope.variables, new_oldVariables,
+                             new_newVariables, new_variables_size);
     new_metadata->scope.expressions_size = metadata->scope.expressions_size;
     new_metadata->scope.expressions =
         a404m_malloc(new_metadata->scope.expressions_size *
                      sizeof(*new_metadata->scope.expressions));
 
+    new_oldVariables[new_variables_size - 1] = metadata->scope.variables;
+    new_newVariables[new_variables_size - 1] = new_metadata->scope.variables;
+
     for (size_t i = 0; i < metadata->scope.expressions_size; ++i) {
       new_metadata->scope.expressions[i] =
-          copyAstTree(metadata->scope.expressions[i]);
+          copyAstTreeBack(metadata->scope.expressions[i], new_oldVariables,
+                          new_newVariables, new_variables_size);
     }
 
-    new_metadata->returnType = copyAstTree(metadata->returnType);
-    new_metadata->arguments = copyAstTreeVariables(metadata->arguments);
-
-    return newAstTree(tree->token, new_metadata, copyAstTree(tree->type),
+    return newAstTree(tree->token, new_metadata,
+                      copyAstTreeBack(tree->type, new_oldVariables,
+                                      new_newVariables, new_variables_size),
                       tree->str_begin, tree->str_end);
   }
   case AST_TREE_TOKEN_OPERATOR_POINTER:
@@ -707,28 +758,35 @@ AstTree *copyAstTree(AstTree *tree) {
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
   case AST_TREE_TOKEN_KEYWORD_COMPTIME: {
     AstTreeSingleChild *metadata = tree->metadata;
-    AstTreeSingleChild *new_metadata = copyAstTree(metadata);
+    AstTreeSingleChild *new_metadata =
+        copyAstTreeBack(metadata, oldVariables, newVariables, variables_size);
 
-    return newAstTree(tree->token, new_metadata, copyAstTree(tree->type),
-                      tree->str_begin, tree->str_end);
+    return newAstTree(
+        tree->token, new_metadata,
+        copyAstTreeBack(tree->type, oldVariables, newVariables, variables_size),
+        tree->str_begin, tree->str_end);
   }
   case AST_TREE_TOKEN_KEYWORD_RETURN: {
     AstTreeReturn *metadata = tree->metadata;
     AstTreeReturn *new_metadata = a404m_malloc(sizeof(*new_metadata));
     if (metadata->value != NULL) {
-      new_metadata->value = copyAstTree(metadata->value);
+      new_metadata->value = copyAstTreeBack(metadata->value, oldVariables,
+                                            newVariables, variables_size);
     } else {
       new_metadata->value = NULL;
     }
 
-    return newAstTree(tree->token, new_metadata, copyAstTree(tree->type),
-                      tree->str_begin, tree->str_end);
+    return newAstTree(
+        tree->token, new_metadata,
+        copyAstTreeBack(tree->type, oldVariables, newVariables, variables_size),
+        tree->str_begin, tree->str_end);
   }
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = tree->metadata;
     AstTreeFunctionCall *new_metadata = a404m_malloc(sizeof(*new_metadata));
 
-    new_metadata->function = copyAstTree(metadata->function);
+    new_metadata->function = copyAstTreeBack(metadata->function, oldVariables,
+                                             newVariables, variables_size);
 
     new_metadata->parameters_size = metadata->parameters_size;
     new_metadata->parameters = a404m_malloc(metadata->parameters_size *
@@ -737,21 +795,86 @@ AstTree *copyAstTree(AstTree *tree) {
       new_metadata->parameters[i].nameBegin = metadata->parameters[i].nameBegin;
       new_metadata->parameters[i].nameEnd = metadata->parameters[i].nameEnd;
       new_metadata->parameters[i].value =
-          copyAstTree(metadata->parameters[i].value);
+          copyAstTreeBack(metadata->parameters[i].value, oldVariables,
+                          newVariables, variables_size);
     }
-    return newAstTree(tree->token, new_metadata, copyAstTree(tree->type),
+    return newAstTree(
+        tree->token, new_metadata,
+        copyAstTreeBack(tree->type, oldVariables, newVariables, variables_size),
+        tree->str_begin, tree->str_end);
+  }
+  case AST_TREE_TOKEN_KEYWORD_IF: {
+    AstTreeIf *metadata = tree->metadata;
+    AstTreeIf *new_metadata = a404m_malloc(sizeof(*new_metadata));
+    new_metadata->condition = copyAstTreeBack(metadata->condition, oldVariables,
+                                              newVariables, variables_size);
+    new_metadata->ifBody = copyAstTreeBack(metadata->ifBody, oldVariables,
+                                           newVariables, variables_size);
+    if (metadata->elseBody != NULL) {
+      new_metadata->elseBody = copyAstTreeBack(metadata->elseBody, oldVariables,
+                                               newVariables, variables_size);
+    } else {
+      new_metadata->elseBody = NULL;
+    }
+    return newAstTree(
+        tree->token, new_metadata,
+        copyAstTreeBack(tree->type, oldVariables, newVariables, variables_size),
+        tree->str_begin, tree->str_end);
+  }
+  case AST_TREE_TOKEN_KEYWORD_WHILE: {
+    AstTreeWhile *metadata = tree->metadata;
+    AstTreeWhile *new_metadata = a404m_malloc(sizeof(*new_metadata));
+    new_metadata->condition = copyAstTreeBack(metadata->condition, oldVariables,
+                                              newVariables, variables_size);
+    new_metadata->body = copyAstTreeBack(metadata->body, oldVariables,
+                                         newVariables, variables_size);
+    return newAstTree(
+        tree->token, new_metadata,
+        copyAstTreeBack(tree->type, oldVariables, newVariables, variables_size),
+        tree->str_begin, tree->str_end);
+  }
+  case AST_TREE_TOKEN_SCOPE: {
+    AstTreeScope *metadata = tree->metadata;
+    AstTreeScope *new_metadata = a404m_malloc(sizeof(*new_metadata));
+
+    new_metadata->variables = copyAstTreeVariables(
+        metadata->variables, oldVariables, newVariables, variables_size);
+    new_metadata->expressions_size = metadata->expressions_size;
+    new_metadata->expressions = a404m_malloc(
+        new_metadata->expressions_size * sizeof(*new_metadata->expressions));
+
+    size_t new_variables_size = variables_size + 1;
+    AstTreeVariables new_oldVariables[new_variables_size];
+    AstTreeVariables new_newVariables[new_variables_size];
+    for (size_t i = 0; i < variables_size; ++i) {
+      new_oldVariables[i] = oldVariables[i];
+      new_newVariables[i] = newVariables[i];
+    }
+
+    new_oldVariables[new_variables_size - 1] = metadata->variables;
+    new_newVariables[new_variables_size - 1] = new_metadata->variables;
+
+    for (size_t i = 0; i < metadata->expressions_size; ++i) {
+      new_metadata->expressions[i] =
+          copyAstTreeBack(metadata->expressions[i], new_oldVariables,
+                          new_newVariables, new_variables_size);
+    }
+
+    return newAstTree(tree->token, new_metadata,
+                      copyAstTreeBack(tree->type, new_oldVariables,
+                                      new_newVariables, new_variables_size),
                       tree->str_begin, tree->str_end);
   }
-  case AST_TREE_TOKEN_KEYWORD_IF:
-  case AST_TREE_TOKEN_KEYWORD_WHILE:
-  case AST_TREE_TOKEN_SCOPE:
   case AST_TREE_TOKEN_NONE:
   }
   printLog("Bad token %ld", tree->token);
   UNREACHABLE;
 }
 
-AstTreeVariables copyAstTreeVariables(AstTreeVariables variables) {
+AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
+                                      AstTreeVariables oldVariables[],
+                                      AstTreeVariables newVariables[],
+                                      size_t variables_size) {
   AstTreeVariables result = {
       .data = a404m_malloc(variables.size * sizeof(*variables.data)),
       .size = variables.size,
@@ -760,11 +883,13 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables) {
   for (size_t i = 0; i < result.size; ++i) {
     result.data[i] = a404m_malloc(sizeof(*result.data[i]));
     if (variables.data[i]->value != NULL) {
-      result.data[i]->value = copyAstTree(variables.data[i]->value);
+      result.data[i]->value = copyAstTreeBack(
+          variables.data[i]->value, oldVariables, newVariables, variables_size);
     } else {
       result.data[i]->value = NULL;
     }
-    result.data[i]->type = copyAstTree(variables.data[i]->type);
+    result.data[i]->type = copyAstTreeBack(
+        variables.data[i]->type, oldVariables, newVariables, variables_size);
     result.data[i]->isConst = variables.data[i]->isConst;
     result.data[i]->name_begin = variables.data[i]->name_begin;
     result.data[i]->name_end = variables.data[i]->name_end;
