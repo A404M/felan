@@ -192,6 +192,7 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet) {
         UNREACHABLE;
       }
       left = var->metadata;
+      astTreeDelete(var);
     }
     runnerVariableSetValue(left, runExpression(&metadata->right, shouldRet));
     return copyAstTree(left->value);

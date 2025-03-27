@@ -1,6 +1,8 @@
 main :: () -> void {
   a :u64= 1;
+  a1 :u64= 9;
   b := &a;
+  b1 :*u64= &a1;
   c := &b;
   print_u64 b.*;
   print_u64 a;
@@ -18,6 +20,7 @@ main :: () -> void {
   print_u64 a;
   print_u64 c.*.*;
   c.*.* = 6;
+  b = b1;
   print_u64 b.*;
   print_u64 a;
   print_u64 c.*.*;

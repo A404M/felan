@@ -113,7 +113,7 @@ static constexpr ParserOrder PARSER_ORDER[] = {
         ORDER_ARRAY(LEXER_TOKEN_SYMBOL_DEREFERENCE, ),
     },
     {
-        .ltr = true,
+        .ltr = false,
         ORDER_ARRAY(LEXER_TOKEN_SYMBOL_PLUS, LEXER_TOKEN_SYMBOL_MINUS,
                     LEXER_TOKEN_SYMBOL_ADDRESS, ),
     },
