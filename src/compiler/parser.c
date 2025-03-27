@@ -105,7 +105,8 @@ static constexpr ParserOrder PARSER_ORDER[] = {
     },
     {
         .ltr = false,
-        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_FUNCTION_ARROW, ),
+        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_FUNCTION_ARROW,
+                    LEXER_TOKEN_SYMBOL_POINTER, ),
     },
     {
         .ltr = true,
@@ -114,7 +115,7 @@ static constexpr ParserOrder PARSER_ORDER[] = {
     {
         .ltr = true,
         ORDER_ARRAY(LEXER_TOKEN_SYMBOL_PLUS, LEXER_TOKEN_SYMBOL_MINUS,
-                    LEXER_TOKEN_SYMBOL_POINTER, LEXER_TOKEN_SYMBOL_ADDRESS, ),
+                    LEXER_TOKEN_SYMBOL_ADDRESS, ),
     },
     {
         .ltr = true,

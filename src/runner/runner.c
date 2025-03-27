@@ -868,7 +868,8 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet) {
   case AST_TREE_TOKEN_OPERATOR_DEREFERENCE: {
     AstTreeSingleChild *metadata = expr->metadata;
     AstTree *operand = runExpression(metadata, shouldRet);
-    if (metadata->token != AST_TREE_TOKEN_VARIABLE) {
+    if (operand->token != AST_TREE_TOKEN_VARIABLE) {
+      printLog("%s", AST_TREE_TOKEN_STRINGS[operand->token]);
       UNREACHABLE;
     }
     AstTreeVariable *variable = operand->metadata;

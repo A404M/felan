@@ -1,12 +1,28 @@
 main :: () -> void {
   a :u64= 1;
   b :*u64 = &a;
+  c :**u64 = &b;
   print_u64 b.*;
   print_u64 a;
-  b.* = 2;
+  a = 2;
   print_u64 b.*;
   print_u64 a;
-  a = 3;
+  b.* = 3;
   print_u64 b.*;
   print_u64 a;
+  foo(a);
+  print_u64 b.*;
+  print_u64 a;
+  bar(b);
+  print_u64 b.*;
+  print_u64 a;
+  print_u64 c.*.*;
+};
+
+foo :: (a:u64)->void{
+  a = 4;
+};
+
+bar :: (a:*u64)->void{
+  a.* = 5;
 };
