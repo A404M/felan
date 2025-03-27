@@ -185,15 +185,13 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet) {
     AstTreeVariable *left;
     if (metadata->left.token == AST_TREE_TOKEN_VARIABLE) {
       left = metadata->left.metadata;
-    } else if (metadata->left.token == AST_TREE_TOKEN_OPERATOR_DEREFERENCE) {
+    } else {
       AstTree *left_metadata = metadata->left.metadata;
-      if (left_metadata->token != AST_TREE_TOKEN_VARIABLE) {
+      AstTree *var = runExpression(left_metadata, shouldRet);
+      if (var->token != AST_TREE_TOKEN_VARIABLE) {
         UNREACHABLE;
       }
-      left = left_metadata->metadata;
-      left = left->value->metadata;
-    } else {
-      UNREACHABLE;
+      left = var->metadata;
     }
     runnerVariableSetValue(left, runExpression(&metadata->right, shouldRet));
     return copyAstTree(left->value);
