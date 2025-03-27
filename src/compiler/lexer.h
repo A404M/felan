@@ -62,6 +62,7 @@ typedef enum LexerToken {
   LEXER_TOKEN_SYMBOL_SMALLER_OR_EQUAL,
   LEXER_TOKEN_SYMBOL_POINTER,
   LEXER_TOKEN_SYMBOL_ADDRESS,
+  LEXER_TOKEN_SYMBOL_DEREFERENCE,
 
   LEXER_TOKEN_NONE,
 } LexerToken;
@@ -105,5 +106,5 @@ extern void lexerPushClear(LexerNodeArray *array, size_t *array_size,
 extern bool isIdentifier(char c);
 extern bool isNumber(char c);
 extern bool isSymbol(char c);
-extern bool isSingleSymbol(char c);
+extern bool isCompleteSymbol(char *str, size_t str_size);
 extern bool isSpace(char c);

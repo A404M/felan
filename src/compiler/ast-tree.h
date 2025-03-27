@@ -57,6 +57,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL,
   AST_TREE_TOKEN_OPERATOR_POINTER,
   AST_TREE_TOKEN_OPERATOR_ADDRESS,
+  AST_TREE_TOKEN_OPERATOR_DEREFERENCE,
 
   AST_TREE_TOKEN_SCOPE,
 
@@ -267,6 +268,7 @@ bool setTypesOperatorInfixWithRet(AstTree *tree, AstTree *retType,
 bool setTypesOperatorUnary(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorPointer(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorAddress(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesOperatorDereference(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesVariableDefine(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesIf(AstTree *tree, AstTreeSetTypesHelper helper,
                 AstTreeFunction *function);

@@ -44,6 +44,9 @@
       (type) * (originalType *)(op0)->metadata)
 
 void runnerVariableSetValue(AstTreeVariable *variable, AstTree *value) {
+  if (variable->isConst) {
+    UNREACHABLE;
+  }
   if (variable->value != NULL) {
     astTreeDelete(variable->value);
   }
@@ -179,13 +182,21 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet) {
   }
   case AST_TREE_TOKEN_OPERATOR_ASSIGN: {
     AstTreeInfix *metadata = expr->metadata;
+    AstTreeVariable *left;
     if (metadata->left.token == AST_TREE_TOKEN_VARIABLE) {
-      AstTreeVariable *left = metadata->left.metadata;
-      runnerVariableSetValue(left, runExpression(&metadata->right, shouldRet));
-      return copyAstTree(left->value);
+      left = metadata->left.metadata;
+    } else if (metadata->left.token == AST_TREE_TOKEN_OPERATOR_DEREFERENCE) {
+      AstTree *left_metadata = metadata->left.metadata;
+      if (left_metadata->token != AST_TREE_TOKEN_VARIABLE) {
+        UNREACHABLE;
+      }
+      left = left_metadata->metadata;
+      left = left->value->metadata;
     } else {
       UNREACHABLE;
     }
+    runnerVariableSetValue(left, runExpression(&metadata->right, shouldRet));
+    return copyAstTree(left->value);
   }
   case AST_TREE_TOKEN_KEYWORD_RETURN: {
     AstTreeReturn *metadata = expr->metadata;
@@ -849,13 +860,25 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet) {
     return copyAstTree(expr);
   case AST_TREE_TOKEN_OPERATOR_ADDRESS: {
     AstTreeSingleChild *metadata = expr->metadata;
-    return newAstTree(AST_TREE_TOKEN_VARIABLE, metadata->metadata,
-                      copyAstTree(expr->type), expr->str_begin, expr->str_end);
+    if (metadata->token != AST_TREE_TOKEN_VARIABLE) {
+      UNREACHABLE;
+    }
+    return copyAstTree(metadata);
+  }
+  case AST_TREE_TOKEN_OPERATOR_DEREFERENCE: {
+    AstTreeSingleChild *metadata = expr->metadata;
+    AstTree *operand = runExpression(metadata, shouldRet);
+    if (metadata->token != AST_TREE_TOKEN_VARIABLE) {
+      UNREACHABLE;
+    }
+    AstTreeVariable *variable = operand->metadata;
+    AstTree *ret = copyAstTree(variable->value);
+    astTreeDelete(operand);
+    return ret;
   }
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *variable = expr->metadata;
-    AstTree *value = variable->value;
-    return runExpression(value, shouldRet);
+    return copyAstTree(variable->value);
   }
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_NONE:

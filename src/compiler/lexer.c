@@ -69,13 +69,14 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_SMALLER_OR_EQUAL",
     "LEXER_TOKEN_SYMBOL_POINTER",
     "LEXER_TOKEN_SYMBOL_ADDRESS",
+    "LEXER_TOKEN_SYMBOL_DEREFERENCE",
 
     "LEXER_TOKEN_NONE",
 };
 
 const char *LEXER_SYMBOL_STRINGS[] = {
-    ";", "(", ")", "{", "}", "->", ":",  "=",  "+=", "-=", "*=", "/=", "%=",
-    ",", "+", "-", "*", "/", "%",  "==", "!=", ">",  ">=", "<",  "<=", "&",
+    ";", "(", ")", "{", "}", "->", ":",  "=", "+=", "-=", "*=", "/=", "%=", ",",
+    "+", "-", "*", "/", "%", "==", "!=", ">", ">=", "<",  "<=", "&",  ".*",
 };
 const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_EOL,
@@ -104,6 +105,7 @@ const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_SMALLER,
     LEXER_TOKEN_SYMBOL_SMALLER_OR_EQUAL,
     LEXER_TOKEN_SYMBOL_ADDRESS,
+    LEXER_TOKEN_SYMBOL_DEREFERENCE,
 };
 const size_t LEXER_SYMBOL_SIZE =
     sizeof(LEXER_SYMBOL_TOKENS) / sizeof(*LEXER_SYMBOL_TOKENS);
@@ -195,20 +197,21 @@ LexerNodeArray lexer(char *str) {
     if (isSpace(c)) {
       lexerPushClear(&result, &result_size, iter, &node_str_begin, &node_token,
                      LEXER_TOKEN_NONE);
-    } else if (isIdentifier(c)) {
+    } else if (isIdentifier(c) ||
+               (node_token == LEXER_TOKEN_IDENTIFIER && isNumber(c))) {
       if (node_token != LEXER_TOKEN_IDENTIFIER &&
           node_token != LEXER_TOKEN_NUMBER) {
         lexerPushClear(&result, &result_size, iter, &node_str_begin,
                        &node_token, LEXER_TOKEN_IDENTIFIER);
       }
-    } else if (isNumber(c)) {
-      if (node_token != LEXER_TOKEN_IDENTIFIER &&
-          node_token != LEXER_TOKEN_NUMBER) {
+    } else if (isNumber(c) || (node_token == LEXER_TOKEN_NUMBER && c == '.')) {
+      if (node_token != LEXER_TOKEN_NUMBER) {
         lexerPushClear(&result, &result_size, iter, &node_str_begin,
                        &node_token, LEXER_TOKEN_NUMBER);
       }
-    } else if (isSymbol(c) || isSingleSymbol(c)) {
-      if (node_token != LEXER_TOKEN_SYMBOL || isSingleSymbol(*node_str_begin)) {
+    } else if (isSymbol(c)) {
+      if (node_token != LEXER_TOKEN_SYMBOL ||
+          !isCompleteSymbol(node_str_begin, iter - node_str_begin + 1)) {
         lexerPushClear(&result, &result_size, iter, &node_str_begin,
                        &node_token, LEXER_TOKEN_SYMBOL);
       }
@@ -308,6 +311,7 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_SYMBOL_SMALLER_OR_EQUAL:
   case LEXER_TOKEN_SYMBOL_POINTER:
   case LEXER_TOKEN_SYMBOL_ADDRESS:
+  case LEXER_TOKEN_SYMBOL_DEREFERENCE:
     if (*array_size == array->size) {
       *array_size += 1 + *array_size / 2;
       array->data =
@@ -336,7 +340,7 @@ bool isIdentifier(char c) {
   return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') || c == '_';
 }
 
-bool isNumber(char c) { return ('0' <= c && c <= '9') || c == '.'; }
+bool isNumber(char c) { return '0' <= c && c <= '9'; }
 
 bool isSymbol(char c) {
   switch (c) {
@@ -351,14 +355,6 @@ bool isSymbol(char c) {
   case '=':
   case '!':
   case '&':
-    return true;
-  default:
-    return false;
-  }
-}
-
-bool isSingleSymbol(char c) {
-  switch (c) {
   case ';':
   case ':':
   case ',':
@@ -370,6 +366,11 @@ bool isSingleSymbol(char c) {
   default:
     return false;
   }
+}
+
+bool isCompleteSymbol(char *str, size_t str_size) {
+  return searchInStringArray(LEXER_SYMBOL_STRINGS, LEXER_SYMBOL_SIZE, str,
+                             str_size) != LEXER_SYMBOL_SIZE;
 }
 
 bool isSpace(char c) { return isspace(c); }

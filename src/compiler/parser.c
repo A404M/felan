@@ -71,6 +71,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_OPERATOR_SMALLER_OR_EQUAL",
     "PARSER_TOKEN_OPERATOR_POINTER",
     "PARSER_TOKEN_OPERATOR_ADDRESS",
+    "PARSER_TOKEN_OPERATOR_DEREFERENCE",
 
     "PARSER_TOKEN_FUNCTION_DEFINITION",
 
@@ -105,6 +106,10 @@ static constexpr ParserOrder PARSER_ORDER[] = {
     {
         .ltr = false,
         ORDER_ARRAY(LEXER_TOKEN_SYMBOL_FUNCTION_ARROW, ),
+    },
+    {
+        .ltr = true,
+        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_DEREFERENCE, ),
     },
     {
         .ltr = true,
@@ -241,6 +246,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_OPERATOR_POINTER:
   case PARSER_TOKEN_OPERATOR_ADDRESS:
+  case PARSER_TOKEN_OPERATOR_DEREFERENCE:
   case PARSER_TOKEN_OPERATOR_PLUS:
   case PARSER_TOKEN_OPERATOR_MINUS:
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
@@ -468,6 +474,7 @@ void parserNodeDelete(ParserNode *node) {
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_OPERATOR_POINTER:
   case PARSER_TOKEN_OPERATOR_ADDRESS:
+  case PARSER_TOKEN_OPERATOR_DEREFERENCE:
   case PARSER_TOKEN_OPERATOR_PLUS:
   case PARSER_TOKEN_OPERATOR_MINUS:
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
@@ -784,6 +791,12 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
   case LEXER_TOKEN_SYMBOL_ADDRESS: {
     ParserNode *result =
         parserLeftOperator(node, end, parent, PARSER_TOKEN_OPERATOR_ADDRESS);
+    *conti = result == NULL;
+    return result;
+  }
+  case LEXER_TOKEN_SYMBOL_DEREFERENCE: {
+    ParserNode *result = parserRightOperator(node, begin, parent,
+                                             PARSER_TOKEN_OPERATOR_DEREFERENCE);
     *conti = result == NULL;
     return result;
   }
@@ -1198,6 +1211,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_OPERATOR_MODULO_ASSIGN:
       case PARSER_TOKEN_OPERATOR_POINTER:
       case PARSER_TOKEN_OPERATOR_ADDRESS:
+      case PARSER_TOKEN_OPERATOR_DEREFERENCE:
       case PARSER_TOKEN_OPERATOR_PLUS:
       case PARSER_TOKEN_OPERATOR_MINUS:
       case PARSER_TOKEN_OPERATOR_SUM:
@@ -1436,6 +1450,27 @@ ParserNode *parserLeftOperator(LexerNode *node, LexerNode *end,
                            (ParserNodeSingleChildMetadata *)right, parent);
 }
 
+ParserNode *parserRightOperator(LexerNode *node, LexerNode *begin,
+                                ParserNode *parent, ParserToken token) {
+  LexerNode *leftNode = node - 1;
+
+  if (leftNode < begin || leftNode->parserNode == NULL) {
+    printError(node->str_begin, node->str_end, "No operand found");
+    return NULL;
+  }
+
+  ParserNode *left = getUntilCommonParent(leftNode->parserNode, parent);
+
+  if (left == NULL) {
+    printError(node->str_begin, node->str_end, "No operand found");
+    return NULL;
+  }
+
+  return left->parent = node->parserNode =
+             newParserNode(token, node->str_begin, left->str_end,
+                           (ParserNodeSingleChildMetadata *)left, parent);
+}
+
 ParserNode *parserIf(LexerNode *node, LexerNode *end, ParserNode *parent) {
   LexerNode *conditionNode = node + 1;
   if (conditionNode >= end) {
@@ -1578,6 +1613,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_MODULO_ASSIGN:
   case PARSER_TOKEN_OPERATOR_POINTER:
   case PARSER_TOKEN_OPERATOR_ADDRESS:
+  case PARSER_TOKEN_OPERATOR_DEREFERENCE:
   case PARSER_TOKEN_OPERATOR_PLUS:
   case PARSER_TOKEN_OPERATOR_MINUS:
   case PARSER_TOKEN_OPERATOR_SUM:
@@ -1670,6 +1706,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_MULTIPLY_ASSIGN:
   case PARSER_TOKEN_OPERATOR_DIVIDE_ASSIGN:
   case PARSER_TOKEN_OPERATOR_MODULO_ASSIGN:
+  case PARSER_TOKEN_OPERATOR_DEREFERENCE:
   case PARSER_TOKEN_OPERATOR_PLUS:
   case PARSER_TOKEN_OPERATOR_MINUS:
   case PARSER_TOKEN_OPERATOR_SUM:
@@ -1706,6 +1743,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_MODULO_ASSIGN:
   case PARSER_TOKEN_OPERATOR_POINTER:
   case PARSER_TOKEN_OPERATOR_ADDRESS:
+  case PARSER_TOKEN_OPERATOR_DEREFERENCE:
   case PARSER_TOKEN_OPERATOR_PLUS:
   case PARSER_TOKEN_OPERATOR_MINUS:
   case PARSER_TOKEN_OPERATOR_SUM:
