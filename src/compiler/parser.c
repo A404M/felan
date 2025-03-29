@@ -462,6 +462,7 @@ void parserNodeDelete(ParserNode *node) {
     ParserNodeIntMetadata *metadata = node->metadata;
     free(metadata);
   }
+    goto RETURN_SUCCESS;
   case PARSER_TOKEN_VALUE_FLOAT: {
     ParserNodeFloatMetadata *metadata = node->metadata;
     free(metadata);
