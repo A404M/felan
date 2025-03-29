@@ -163,7 +163,7 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet) {
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64: {
     AstTreeSingleChild *metadata = expr->metadata;
     AstTree *tree = runExpression(metadata, shouldRet);
-    printf("%lu", (AstTreeInt)tree->metadata);
+    printf("%lu", *(AstTreeInt *)tree->metadata);
     astTreeDelete(tree);
     return &AST_TREE_VOID_VALUE;
   }

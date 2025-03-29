@@ -1,29 +1,12 @@
+char :: u8;
+short :: i16;
+int :: i32;
+long :: i64;
+float :: f32;
+double :: f64;
+
 main :: () -> void {
-  a :u64= 1;
-  a1 :u64= 9;
-  b := &a;
-  b1 :*u64= &a1;
-  c := &b;
-  print_u64 b.*;
-  print_u64 a;
-  a = 2;
-  print_u64 b.*;
-  print_u64 a;
-  b.* = 3;
-  print_u64 b.*;
-  print_u64 a;
-  foo(a);
-  print_u64 b.*;
-  print_u64 a;
-  bar(b);
-  print_u64 b.*;
-  print_u64 a;
-  print_u64 c.*.*;
-  c.*.* = 6;
-  b = b1;
-  print_u64 b.*;
-  print_u64 a;
-  print_u64 c.*.*;
+  a : int = 2;
 };
 
 foo :: (a:u64)->void{

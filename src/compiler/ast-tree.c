@@ -250,8 +250,8 @@ void astTreePrint(const AstTree *tree, int indent) {
   }
     goto RETURN_SUCCESS;
   case AST_TREE_TOKEN_VALUE_INT: {
-    AstTreeInt metadata = (AstTreeInt)tree->metadata;
-    printf(",value=%lu", metadata);
+    AstTreeInt *metadata = tree->metadata;
+    printf(",value=%lu", *metadata);
   }
     goto RETURN_SUCCESS;
   case AST_TREE_TOKEN_VALUE_FLOAT: {
@@ -457,10 +457,14 @@ void astTreeDestroy(AstTree tree) {
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_VOID:
-  case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
     return;
+  case AST_TREE_TOKEN_VALUE_INT: {
+    AstTreeInt *metadata = tree.metadata;
+    free(metadata);
+    return;
+  }
   case AST_TREE_TOKEN_VALUE_FLOAT: {
     AstTreeFloat *metadata = tree.metadata;
     free(metadata);
@@ -638,10 +642,16 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
         tree->token, NULL,
         copyAstTreeBack(tree->type, oldVariables, newVariables, variables_size),
         tree->str_begin, tree->str_end);
-  case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_BOOL:
     return newAstTree(tree->token, tree->metadata, tree->type, tree->str_begin,
                       tree->str_end);
+  case AST_TREE_TOKEN_VALUE_INT: {
+    AstTreeInt *metadata = tree->metadata;
+    AstTreeInt *newMetadata = a404m_malloc(sizeof(*newMetadata));
+    *newMetadata = *metadata;
+    return newAstTree(tree->token, newMetadata, tree->type, tree->str_begin,
+                      tree->str_end);
+  }
   case AST_TREE_TOKEN_VALUE_FLOAT: {
     AstTreeFloat *metadata = tree->metadata;
     AstTreeFloat *newMetadata = a404m_malloc(sizeof(*newMetadata));
@@ -1203,12 +1213,11 @@ AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper) {
   case PARSER_TOKEN_IDENTIFIER:
     return astTreeParseIdentifier(parserNode, helper);
   case PARSER_TOKEN_VALUE_INT:
-    return newAstTree(
-        AST_TREE_TOKEN_VALUE_INT,
-        (void *)(AstTreeInt)(ParserNodeIntMetadata)parserNode->metadata, NULL,
-        parserNode->str_begin, parserNode->str_end);
+    return astTreeParseValue(parserNode, AST_TREE_TOKEN_VALUE_INT,
+                             sizeof(AstTreeInt));
   case PARSER_TOKEN_VALUE_FLOAT:
-    return astTreeParseFloat(parserNode);
+    return astTreeParseValue(parserNode, AST_TREE_TOKEN_VALUE_FLOAT,
+                             sizeof(AstTreeFloat));
   case PARSER_TOKEN_VALUE_BOOL:
     return newAstTree(
         AST_TREE_TOKEN_VALUE_BOOL,
@@ -1607,15 +1616,13 @@ AstTree *astTreeParseIdentifier(ParserNode *parserNode, AstTreeHelper *helper) {
                     parserNode->str_end);
 }
 
-AstTree *astTreeParseFloat(ParserNode *parserNode) {
-  AstTreeFloat *metadata = a404m_malloc(sizeof(*metadata));
+AstTree *astTreeParseValue(ParserNode *parserNode, AstTreeToken token,
+                           size_t metadata_size) {
+  void *metadata = a404m_malloc(sizeof(metadata));
+  memcpy(metadata, parserNode->metadata, metadata_size);
 
-  ParserNodeFloatMetadata *node_metadata = parserNode->metadata;
-
-  *metadata = *node_metadata;
-
-  return newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, metadata, NULL,
-                    parserNode->str_begin, parserNode->str_end);
+  return newAstTree(token, metadata, NULL, parserNode->str_begin,
+                    parserNode->str_end);
 }
 
 AstTree *astTreeParseKeyword(ParserNode *parserNode, AstTreeToken token) {
@@ -2059,8 +2066,10 @@ AstTreeFunction *getFunction(AstTree *value) {
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
   case AST_TREE_TOKEN_TYPE_BOOL:
+  case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_INT:
+  case AST_TREE_TOKEN_VALUE_FLOAT:
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
@@ -2082,8 +2091,6 @@ AstTreeFunction *getFunction(AstTree *value) {
   case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
   case AST_TREE_TOKEN_SCOPE:
   case AST_TREE_TOKEN_KEYWORD_WHILE:
-  case AST_TREE_TOKEN_VALUE_FLOAT:
-  case AST_TREE_TOKEN_VALUE_NULL:
     return NULL;
   case AST_TREE_TOKEN_NONE:
   }
@@ -2687,7 +2694,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
   } else if (typeIsEqual(helper.lookingType, &AST_TREE_U64_TYPE)) {
     tree->type = &AST_TREE_U64_TYPE;
   } else if (typeIsEqual(helper.lookingType, &AST_TREE_I32_TYPE)) {
-    AstTreeInt value = (AstTreeInt)tree->metadata;
+    AstTreeInt value = *(AstTreeInt *)tree->metadata;
     i32 newValue = value;
     tree->metadata = (void *)(u64)newValue;
     if (value - newValue != 0) {
@@ -2695,7 +2702,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     }
     tree->type = &AST_TREE_I32_TYPE;
   } else if (typeIsEqual(helper.lookingType, &AST_TREE_U32_TYPE)) {
-    AstTreeInt value = (AstTreeInt)tree->metadata;
+    AstTreeInt value = *(AstTreeInt *)tree->metadata;
     u32 newValue = value;
     tree->metadata = (void *)(u64)newValue;
     if (value - newValue != 0) {
@@ -2703,7 +2710,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     }
     tree->type = &AST_TREE_U32_TYPE;
   } else if (typeIsEqual(helper.lookingType, &AST_TREE_I16_TYPE)) {
-    AstTreeInt value = (AstTreeInt)tree->metadata;
+    AstTreeInt value = *(AstTreeInt *)tree->metadata;
     i16 newValue = value;
     tree->metadata = (void *)(u64)newValue;
     if (value - newValue != 0) {
@@ -2711,7 +2718,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     }
     tree->type = &AST_TREE_I16_TYPE;
   } else if (typeIsEqual(helper.lookingType, &AST_TREE_U16_TYPE)) {
-    AstTreeInt value = (AstTreeInt)tree->metadata;
+    AstTreeInt value = *(AstTreeInt *)tree->metadata;
     u16 newValue = value;
     tree->metadata = (void *)(u64)newValue;
     if (value - newValue != 0) {
@@ -2719,7 +2726,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     }
     tree->type = &AST_TREE_U16_TYPE;
   } else if (typeIsEqual(helper.lookingType, &AST_TREE_I8_TYPE)) {
-    AstTreeInt value = (AstTreeInt)tree->metadata;
+    AstTreeInt value = *(AstTreeInt *)tree->metadata;
     i8 newValue = value;
     tree->metadata = (void *)(u64)newValue;
     if (value - newValue != 0) {
@@ -2727,7 +2734,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     }
     tree->type = &AST_TREE_I8_TYPE;
   } else if (typeIsEqual(helper.lookingType, &AST_TREE_U8_TYPE)) {
-    AstTreeInt value = (AstTreeInt)tree->metadata;
+    AstTreeInt value = *(AstTreeInt *)tree->metadata;
     u8 newValue = value;
     tree->metadata = (void *)(u64)newValue;
     if (value - newValue != 0) {
@@ -2736,7 +2743,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     tree->type = &AST_TREE_U8_TYPE;
   } else if (typeIsEqual(helper.lookingType, &AST_TREE_F16_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
-    AstTreeInt value = (AstTreeInt)tree->metadata;
+    AstTreeInt value = *(AstTreeInt *)tree->metadata;
     f16 newValue = value;
     tree->metadata = a404m_malloc(sizeof(f128));
     *(AstTreeFloat *)tree->metadata = value;
@@ -2746,7 +2753,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     tree->type = &AST_TREE_F16_TYPE;
   } else if (typeIsEqual(helper.lookingType, &AST_TREE_F32_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
-    AstTreeInt value = (AstTreeInt)tree->metadata;
+    AstTreeInt value = *(AstTreeInt *)tree->metadata;
     f32 newValue = value;
     tree->metadata = a404m_malloc(sizeof(f128));
     *(AstTreeFloat *)tree->metadata = value;
@@ -2756,7 +2763,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     tree->type = &AST_TREE_F32_TYPE;
   } else if (typeIsEqual(helper.lookingType, &AST_TREE_F64_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
-    AstTreeInt value = (AstTreeInt)tree->metadata;
+    AstTreeInt value = *(AstTreeInt *)tree->metadata;
     f64 newValue = value;
     tree->metadata = a404m_malloc(sizeof(f128));
     *(AstTreeFloat *)tree->metadata = value;
@@ -2766,7 +2773,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     tree->type = &AST_TREE_F64_TYPE;
   } else if (typeIsEqual(helper.lookingType, &AST_TREE_F128_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
-    AstTreeInt value = (AstTreeInt)tree->metadata;
+    AstTreeInt value = *(AstTreeInt *)tree->metadata;
     f128 newValue = value;
     tree->metadata = a404m_malloc(sizeof(f128));
     *(AstTreeFloat *)tree->metadata = value;
