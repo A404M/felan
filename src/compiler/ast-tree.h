@@ -252,6 +252,7 @@ bool isCircularDependenciesVariable(AstTreeHelper *helper,
 bool setAllTypesRoot(AstTreeRoot *root, AstTreeHelper *helper);
 bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
                  AstTreeFunction *function);
+bool setTypesValueBool(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesValueNull(AstTree *tree, AstTreeSetTypesHelper helper);

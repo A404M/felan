@@ -218,8 +218,8 @@ void parserNodePrint(const ParserNode *node, int indent) {
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_VALUE_BOOL: {
-    ParserNodeIntMetadata metadata = (ParserNodeIntMetadata)node->metadata;
-    printf(",value=%b", (ParserNodeBoolMetadata)metadata);
+    ParserNodeBoolMetadata *metadata = node->metadata;
+    printf(",value=%b", *metadata);
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_CONSTANT:
@@ -455,9 +455,14 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_TYPE_F32:
   case PARSER_TOKEN_TYPE_F64:
   case PARSER_TOKEN_TYPE_F128:
-  case PARSER_TOKEN_VALUE_BOOL:
   case PARSER_TOKEN_KEYWORD_NULL:
     goto RETURN_SUCCESS;
+  case PARSER_TOKEN_VALUE_BOOL: {
+    ParserNodeBoolMetadata *metadata = node->metadata;
+    free(metadata);
+  }
+    goto RETURN_SUCCESS;
+
   case PARSER_TOKEN_VALUE_INT: {
     ParserNodeIntMetadata *metadata = node->metadata;
     free(metadata);
@@ -979,11 +984,11 @@ ParserNode *parserNumber(LexerNode *node, ParserNode *parent) {
 }
 
 ParserNode *parserBoolValue(LexerNode *node, ParserNode *parent) {
-  return node->parserNode = newParserNode(
-             PARSER_TOKEN_VALUE_BOOL, node->str_begin, node->str_end,
-             (void *)(ParserNodeBoolMetadata)(node->token ==
-                                              LEXER_TOKEN_KEYWORD_TRUE),
-             parent);
+  ParserNodeBoolMetadata *metadata = a404m_malloc(sizeof(*metadata));
+  *metadata = node->token == LEXER_TOKEN_KEYWORD_TRUE;
+  return node->parserNode =
+             newParserNode(PARSER_TOKEN_VALUE_BOOL, node->str_begin,
+                           node->str_end, metadata, parent);
 }
 
 ParserNode *parserEol(LexerNode *node, LexerNode *begin, ParserNode *parent) {

@@ -7,12 +7,8 @@ double :: f64;
 
 main :: () -> void {
   a : int = 2;
-};
-
-foo :: (a:u64)->void{
-  a = 4;
-};
-
-bar :: (a:*u64)->void{
-  a.* = 5;
+  if a == 2
+    print_u64 1;
+  else
+    print_u64 0;
 };

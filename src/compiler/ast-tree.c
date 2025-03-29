@@ -260,8 +260,8 @@ void astTreePrint(const AstTree *tree, int indent) {
   }
     goto RETURN_SUCCESS;
   case AST_TREE_TOKEN_VALUE_BOOL: {
-    AstTreeBool metadata = (AstTreeBool)tree->metadata;
-    printf(",value=%b", metadata);
+    AstTreeBool *metadata = tree->metadata;
+    printf(",value=%b", *metadata);
   }
     goto RETURN_SUCCESS;
   case AST_TREE_TOKEN_TYPE_FUNCTION: {
@@ -457,9 +457,13 @@ void astTreeDestroy(AstTree tree) {
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_VOID:
-  case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
     return;
+  case AST_TREE_TOKEN_VALUE_BOOL: {
+    AstTreeBool *metadata = tree.metadata;
+    free(metadata);
+    return;
+  }
   case AST_TREE_TOKEN_VALUE_INT: {
     AstTreeInt *metadata = tree.metadata;
     free(metadata);
@@ -642,9 +646,13 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
         tree->token, NULL,
         copyAstTreeBack(tree->type, oldVariables, newVariables, variables_size),
         tree->str_begin, tree->str_end);
-  case AST_TREE_TOKEN_VALUE_BOOL:
-    return newAstTree(tree->token, tree->metadata, tree->type, tree->str_begin,
+  case AST_TREE_TOKEN_VALUE_BOOL: {
+    AstTreeBool *metadata = tree->metadata;
+    AstTreeBool *newMetadata = a404m_malloc(sizeof(*newMetadata));
+    *newMetadata = *metadata;
+    return newAstTree(tree->token, newMetadata, tree->type, tree->str_begin,
                       tree->str_end);
+  }
   case AST_TREE_TOKEN_VALUE_INT: {
     AstTreeInt *metadata = tree->metadata;
     AstTreeInt *newMetadata = a404m_malloc(sizeof(*newMetadata));
@@ -1219,10 +1227,8 @@ AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper) {
     return astTreeParseValue(parserNode, AST_TREE_TOKEN_VALUE_FLOAT,
                              sizeof(AstTreeFloat));
   case PARSER_TOKEN_VALUE_BOOL:
-    return newAstTree(
-        AST_TREE_TOKEN_VALUE_BOOL,
-        (void *)(AstTreeBool)(ParserNodeBoolMetadata)parserNode->metadata,
-        &AST_TREE_BOOL_TYPE, parserNode->str_begin, parserNode->str_end);
+    return astTreeParseValue(parserNode, AST_TREE_TOKEN_VALUE_BOOL,
+                             sizeof(AstTreeBool));
   case PARSER_TOKEN_KEYWORD_NULL:
     return astTreeParseKeyword(parserNode, AST_TREE_TOKEN_VALUE_NULL);
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
@@ -2626,8 +2632,9 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
   case AST_TREE_TOKEN_VALUE_VOID:
-  case AST_TREE_TOKEN_VALUE_BOOL:
     return true;
+  case AST_TREE_TOKEN_VALUE_BOOL:
+    return setTypesValueBool(tree, helper);
   case AST_TREE_TOKEN_VALUE_INT:
     return setTypesValueInt(tree, helper);
   case AST_TREE_TOKEN_VALUE_FLOAT:
@@ -2685,6 +2692,12 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
   }
   printError(tree->str_begin, tree->str_end, "Unknown token %d", tree->token);
   UNREACHABLE;
+}
+
+bool setTypesValueBool(AstTree *tree, AstTreeSetTypesHelper helper) {
+  (void)helper;
+  tree->type = &AST_TREE_BOOL_TYPE;
+  return true;
 }
 
 bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
