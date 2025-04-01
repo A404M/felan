@@ -1158,11 +1158,9 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
   LexerNode *retTypeNode = node + 1;
   LexerNode *bodyNode = node + 2;
   if (paramsNode < begin || paramsNode->parserNode == NULL) {
-  NO_PARAMS:
     printError(node->str_begin, node->str_end, "No params");
     return NULL;
   } else if (retTypeNode >= end || retTypeNode->parserNode == NULL) {
-  NO_RETURN_TYPE:
     printError(node->str_begin, node->str_end, "No return type");
     return NULL;
   }
@@ -1250,9 +1248,12 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
   }
 
   if (params->token != PARSER_TOKEN_SYMBOL_PARENTHESIS) {
-    goto NO_PARAMS;
+    printError(node->str_begin, node->str_end, "No params %s",
+               PARSER_TOKEN_STRINGS[params->token]);
+    return NULL;
   } else if (!isType(retType)) {
-    goto NO_RETURN_TYPE;
+    printError(node->str_begin, node->str_end, "No return type");
+    return NULL;
   } else if (!isAllArguments(params->metadata)) {
     printError(params->str_begin, params->str_end, "Bad arguments");
     return NULL;
