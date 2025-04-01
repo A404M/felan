@@ -6,9 +6,13 @@ float :: f32;
 double :: f64;
 
 main :: () -> void {
-  a : int = 2;
-  if a == 2
-    print_u64 1;
-  else
-    print_u64 0;
+  a :u64= 2;
+  f :: ()->void{
+    print_u64 a;
+  };
+  foo(f);
+};
+
+foo :: (fun:()->void)->void{
+  // fun();
 };

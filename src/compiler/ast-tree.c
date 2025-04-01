@@ -2103,6 +2103,10 @@ AstTreeFunction *getFunction(AstTree *value) {
   UNREACHABLE;
 }
 
+bool isFunction(AstTree *value) {
+  return value->type->token == AST_TREE_TOKEN_TYPE_FUNCTION;
+}
+
 bool isConst(AstTree *tree, AstTreeHelper *helper) {
   switch (tree->token) {
   case AST_TREE_TOKEN_TYPE_TYPE:
@@ -2953,6 +2957,10 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper) {
   AstTreeFunctionCall *metadata = tree->metadata;
 
   if (!setAllTypes(metadata->function, helper, NULL)) {
+    return false;
+  } else if (!isFunction(metadata->function)) {
+    printError(metadata->function->str_begin, metadata->function->str_end,
+               "Object is not a function");
     return false;
   }
 

@@ -235,6 +235,7 @@ AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
 AstTree *astTreeParseParenthesis(ParserNode *parserNode, AstTreeHelper *helper);
 
 AstTreeFunction *getFunction(AstTree *value);
+bool isFunction(AstTree *value);
 bool isConst(AstTree *tree, AstTreeHelper *helper);
 AstTree *makeTypeOf(AstTree *value);
 bool typeIsEqual(const AstTree *type0, const AstTree *type1);
