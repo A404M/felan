@@ -7,12 +7,12 @@ double :: f64;
 
 main :: () -> void {
   a :u64= 2;
-  f :: ()->void{
-    print_u64 a;
+  f :: (c:u64,b:u64)->void{
+    print_u64 c-b+a;
   };
   foo(f);
 };
 
-foo :: (fun:()->void)->void{
-  // fun();
+foo :: (fun:(b:u64,u64)->void)->void{
+  fun(b = 3,4);
 };

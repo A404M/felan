@@ -5,6 +5,7 @@
 #define printWarning(begin,end,format,...) _printErrorWarningBack(__FILE_NAME__, __LINE__, begin, end, false, format, ## __VA_ARGS__)
 
 #define UNREACHABLE printLog("Unreachable");exit(1)
+#define NOT_IMPLEMENTED printLog("Not implemented");exit(1)
 
 extern void _printLogBack(const char *format, const char *file, int line, ...);
 

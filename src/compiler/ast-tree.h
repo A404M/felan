@@ -120,8 +120,16 @@ typedef struct AstTreeFunction {
   AstTree *returnType;
 } AstTreeFunction;
 
+typedef struct AstTreeTypeFunctionArgument {
+  char *str_begin;
+  char *str_end;
+  char *name_begin;
+  char *name_end;
+  AstTree *type;
+} AstTreeTypeFunctionArgument;
+
 typedef struct AstTreeTypeFunction {
-  AstTree **arguments;
+  AstTreeTypeFunctionArgument *arguments;
   size_t arguments_size;
   AstTree *returnType;
 } AstTreeTypeFunction;
@@ -234,7 +242,6 @@ AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
                                   AstTreeHelper *helper);
 AstTree *astTreeParseParenthesis(ParserNode *parserNode, AstTreeHelper *helper);
 
-AstTreeFunction *getFunction(AstTree *value);
 bool isFunction(AstTree *value);
 bool isConst(AstTree *tree, AstTreeHelper *helper);
 AstTree *makeTypeOf(AstTree *value);

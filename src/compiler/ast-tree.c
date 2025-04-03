@@ -271,8 +271,23 @@ void astTreePrint(const AstTree *tree, int indent) {
       printf(" ");
     printf("arguments=[\n");
     for (size_t i = 0; i < metadata->arguments_size; ++i) {
-      astTreePrint(metadata->arguments[i], indent + 1);
+      AstTreeTypeFunctionArgument arg = metadata->arguments[i];
+      for (int i = 0; i < indent + 1; ++i)
+        printf(" ");
+      printf("{\n");
+      for (int i = 0; i < indent + 1; ++i)
+        printf(" ");
+      if (arg.name_begin != arg.name_end) {
+        printf("name=\"%.*s\",\n", (int)(arg.name_end - arg.name_begin),
+               arg.name_begin);
+      }
+      for (int i = 0; i < indent + 1; ++i)
+        printf(" ");
+      printf("type=\n");
+      astTreePrint(arg.type, indent + 2);
       printf(",\n");
+      for (int i = 0; i < indent + 1; ++i)
+        printf(" ");
     }
     for (int i = 0; i < indent; ++i)
       printf(" ");
@@ -496,7 +511,8 @@ void astTreeDestroy(AstTree tree) {
   case AST_TREE_TOKEN_TYPE_FUNCTION: {
     AstTreeTypeFunction *metadata = tree.metadata;
     for (size_t i = 0; i < metadata->arguments_size; ++i) {
-      astTreeDelete(metadata->arguments[i]);
+      AstTreeTypeFunctionArgument arg = metadata->arguments[i];
+      astTreeDelete(arg.type);
     }
     astTreeDelete(metadata->returnType);
     free(metadata->arguments);
@@ -686,11 +702,16 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
     AstTreeTypeFunction *metadata = tree->metadata;
     AstTreeTypeFunction *new_metadata = a404m_malloc(sizeof(*new_metadata));
     new_metadata->arguments_size = metadata->arguments_size;
-    new_metadata->arguments =
-        a404m_malloc(sizeof(*new_metadata) * new_metadata->arguments_size);
+    new_metadata->arguments = a404m_malloc(sizeof(*new_metadata->arguments) *
+                                           new_metadata->arguments_size);
     for (size_t i = 0; i < metadata->arguments_size; ++i) {
-      new_metadata->arguments[i] = copyAstTreeBack(
-          metadata->arguments[i], oldVariables, newVariables, variables_size);
+      AstTreeTypeFunctionArgument arg = metadata->arguments[i];
+      new_metadata->arguments[i].str_begin = arg.str_begin;
+      new_metadata->arguments[i].str_end = arg.str_end;
+      new_metadata->arguments[i].name_begin = arg.name_begin;
+      new_metadata->arguments[i].name_end = arg.name_end;
+      new_metadata->arguments[i].type =
+          copyAstTreeBack(arg.type, oldVariables, newVariables, variables_size);
     }
     new_metadata->returnType = copyAstTreeBack(
         metadata->returnType, oldVariables, newVariables, variables_size);
@@ -1523,23 +1544,36 @@ AstTree *astTreeParseTypeFunction(ParserNode *parserNode,
       node_argument = (ParserNodeSingleChildMetadata *)node_argument->metadata;
     }
 
-    AstTree *argument;
+    AstTreeTypeFunctionArgument argument = {
+        .str_begin = node_argument->str_begin,
+        .str_end = node_argument->str_end,
+    };
 
     if (node_argument->token == PARSER_TOKEN_VARIABLE) {
-      argument = NULL;
-      printError(node_argument->str_begin, node_argument->str_end,
-                 "Not yet supported");
-      UNREACHABLE;
-    } else {
-      argument = astTreeParse(node_argument, helper);
-      if (argument == NULL) {
-        return NULL;
+      ParserNodeVariableMetadata *variable_metadata = node_argument->metadata;
+      if (variable_metadata->name->token != PARSER_TOKEN_IDENTIFIER) {
+        printError(node_argument->str_begin, node_argument->str_end,
+                   "Name must be identifier");
+        UNREACHABLE;
       }
+      argument.name_begin = variable_metadata->name->str_begin;
+      argument.name_end = variable_metadata->name->str_end;
 
-      if (!typeIsEqual(argument->type, &AST_TREE_TYPE_TYPE)) {
-        printError(argument->str_begin, argument->str_end, "Not yet supported");
+      argument.type = astTreeParse(variable_metadata->type, helper);
+      if (argument.type == NULL) {
         return NULL;
       }
+    } else {
+      argument.type = astTreeParse(node_argument, helper);
+      if (argument.type == NULL) {
+        return NULL;
+      }
+      argument.name_begin = argument.name_end = NULL;
+    }
+
+    if (!typeIsEqual(argument.type->type, &AST_TREE_TYPE_TYPE)) {
+      printError(argument.str_begin, argument.str_end, "Type is incorrenct");
+      return NULL;
     }
 
     if (typeFunction->arguments_size == arguments_size) {
@@ -2039,70 +2073,6 @@ AstTree *astTreeParseParenthesis(ParserNode *parserNode,
   }
 }
 
-AstTreeFunction *getFunction(AstTree *value) {
-  switch (value->token) {
-  case AST_TREE_TOKEN_FUNCTION:
-    return value->metadata;
-  case AST_TREE_TOKEN_VARIABLE: {
-    AstTreeVariable *metadata = value->metadata;
-    if (metadata->value->token == AST_TREE_TOKEN_FUNCTION) {
-      return metadata->value->metadata;
-    } else {
-      return NULL;
-    }
-  }
-  case AST_TREE_TOKEN_FUNCTION_CALL:
-  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
-  case AST_TREE_TOKEN_KEYWORD_RETURN:
-  case AST_TREE_TOKEN_KEYWORD_IF:
-  case AST_TREE_TOKEN_KEYWORD_COMPTIME:
-  case AST_TREE_TOKEN_TYPE_TYPE:
-  case AST_TREE_TOKEN_TYPE_FUNCTION:
-  case AST_TREE_TOKEN_TYPE_VOID:
-  case AST_TREE_TOKEN_TYPE_I8:
-  case AST_TREE_TOKEN_TYPE_U8:
-  case AST_TREE_TOKEN_TYPE_I16:
-  case AST_TREE_TOKEN_TYPE_U16:
-  case AST_TREE_TOKEN_TYPE_I32:
-  case AST_TREE_TOKEN_TYPE_U32:
-  case AST_TREE_TOKEN_TYPE_I64:
-  case AST_TREE_TOKEN_TYPE_U64:
-  case AST_TREE_TOKEN_TYPE_F16:
-  case AST_TREE_TOKEN_TYPE_F32:
-  case AST_TREE_TOKEN_TYPE_F64:
-  case AST_TREE_TOKEN_TYPE_F128:
-  case AST_TREE_TOKEN_TYPE_BOOL:
-  case AST_TREE_TOKEN_VALUE_NULL:
-  case AST_TREE_TOKEN_VALUE_VOID:
-  case AST_TREE_TOKEN_VALUE_INT:
-  case AST_TREE_TOKEN_VALUE_FLOAT:
-  case AST_TREE_TOKEN_VALUE_BOOL:
-  case AST_TREE_TOKEN_VARIABLE_DEFINE:
-  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
-  case AST_TREE_TOKEN_OPERATOR_POINTER:
-  case AST_TREE_TOKEN_OPERATOR_ADDRESS:
-  case AST_TREE_TOKEN_OPERATOR_DEREFERENCE:
-  case AST_TREE_TOKEN_OPERATOR_PLUS:
-  case AST_TREE_TOKEN_OPERATOR_MINUS:
-  case AST_TREE_TOKEN_OPERATOR_SUM:
-  case AST_TREE_TOKEN_OPERATOR_SUB:
-  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
-  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
-  case AST_TREE_TOKEN_OPERATOR_MODULO:
-  case AST_TREE_TOKEN_OPERATOR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_GREATER:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER:
-  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
-  case AST_TREE_TOKEN_SCOPE:
-  case AST_TREE_TOKEN_KEYWORD_WHILE:
-    return NULL;
-  case AST_TREE_TOKEN_NONE:
-  }
-  UNREACHABLE;
-}
-
 bool isFunction(AstTree *value) {
   return value->type->token == AST_TREE_TOKEN_TYPE_FUNCTION;
 }
@@ -2236,8 +2206,10 @@ AstTree *makeTypeOf(AstTree *value) {
     type_metadata->returnType = copyAstTree(function->returnType);
 
     for (size_t i = 0; i < function->arguments.size; ++i) {
-      type_metadata->arguments[i] =
-          copyAstTree(function->arguments.data[i]->type);
+      AstTreeVariable *arg = function->arguments.data[i];
+      type_metadata->arguments[i].name_begin = arg->name_begin;
+      type_metadata->arguments[i].name_end = arg->name_end;
+      type_metadata->arguments[i].type = copyAstTree(arg->type);
     }
 
     return newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, type_metadata,
@@ -2358,9 +2330,9 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
       return false;
     }
     for (size_t i = 0; i < type0_metadata->arguments_size; ++i) {
-      AstTree *p0 = type0_metadata->arguments[i];
-      AstTree *p1 = type1_metadata->arguments[i];
-      if (!typeIsEqual(p0, p1)) {
+      AstTreeTypeFunctionArgument p0 = type0_metadata->arguments[i];
+      AstTreeTypeFunctionArgument p1 = type1_metadata->arguments[i];
+      if (!typeIsEqual(p0.type, p1.type)) {
         return false;
       }
     }
@@ -2933,11 +2905,11 @@ bool setTypesTypeFunction(AstTree *tree, AstTreeSetTypesHelper helper) {
   AstTreeTypeFunction *metadata = tree->metadata;
 
   for (size_t i = 0; i < metadata->arguments_size; ++i) {
-    AstTree *arg = metadata->arguments[i];
-    if (!setAllTypes(arg, helper, NULL)) {
+    AstTreeTypeFunctionArgument arg = metadata->arguments[i];
+    if (!setAllTypes(arg.type, helper, NULL)) {
       return false;
-    } else if (!typeIsEqual(arg->type, &AST_TREE_TYPE_TYPE)) {
-      printError(arg->str_begin, arg->str_end, "Expected a type");
+    } else if (!typeIsEqual(arg.type, &AST_TREE_TYPE_TYPE)) {
+      printError(arg.str_begin, arg.str_end, "Expected a type");
       return false;
     }
   }
@@ -2964,33 +2936,33 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper) {
     return false;
   }
 
-  AstTreeFunction *function = getFunction(metadata->function);
+  AstTreeTypeFunction *function = metadata->function->type->metadata;
   if (function == NULL ||
-      function->arguments.size != metadata->parameters_size) {
+      function->arguments_size != metadata->parameters_size) {
     printError(tree->str_begin, tree->str_end,
-               "Arguments doesn't match %ld != %ld", function->arguments.size,
+               "Arguments doesn't match %ld != %ld", function->arguments_size,
                metadata->parameters_size);
     return NULL;
   }
 
-  bool initedArguments[function->arguments.size];
-  size_t initedArguments_size = function->arguments.size;
+  AstTreeFunctionCallParam initedArguments[function->arguments_size];
+  size_t initedArguments_size = function->arguments_size;
 
   for (size_t i = 0; i < initedArguments_size; ++i) {
-    initedArguments[i] = false;
+    initedArguments[i].value = NULL;
   }
 
   for (size_t i = 0; i < metadata->parameters_size; ++i) {
     AstTreeFunctionCallParam param = metadata->parameters[i];
     if (param.nameBegin != param.nameEnd) {
       const size_t param_name_size = param.nameEnd - param.nameBegin;
-      for (size_t j = 0; j < function->arguments.size; ++j) {
-        AstTreeVariable *arg = function->arguments.data[j];
-        if ((size_t)(arg->name_end - arg->name_begin) == param_name_size &&
-            strncmp(arg->name_begin, param.nameBegin, param_name_size) == 0) {
-          initedArguments[j] = true;
+      for (size_t j = 0; j < function->arguments_size; ++j) {
+        AstTreeTypeFunctionArgument arg = function->arguments[j];
+        if ((size_t)(arg.name_end - arg.name_begin) == param_name_size &&
+            strncmp(arg.name_begin, param.nameBegin, param_name_size) == 0) {
+          initedArguments[j] = param;
           AstTreeSetTypesHelper newHelper = {
-              .lookingType = arg->type,
+              .lookingType = arg.type,
               .treeHelper = helper.treeHelper,
           };
 
@@ -3010,12 +2982,12 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper) {
   for (size_t i = 0; i < metadata->parameters_size; ++i) {
     AstTreeFunctionCallParam param = metadata->parameters[i];
     if (param.nameBegin == param.nameEnd) {
-      for (size_t j = 0; j < function->arguments.size; ++j) {
-        AstTreeVariable *arg = function->arguments.data[j];
-        if (!initedArguments[j]) {
-          initedArguments[j] = true;
+      for (size_t j = 0; j < function->arguments_size; ++j) {
+        AstTreeTypeFunctionArgument arg = function->arguments[j];
+        if (initedArguments[j].value == NULL) {
+          initedArguments[j] = param;
           AstTreeSetTypesHelper newHelper = {
-              .lookingType = arg->type,
+              .lookingType = arg.type,
               .treeHelper = helper.treeHelper,
           };
 
@@ -3032,12 +3004,16 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper) {
   END_OF_UNNAMED_FOR:
   }
 
-  for (size_t i = 0; i < function->arguments.size; ++i) {
-    AstTreeVariable *arg = function->arguments.data[i];
-    if (!initedArguments[i] && arg->value == NULL) {
-      printError(arg->name_begin, arg->name_end, "Argument is not initialized");
+  for (size_t i = 0; i < function->arguments_size; ++i) {
+    AstTreeTypeFunctionArgument arg = function->arguments[i];
+    if (initedArguments[i].value == NULL) {
+      printError(arg.str_begin, arg.str_end, "Argument is not initialized");
       return false;
     }
+  }
+
+  for (size_t i = 0; i < initedArguments_size; ++i) {
+    metadata->parameters[i] = initedArguments[i];
   }
 
   tree->type = copyAstTree(function->returnType);
