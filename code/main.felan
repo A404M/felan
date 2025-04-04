@@ -11,6 +11,6 @@ st :: struct {
 };
 
 main :: () -> void {
-  print_u64 1234;
+  a : st = undefined;
 };
 

@@ -39,6 +39,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_VARIABLE,
   AST_TREE_TOKEN_VARIABLE_DEFINE,
   AST_TREE_TOKEN_VALUE_NULL,
+  AST_TREE_TOKEN_VALUE_UNDEFINED,
   AST_TREE_TOKEN_VALUE_INT,
   AST_TREE_TOKEN_VALUE_FLOAT,
   AST_TREE_TOKEN_VALUE_BOOL,
@@ -273,6 +274,7 @@ bool setTypesValueBool(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesValueNull(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesValueUndefined(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesFunction(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesPrintU64(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper helper,

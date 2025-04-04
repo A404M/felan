@@ -38,6 +38,7 @@ typedef enum ParserToken {
   PARSER_TOKEN_KEYWORD_COMPTIME,
   PARSER_TOKEN_KEYWORD_NULL,
   PARSER_TOKEN_KEYWORD_STRUCT,
+  PARSER_TOKEN_KEYWORD_UNDEFINED,
 
   PARSER_TOKEN_CONSTANT,
   PARSER_TOKEN_VARIABLE,
@@ -82,7 +83,7 @@ extern const char *PARSER_TOKEN_STRINGS[];
 typedef struct ParserOrder {
   bool ltr;
   size_t size;
-  LexerToken data[21];
+  LexerToken data[22];
 } ParserOrder;
 
 typedef struct ParserNode {

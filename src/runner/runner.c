@@ -782,6 +782,7 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet) {
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
   case AST_TREE_TOKEN_VALUE_NULL:
+  case AST_TREE_TOKEN_VALUE_UNDEFINED:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_BOOL:
@@ -812,6 +813,7 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet) {
     AstTreeVariable *variable = expr->metadata;
     return copyAstTree(variable->value);
   }
+  case AST_TREE_TOKEN_KEYWORD_STRUCT:
   case AST_TREE_TOKEN_NONE:
   }
   UNREACHABLE;
