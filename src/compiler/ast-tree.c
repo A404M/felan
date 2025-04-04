@@ -886,7 +886,7 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
     new_metadata->expressions = a404m_malloc(
         new_metadata->expressions_size * sizeof(*new_metadata->expressions));
 
-    size_t new_variables_size = variables_size + 1;
+    const size_t new_variables_size = variables_size + 1;
     AstTreeVariables new_oldVariables[new_variables_size];
     AstTreeVariables new_newVariables[new_variables_size];
     for (size_t i = 0; i < variables_size; ++i) {
@@ -1554,12 +1554,17 @@ AstTree *astTreeParseTypeFunction(ParserNode *parserNode,
       if (variable_metadata->name->token != PARSER_TOKEN_IDENTIFIER) {
         printError(node_argument->str_begin, node_argument->str_end,
                    "Name must be identifier");
-        UNREACHABLE;
+        return NULL;
       }
       argument.name_begin = variable_metadata->name->str_begin;
       argument.name_end = variable_metadata->name->str_end;
 
       argument.type = astTreeParse(variable_metadata->type, helper);
+      if (variable_metadata->value != NULL) {
+        printError(node_argument->str_begin, node_argument->str_end,
+                   "Cannot have value in function type");
+        return NULL;
+      }
       if (argument.type == NULL) {
         return NULL;
       }

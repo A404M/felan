@@ -787,6 +787,7 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet) {
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VALUE_FLOAT:
   case AST_TREE_TOKEN_OPERATOR_POINTER:
+  case AST_TREE_TOKEN_FUNCTION:
     return copyAstTree(expr);
   case AST_TREE_TOKEN_OPERATOR_ADDRESS: {
     AstTreeSingleChild *metadata = expr->metadata;
@@ -811,7 +812,6 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet) {
     AstTreeVariable *variable = expr->metadata;
     return copyAstTree(variable->value);
   }
-  case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_NONE:
   }
   UNREACHABLE;
