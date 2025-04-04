@@ -3,6 +3,7 @@
 #include "compiler/parser.h"
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/types.h>
 
 typedef enum AstTreeToken {
   AST_TREE_TOKEN_FUNCTION,
@@ -12,6 +13,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_KEYWORD_IF,
   AST_TREE_TOKEN_KEYWORD_WHILE,
   AST_TREE_TOKEN_KEYWORD_COMPTIME,
+  AST_TREE_TOKEN_KEYWORD_STRUCT,
 
   AST_TREE_TOKEN_TYPE_FUNCTION,
   AST_TREE_TOKEN_TYPE_TYPE,
@@ -186,7 +188,13 @@ typedef struct AstTreeSetTypesHelper {
   AstTreeHelper *treeHelper;
 } AstTreeSetTypesHelper;
 
+typedef struct AstTreeStruct {
+  size_t id;
+  AstTreeVariables variables;
+} AstTreeStruct;
+
 void astTreePrint(const AstTree *tree, int indent);
+void astTreeVariablePrint(const AstTreeVariable *variable, int indent);
 void astTreeRootPrint(const AstTreeRoot *root);
 
 void astTreeDestroy(AstTree tree);
@@ -241,6 +249,7 @@ AstTree *astTreeParseComptime(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
                                   AstTreeHelper *helper);
 AstTree *astTreeParseParenthesis(ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseStruct(ParserNode *parserNode, AstTreeHelper *helper);
 
 bool isFunction(AstTree *value);
 bool isConst(AstTree *tree, AstTreeHelper *helper);
@@ -287,6 +296,7 @@ bool setTypesWhile(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesScope(AstTree *tree, AstTreeSetTypesHelper helper,
                    AstTreeFunction *function);
 bool setTypesComptime(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesStruct(AstTree *tree, AstTreeSetTypesHelper helper);
 
 bool setTypesAstVariable(AstTreeVariable *variable,
                          AstTreeSetTypesHelper helper);

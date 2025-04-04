@@ -5,14 +5,12 @@ long :: i64;
 float :: f32;
 double :: f64;
 
-main :: () -> void {
-  f := foo();
-  f(3);
+st :: struct {
+  a : int;
+  b : double;
 };
 
-foo :: ()->((u64)->void){
-  f :: (a:u64)->void{
-    print_u64 a;
-  };
-  return f;
+main :: () -> void {
+  print_u64 1234;
 };
+

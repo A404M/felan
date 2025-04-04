@@ -41,6 +41,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_KEYWORD_WHILE",
     "PARSER_TOKEN_KEYWORD_COMPTIME",
     "PARSER_TOKEN_KEYWORD_NULL",
+    "PARSER_TOKEN_KEYWORD_STRUCT",
 
     "PARSER_TOKEN_CONSTANT",
     "PARSER_TOKEN_VARIABLE",
@@ -106,7 +107,7 @@ static constexpr ParserOrder PARSER_ORDER[] = {
     {
         .ltr = false,
         ORDER_ARRAY(LEXER_TOKEN_SYMBOL_FUNCTION_ARROW,
-                    LEXER_TOKEN_SYMBOL_POINTER, ),
+                    LEXER_TOKEN_SYMBOL_POINTER, LEXER_TOKEN_KEYWORD_STRUCT, ),
     },
     {
         .ltr = true,
@@ -245,6 +246,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
       printf(" ");
   }
     goto RETURN_SUCCESS;
+  case PARSER_TOKEN_KEYWORD_STRUCT:
   case PARSER_TOKEN_OPERATOR_POINTER:
   case PARSER_TOKEN_OPERATOR_ADDRESS:
   case PARSER_TOKEN_OPERATOR_DEREFERENCE:
@@ -482,6 +484,7 @@ void parserNodeDelete(ParserNode *node) {
     free(metadata);
   }
     goto RETURN_SUCCESS;
+  case PARSER_TOKEN_KEYWORD_STRUCT:
   case PARSER_TOKEN_OPERATOR_POINTER:
   case PARSER_TOKEN_OPERATOR_ADDRESS:
   case PARSER_TOKEN_OPERATOR_DEREFERENCE:
@@ -816,6 +819,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserWhile(node, end, parent);
   case LEXER_TOKEN_KEYWORD_COMPTIME:
     return parserComptime(node, end, parent);
+  case LEXER_TOKEN_KEYWORD_STRUCT:
+    return parserStruct(node, end, parent);
   case LEXER_TOKEN_KEYWORD_ELSE:
   case LEXER_TOKEN_SYMBOL:
   case LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS:
@@ -1209,6 +1214,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_KEYWORD_NULL:
       case PARSER_TOKEN_KEYWORD_PRINT_U64:
       case PARSER_TOKEN_KEYWORD_RETURN:
+      case PARSER_TOKEN_KEYWORD_STRUCT:
       case PARSER_TOKEN_CONSTANT:
       case PARSER_TOKEN_VARIABLE:
       case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
@@ -1599,6 +1605,28 @@ ParserNode *parserComptime(LexerNode *node, LexerNode *end,
              (ParserNodeSingleChildMetadata *)operand, parent);
 }
 
+ParserNode *parserStruct(LexerNode *node, LexerNode *end, ParserNode *parent) {
+  LexerNode *next = node + 1;
+  if (next >= end) {
+    printError(node->str_begin, node->str_end, "Bad struct without a body");
+    return NULL;
+  }
+
+  ParserNode *operand = getUntilCommonParent(next->parserNode, parent);
+
+  if (operand == NULL) {
+    printError(node->str_begin, node->str_end, "Bad struct without a body");
+    return NULL;
+  } else if (operand->token != PARSER_TOKEN_SYMBOL_CURLY_BRACKET) {
+    printError(node->str_begin, node->str_end, "Bad body");
+    return NULL;
+  }
+
+  return operand->parent = node->parserNode = newParserNode(
+             PARSER_TOKEN_KEYWORD_STRUCT, node->str_begin, operand->str_end,
+             (ParserNodeSingleChildMetadata *)operand, parent);
+}
+
 bool isAllArguments(const ParserNodeArray *nodes) {
   for (size_t i = 0; i < nodes->size; ++i) {
     const ParserNode *node = nodes->data[i];
@@ -1664,6 +1692,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_TYPE_F64:
   case PARSER_TOKEN_TYPE_F128:
   case PARSER_TOKEN_KEYWORD_NULL:
+  case PARSER_TOKEN_KEYWORD_STRUCT:
     return true;
   case PARSER_TOKEN_ROOT:
   case PARSER_TOKEN_SYMBOL_EOL:
@@ -1700,6 +1729,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_KEYWORD_COMPTIME:
   case PARSER_TOKEN_OPERATOR_POINTER:
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
+  case PARSER_TOKEN_KEYWORD_STRUCT:
     return true;
   case PARSER_TOKEN_OPERATOR_ADDRESS:
   case PARSER_TOKEN_KEYWORD_NULL:
@@ -1791,6 +1821,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_KEYWORD_IF:
   case PARSER_TOKEN_KEYWORD_COMPTIME:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
+  case PARSER_TOKEN_KEYWORD_STRUCT:
     return true;
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_VARIABLE:
