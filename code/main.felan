@@ -6,16 +6,13 @@ float :: f32;
 double :: f64;
 
 main :: () -> void {
-  a :u64= 2;
-  f := (c:u64,b:u64)->void{
-    print_u64 c-b+a;
-  };
-  f = (c:u64,b:u64)->void{
-    print_u64 c*b;
-  };
-  foo(fun = f);
+  f := foo();
+  f(3);
 };
 
-foo :: (fun:(b:u64,u64)->void)->void{
-  fun(b = 3,4);
+foo :: ()->((u64)->void){
+  f :: (a:u64)->void{
+    print_u64 a;
+  };
+  return f;
 };

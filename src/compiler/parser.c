@@ -1156,7 +1156,6 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
                            ParserNode *parent) {
   LexerNode *paramsNode = node - 1;
   LexerNode *retTypeNode = node + 1;
-  LexerNode *bodyNode = node + 2;
   if (paramsNode < begin || paramsNode->parserNode == NULL) {
     printError(node->str_begin, node->str_end, "No params");
     return NULL;
@@ -1166,12 +1165,15 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
   }
   ParserNode *params = getUntilCommonParent(paramsNode->parserNode, parent);
   ParserNode *retType = getUntilCommonParent(retTypeNode->parserNode, parent);
-  ParserNode *body;
 
-  if (bodyNode >= end || bodyNode->parserNode == NULL) {
+  LexerNode *bodyNode =
+      getNextLexerNodeUsingCommonParent(retTypeNode, end, parent);
+
+  ParserNode *body;
+  if (bodyNode == NULL || bodyNode >= end || bodyNode->parserNode == NULL) {
     body = NULL;
   } else {
-    body = getUntilCommonParent(bodyNode->parserNode, parent);
+    body = bodyNode->parserNode;
     if (body == NULL || body->token != PARSER_TOKEN_SYMBOL_CURLY_BRACKET) {
       printError(node->str_begin, node->str_end, "Bad body");
       return NULL;

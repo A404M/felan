@@ -2897,7 +2897,11 @@ bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper _helper,
     };
     if (!setAllTypes(metadata->value, helper, NULL)) {
       return false;
-    } else if (!typeIsEqual(metadata->value->type, function->returnType)) {
+    }
+    if (helper.lookingType != function->returnType) {
+      astTreeDelete(helper.lookingType); // TODO: change plan
+    }
+    if (!typeIsEqual(metadata->value->type, function->returnType)) {
       printError(tree->str_begin, tree->str_end, "Type mismatch");
       return false;
     }
