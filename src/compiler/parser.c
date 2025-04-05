@@ -74,6 +74,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_OPERATOR_POINTER",
     "PARSER_TOKEN_OPERATOR_ADDRESS",
     "PARSER_TOKEN_OPERATOR_DEREFERENCE",
+    "PARSER_TOKEN_OPERATOR_ACCESS",
 
     "PARSER_TOKEN_FUNCTION_DEFINITION",
 
@@ -113,7 +114,8 @@ static constexpr ParserOrder PARSER_ORDER[] = {
     },
     {
         .ltr = true,
-        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_DEREFERENCE, ),
+        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_DEREFERENCE,
+                    LEXER_TOKEN_SYMBOL_ACCESS, ),
     },
     {
         .ltr = false,
@@ -343,6 +345,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
       printf(" ");
   }
     goto RETURN_SUCCESS;
+  case PARSER_TOKEN_OPERATOR_ACCESS:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUB_ASSIGN:
@@ -536,6 +539,7 @@ void parserNodeDelete(ParserNode *node) {
     free(metadata);
   }
     goto RETURN_SUCCESS;
+  case PARSER_TOKEN_OPERATOR_ACCESS:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUB_ASSIGN:
@@ -786,6 +790,9 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
   case LEXER_TOKEN_SYMBOL_SMALLER_OR_EQUAL:
     return parserBinaryOperator(node, begin, end, parent,
                                 PARSER_TOKEN_OPERATOR_SMALLER_OR_EQUAL);
+  case LEXER_TOKEN_SYMBOL_ACCESS:
+    return parserBinaryOperator(node, begin, end, parent,
+                                PARSER_TOKEN_OPERATOR_ACCESS);
   case LEXER_TOKEN_SYMBOL_PLUS: {
     ParserNode *result = parserBinaryOrLeftOperator(node, begin, end, parent,
                                                     PARSER_TOKEN_OPERATOR_PLUS,
@@ -1227,6 +1234,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
       case PARSER_TOKEN_SYMBOL_PARENTHESIS:
       case PARSER_TOKEN_SYMBOL_COMMA:
+      case PARSER_TOKEN_OPERATOR_ACCESS:
       case PARSER_TOKEN_OPERATOR_ASSIGN:
       case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:
       case PARSER_TOKEN_OPERATOR_SUB_ASSIGN:
@@ -1654,6 +1662,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_FUNCTION_CALL:
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
   case PARSER_TOKEN_KEYWORD_RETURN:
+  case PARSER_TOKEN_OPERATOR_ACCESS:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUB_ASSIGN:
@@ -1738,6 +1747,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_POINTER:
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
   case PARSER_TOKEN_KEYWORD_STRUCT:
+  case PARSER_TOKEN_OPERATOR_ACCESS:
     return true;
   case PARSER_TOKEN_OPERATOR_ADDRESS:
   case PARSER_TOKEN_KEYWORD_NULL:
@@ -1788,6 +1798,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_VALUE_FLOAT:
   case PARSER_TOKEN_VALUE_BOOL:
   case PARSER_TOKEN_IDENTIFIER:
+  case PARSER_TOKEN_OPERATOR_ACCESS:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUB_ASSIGN:

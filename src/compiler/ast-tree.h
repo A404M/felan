@@ -61,6 +61,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_OPERATOR_POINTER,
   AST_TREE_TOKEN_OPERATOR_ADDRESS,
   AST_TREE_TOKEN_OPERATOR_DEREFERENCE,
+  AST_TREE_TOKEN_OPERATOR_ACCESS,
 
   AST_TREE_TOKEN_SCOPE,
 
@@ -194,6 +195,19 @@ typedef struct AstTreeStruct {
   AstTreeVariables variables;
 } AstTreeStruct;
 
+typedef struct AstTreeName {
+  char *begin;
+  char *end;
+} AstTreeName;
+
+typedef struct AstTreeAccess {
+  AstTree *object;
+  struct {
+    AstTreeName name;
+    size_t index;
+  } member;
+} AstTreeAccess;
+
 void astTreePrint(const AstTree *tree, int indent);
 void astTreeVariablePrint(const AstTreeVariable *variable, int indent);
 void astTreeRootPrint(const AstTreeRoot *root);
@@ -251,6 +265,8 @@ AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
                                   AstTreeHelper *helper);
 AstTree *astTreeParseParenthesis(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseStruct(ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseAccessOperator(ParserNode *parserNode,
+                                    AstTreeHelper *helper, AstTreeToken token);
 
 bool isFunction(AstTree *value);
 bool isConst(AstTree *tree, AstTreeHelper *helper);
@@ -299,7 +315,10 @@ bool setTypesScope(AstTree *tree, AstTreeSetTypesHelper helper,
                    AstTreeFunction *function);
 bool setTypesComptime(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesStruct(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper);
 
 bool setTypesAstVariable(AstTreeVariable *variable,
                          AstTreeSetTypesHelper helper);
 bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper helper);
+
+size_t sizeOfType(AstTree *type);
