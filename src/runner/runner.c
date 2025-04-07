@@ -76,17 +76,17 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTreeFunctionCallParam *arguments,
 
   shouldRet = false;
 
-  AstTree *ret = &AST_TREE_VOID_VALUE;
-
   for (size_t i = 0; i < function->scope.expressions_size; ++i) {
-    astTreeDelete(ret);
-    ret = runExpression(function->scope.expressions[i], &shouldRet, false);
+    AstTree *ret =
+        runExpression(function->scope.expressions[i], &shouldRet, false);
     if (shouldRet) {
-      break;
+      return ret;
+    } else {
+      astTreeDelete(ret);
     }
   }
 
-  return ret;
+  return &AST_TREE_VOID_VALUE;
 }
 
 AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
@@ -100,16 +100,11 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   }
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = expr->metadata;
-    if (metadata->function->token == AST_TREE_TOKEN_VARIABLE) {
-      AstTreeVariable *variable = metadata->function->metadata;
-      AstTree *function = copyAstTree(variable->value);
-      AstTree *result = runAstTreeFunction(function, metadata->parameters,
-                                           metadata->parameters_size);
-      astTreeDelete(function);
-      return result;
-    } else {
-      UNREACHABLE;
-    }
+    AstTree *function = runExpression(metadata->function, shouldRet, false);
+    AstTree *result = runAstTreeFunction(function, metadata->parameters,
+                                         metadata->parameters_size);
+    astTreeDelete(function);
+    return result;
   }
   case AST_TREE_TOKEN_OPERATOR_ASSIGN: {
     AstTreeInfix *metadata = expr->metadata;
@@ -120,6 +115,7 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
     AstTreeVariable *left = l->metadata;
     runnerVariableSetValue(left,
                            runExpression(&metadata->right, shouldRet, false));
+    astTreeDelete(l);
     return copyAstTree(left->value);
   }
   case AST_TREE_TOKEN_KEYWORD_RETURN: {
@@ -785,6 +781,7 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VALUE_FLOAT:
+  case AST_TREE_TOKEN_VALUE_OBJECT:
   case AST_TREE_TOKEN_OPERATOR_POINTER:
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_KEYWORD_STRUCT:
@@ -822,18 +819,43 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
     }
   }
   case AST_TREE_TOKEN_OPERATOR_ACCESS: {
-    NOT_IMPLEMENTED;
     AstTreeAccess *metadata = expr->metadata;
     AstTree *tree = runExpression(metadata->object, shouldRet, true);
-    if (tree->token != AST_TREE_TOKEN_VARIABLE) {
+    if (tree->type->token != AST_TREE_TOKEN_KEYWORD_STRUCT) {
       UNREACHABLE;
     }
     AstTreeVariable *variable = tree->metadata;
-    astTreeDelete(variable->type);
-    variable->type = copyAstTree(expr->type);
-    variable->value->metadata =
-        ((u8 *)variable->value->metadata) + metadata->member.index;
-    return tree;
+    astTreeDelete(tree);
+    if (variable->value->token == AST_TREE_TOKEN_VALUE_UNDEFINED) {
+      AstTreeStruct *struc = variable->type->metadata;
+      AstTreeObject *newMetadata = a404m_malloc(sizeof(*newMetadata));
+
+      newMetadata->variables =
+          copyAstTreeVariables(struc->variables, NULL, NULL, 0);
+
+      for (size_t i = 0; i < newMetadata->variables.size; ++i) {
+        AstTreeVariable *member = newMetadata->variables.data[i];
+        runnerVariableSetValue(member,
+                               newAstTree(AST_TREE_TOKEN_VALUE_UNDEFINED, NULL,
+                                          copyAstTree(member->type),
+                                          variable->value->str_begin,
+                                          variable->value->str_end));
+      }
+
+      runnerVariableSetValue(variable, newAstTree(AST_TREE_TOKEN_VALUE_OBJECT,
+                                                  newMetadata,
+                                                  copyAstTree(variable->type),
+                                                  variable->value->str_begin,
+                                                  variable->value->str_end));
+    }
+    AstTreeObject *object = variable->value->metadata;
+    AstTreeVariable *var = object->variables.data[metadata->member.index];
+    if (isLeft) {
+      return newAstTree(AST_TREE_TOKEN_VARIABLE, var, copyAstTree(var->type),
+                        var->name_begin, var->name_end);
+    } else {
+      return copyAstTree(var->value);
+    }
   }
   case AST_TREE_TOKEN_NONE:
   }

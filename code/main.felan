@@ -1,21 +1,14 @@
-char :: u8;
-short :: i16;
-int :: i32;
-long :: i64;
-float :: f32;
-double :: f64;
-
 st :: struct {
-  a : int;
-  b : double;
+  a : u64;
+  b : f64;
 };
 
 main :: () -> void {
-  b :u64= 2;
-  c := &b;
-  c.* = 4;
-  print_u64 b;
   a : st = undefined;
-  a.a = 5;
+  a.a = 2;
+  print(a);
 };
 
+print :: (value:st)->void{
+  print_u64 value.a;
+};

@@ -43,6 +43,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_VALUE_INT,
   AST_TREE_TOKEN_VALUE_FLOAT,
   AST_TREE_TOKEN_VALUE_BOOL,
+  AST_TREE_TOKEN_VALUE_OBJECT,
 
   AST_TREE_TOKEN_OPERATOR_ASSIGN,
   AST_TREE_TOKEN_OPERATOR_PLUS,
@@ -155,6 +156,10 @@ typedef u64 AstTreeInt;
 typedef f128 AstTreeFloat;
 
 typedef bool AstTreeBool;
+
+typedef struct AstTreeObject {
+  AstTreeVariables variables;
+} AstTreeObject;
 
 typedef AstTree AstTreeSingleChild;
 
@@ -291,6 +296,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesValueNull(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesValueUndefined(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesValueObject(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesFunction(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesPrintU64(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper helper,
@@ -320,5 +326,3 @@ bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesAstVariable(AstTreeVariable *variable,
                          AstTreeSetTypesHelper helper);
 bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper helper);
-
-size_t sizeOfType(AstTree *type);
