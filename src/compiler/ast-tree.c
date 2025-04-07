@@ -3517,12 +3517,11 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper) {
 
 bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper) {
   AstTreeVariable *metadata = tree->metadata;
-  if (setTypesAstVariable(metadata, helper)) {
-    tree->type = copyAstTree(metadata->type);
-    return true;
-  } else {
+  if (!setTypesAstVariable(metadata, helper)) {
     return false;
   }
+  tree->type = copyAstTree(metadata->type);
+  return true;
 }
 
 bool setTypesOperatorAssign(AstTree *tree, AstTreeSetTypesHelper helper) {
@@ -3627,9 +3626,9 @@ bool setTypesOperatorDereference(AstTree *tree, AstTreeSetTypesHelper helper) {
 }
 
 bool setTypesVariableDefine(AstTree *tree, AstTreeSetTypesHelper helper) {
-  AstTreeVariable *metadata = tree->metadata;
+  (void)helper;
   tree->type = &AST_TREE_VOID_TYPE;
-  return setTypesAstVariable(metadata, helper);
+  return true;
 }
 
 bool setTypesAstVariable(AstTreeVariable *variable,
