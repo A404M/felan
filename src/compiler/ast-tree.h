@@ -274,10 +274,11 @@ AstTree *astTreeParseAccessOperator(ParserNode *parserNode,
                                     AstTreeHelper *helper, AstTreeToken token);
 
 bool isFunction(AstTree *value);
-bool isConst(AstTree *tree, AstTreeHelper *helper);
+bool isConst(AstTree *tree);
 AstTree *makeTypeOf(AstTree *value);
-bool typeIsEqual(const AstTree *type0, const AstTree *type1);
-AstTree *getValue(AstTree *tree, AstTreeSetTypesHelper helper);
+bool typeIsEqual(AstTree *type0,AstTree *type1);
+bool typeIsEqualBack(const AstTree *type0, const AstTree *type1);
+AstTree *getValue(AstTree *tree);
 
 bool isCircularDependencies(AstTreeHelper *helper, AstTreeVariable *variable);
 bool isCircularDependenciesBack(AstTreeHelper *helper,

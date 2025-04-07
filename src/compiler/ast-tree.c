@@ -2316,7 +2316,7 @@ bool isFunction(AstTree *value) {
   return value->type->token == AST_TREE_TOKEN_TYPE_FUNCTION;
 }
 
-bool isConst(AstTree *tree, AstTreeHelper *helper) {
+bool isConst(AstTree *tree) {
   if (tree->type == NULL) {
     UNREACHABLE;
   }
@@ -2350,18 +2350,17 @@ bool isConst(AstTree *tree, AstTreeHelper *helper) {
     return true;
   case AST_TREE_TOKEN_KEYWORD_IF: {
     AstTreeIf *metadata = tree->metadata;
-    return isConst(metadata->condition, helper) &&
-           isConst(metadata->ifBody, helper) &&
-           (metadata->elseBody == NULL || isConst(metadata->elseBody, helper));
+    return isConst(metadata->condition) && isConst(metadata->ifBody) &&
+           (metadata->elseBody == NULL || isConst(metadata->elseBody));
   }
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = tree->metadata;
     for (size_t i = 0; i < metadata->parameters_size; ++i) {
-      if (!isConst(metadata->parameters[i].value, helper)) {
+      if (!isConst(metadata->parameters[i].value)) {
         return false;
       }
     }
-    return isConst(metadata->function, helper);
+    return isConst(metadata->function);
   }
   case AST_TREE_TOKEN_FUNCTION: {
     return true;
@@ -2393,11 +2392,11 @@ bool isConst(AstTree *tree, AstTreeHelper *helper) {
   case AST_TREE_TOKEN_OPERATOR_ADDRESS:
   case AST_TREE_TOKEN_OPERATOR_POINTER: {
     AstTreeSingleChild *metadata = tree->metadata;
-    return isConst(metadata, helper);
+    return isConst(metadata);
   }
   case AST_TREE_TOKEN_OPERATOR_ACCESS: {
     AstTreeAccess *metadata = tree->metadata;
-    return isConst(metadata->object, helper);
+    return isConst(metadata->object);
   }
   case AST_TREE_TOKEN_NONE:
   }
@@ -2530,7 +2529,23 @@ AstTree *makeTypeOf(AstTree *value) {
   UNREACHABLE;
 }
 
-bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
+bool typeIsEqual(AstTree *type0, AstTree *type1) {
+  AstTree *left = getValue(type0);
+  AstTree *right = getValue(type1);
+
+  bool ret = typeIsEqualBack(left, right);
+
+  if (type0 != left) {
+    astTreeDelete(left);
+  }
+  if (type1 != right) {
+    astTreeDelete(right);
+  }
+
+  return ret;
+}
+
+bool typeIsEqualBack(const AstTree *type0, const AstTree *type1) {
   switch (type0->token) {
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
@@ -2564,6 +2579,8 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
   case AST_TREE_TOKEN_OPERATOR_DEREFERENCE:
   case AST_TREE_TOKEN_OPERATOR_ADDRESS:
   case AST_TREE_TOKEN_OPERATOR_ACCESS:
+  case AST_TREE_TOKEN_FUNCTION_CALL:
+  case AST_TREE_TOKEN_VARIABLE:
     return false;
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_VOID:
@@ -2608,12 +2625,6 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
       }
     }
     return true;
-  case AST_TREE_TOKEN_FUNCTION_CALL:
-    printError(type0->str_begin, type0->str_end, "Not implemented yet");
-    exit(1);
-  case AST_TREE_TOKEN_VARIABLE:
-    return type1->token == AST_TREE_TOKEN_VARIABLE &&
-           type0->metadata == type1->metadata;
   case AST_TREE_TOKEN_KEYWORD_STRUCT: {
     if (type1->token != AST_TREE_TOKEN_KEYWORD_STRUCT)
       return false;
@@ -2627,8 +2638,8 @@ bool typeIsEqual(const AstTree *type0, const AstTree *type1) {
   UNREACHABLE;
 }
 
-AstTree *getValue(AstTree *tree, AstTreeSetTypesHelper helper) {
-  if (!isConst(tree, helper.treeHelper)) {
+AstTree *getValue(AstTree *tree) {
+  if (!isConst(tree)) {
     printError(tree->str_begin, tree->str_end,
                "Can't get value at compile time because it is not const");
     return NULL;
@@ -3046,6 +3057,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     if (*value - newValue != 0) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
+    free(value);
     tree->type = &AST_TREE_F16_TYPE;
   } else if (typeIsEqual(helper.lookingType, &AST_TREE_F32_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
@@ -3056,6 +3068,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     if (*value - newValue != 0) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
+    free(value);
     tree->type = &AST_TREE_F32_TYPE;
   } else if (typeIsEqual(helper.lookingType, &AST_TREE_F64_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
@@ -3066,6 +3079,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     if (*value - newValue != 0) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
+    free(value);
     tree->type = &AST_TREE_F64_TYPE;
   } else if (typeIsEqual(helper.lookingType, &AST_TREE_F128_TYPE)) {
     tree->token = AST_TREE_TOKEN_VALUE_FLOAT;
@@ -3076,6 +3090,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     if (*value - newValue != 0) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
+    free(value);
     tree->type = &AST_TREE_F128_TYPE;
   } else {
     UNREACHABLE;
@@ -3213,7 +3228,7 @@ bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper _helper,
   AstTreeReturn *metadata = tree->metadata;
   if (metadata->value != NULL) {
     AstTreeSetTypesHelper helper = {
-        .lookingType = getValue(function->returnType, _helper),
+        .lookingType = getValue(function->returnType),
         .treeHelper = _helper.treeHelper,
     };
     if (!setAllTypes(metadata->value, helper, NULL)) {
@@ -3368,7 +3383,7 @@ bool setTypesOperatorAssign(AstTree *tree, AstTreeSetTypesHelper helper) {
   } else if (!typeIsEqual(infix->left.type, infix->right.type)) {
     printError(tree->str_begin, tree->str_end, "Type mismatch");
     return false;
-  } else if (isConst(&infix->left, helper.treeHelper)) {
+  } else if (isConst(&infix->left)) {
     printError(tree->str_begin, tree->str_end, "Constants can't be assigned");
     return false;
   } else {
@@ -3480,7 +3495,7 @@ bool setTypesAstVariable(AstTreeVariable *variable,
 
   if (variable->type != NULL) {
     AstTree *type = variable->type;
-    variable->type = getValue(type, helper);
+    variable->type = getValue(type);
     if (variable->type == NULL) {
       return false;
     }
@@ -3510,13 +3525,13 @@ bool setTypesAstVariable(AstTreeVariable *variable,
                  AST_TREE_TOKEN_STRINGS[variable->type->token]);
       return false;
     } else if (variable->isConst) {
-      if (!isConst(variable->value, helper.treeHelper)) {
+      if (!isConst(variable->value)) {
         printError(variable->value->str_begin, variable->value->str_end,
                    "Can't initialize constant with non constant value");
         return false;
       }
       AstTree *value = variable->value;
-      variable->value = getValue(value, helper);
+      variable->value = getValue(value);
       if (variable->value == NULL) {
         return false;
       }
@@ -3612,7 +3627,7 @@ bool setTypesComptime(AstTree *tree, AstTreeSetTypesHelper helper) {
     return false;
   }
 
-  AstTree *newTree = getValue(operand, helper);
+  AstTree *newTree = getValue(operand);
 
   if (operand != newTree) {
     astTreeDelete(operand);

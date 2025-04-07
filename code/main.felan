@@ -3,12 +3,18 @@ st :: struct {
   b : f64;
 };
 
+newSt :: (a : u64,b : f64) -> st {
+  value : st = undefined;
+  value.a = a;
+  value.b = b;
+  return value;
+};
+
 main :: () -> void {
-  a : st = undefined;
-  a.a = 2;
+  a := newSt(a = 2,b = 3);
   print(a);
 };
 
-print :: (value:st)->void{
+print :: (value:st) -> void {
   print_u64 value.a;
 };
