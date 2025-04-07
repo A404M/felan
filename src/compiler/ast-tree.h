@@ -275,6 +275,7 @@ AstTree *astTreeParseAccessOperator(ParserNode *parserNode,
 
 bool isFunction(AstTree *value);
 bool isConst(AstTree *tree);
+bool isConstByValue(AstTree *tree);
 AstTree *makeTypeOf(AstTree *value);
 bool typeIsEqual(AstTree *type0,AstTree *type1);
 bool typeIsEqualBack(const AstTree *type0, const AstTree *type1);

@@ -787,9 +787,7 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VALUE_FLOAT:
   case AST_TREE_TOKEN_VALUE_OBJECT:
-  case AST_TREE_TOKEN_OPERATOR_POINTER:
   case AST_TREE_TOKEN_FUNCTION:
-  case AST_TREE_TOKEN_KEYWORD_STRUCT:
     return copyAstTree(expr);
   case AST_TREE_TOKEN_OPERATOR_ADDRESS: {
     AstTreeSingleChild *metadata = expr->metadata;
@@ -820,6 +818,9 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
     if (isLeft) {
       return copyAstTree(expr);
     } else {
+      if (variable->value == NULL) {
+        UNREACHABLE;
+      }
       return copyAstTree(variable->value);
     }
   }
@@ -861,6 +862,27 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
     } else {
       return copyAstTree(var->value);
     }
+  }
+  case AST_TREE_TOKEN_KEYWORD_STRUCT: {
+    expr = copyAstTree(expr);
+    AstTreeStruct *metadata = expr->metadata;
+    for (size_t i = 0; i < metadata->variables.size; ++i) {
+      AstTreeVariable *member = metadata->variables.data[i];
+      AstTree *type = member->type;
+      member->type = runExpression(member->type, shouldRet, isLeft);
+      if (type != member->type) {
+        astTreeDelete(type);
+      }
+    }
+    return expr;
+  }
+  case AST_TREE_TOKEN_OPERATOR_POINTER: {
+    AstTreeSingleChild *metadata = expr->metadata;
+    AstTreeSingleChild *newMetadata =
+        runExpression(metadata, shouldRet, isLeft);
+
+    return newAstTree(AST_TREE_TOKEN_OPERATOR_POINTER, newMetadata,
+                      copyAstTree(expr->type), expr->str_begin, expr->str_end);
   }
   case AST_TREE_TOKEN_NONE:
   }

@@ -24,10 +24,18 @@ array :: (t:type) -> type {
   };
 };
 
+array2 :: (t:type) -> type {
+  return struct {
+    ptr : *t;
+    length : usize;
+  };
+};
+
 array_int :: array(u64);
+array_int1 :: array(u64);
+array_int2 :: array2(u64);
 
 main :: () -> void {
-  a : array_int = undefined;
-  b :u64 =2;
-  a.length = 1;
+  print_u64 (if array_int == array_int1 1 else 0);
+  print_u64 (if array_int == array_int2 1 else 0);
 };
