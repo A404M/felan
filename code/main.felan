@@ -32,3 +32,7 @@ main :: () -> void {
   print_u64 (if array_int == array_int1 1 else 0);
   print_u64 (if array_int == array_int2 1 else 0);
 };
+
+comptime {
+  main();
+};

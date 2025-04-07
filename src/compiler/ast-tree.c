@@ -1139,24 +1139,35 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
       goto RETURN_ERROR;
     }
     ParserNode *node = (ParserNodeSingleChildMetadata *)eol->metadata;
-    if (node->token != PARSER_TOKEN_CONSTANT &&
-        node->token != PARSER_TOKEN_VARIABLE) {
+    if (node->token == PARSER_TOKEN_KEYWORD_COMPTIME) {
+      continue;
+    } else if (node->token == PARSER_TOKEN_CONSTANT ||
+               node->token == PARSER_TOKEN_VARIABLE) {
+      ParserNodeVariableMetadata *node_metadata = node->metadata;
+
+      AstTreeVariable *variable = a404m_malloc(sizeof(*variable));
+      variable->name_begin = node_metadata->name->str_begin;
+      variable->name_end = node_metadata->name->str_end;
+      variable->isConst = node->token == PARSER_TOKEN_CONSTANT;
+
+      if (!pushVariable(NULL, &root->variables, variable)) {
+        astTreeVariableDelete(variable);
+        goto RETURN_ERROR;
+      }
+    } else {
       printError(node->str_begin, node->str_end, "Unexpected %s",
                  PARSER_TOKEN_STRINGS[node->token]);
       goto RETURN_ERROR;
     }
-    ParserNodeVariableMetadata *node_metadata = node->metadata;
-
-    AstTreeVariable *variable = a404m_malloc(sizeof(*variable));
-    variable->name_begin = node_metadata->name->str_begin;
-    variable->name_end = node_metadata->name->str_end;
-    variable->isConst = node->token == PARSER_TOKEN_CONSTANT;
-
-    if (!pushVariable(NULL, &root->variables, variable)) {
-      astTreeVariableDelete(variable);
-      goto RETURN_ERROR;
-    }
   }
+
+  root->variables.data =
+      a404m_realloc(root->variables.data,
+                    root->variables.size * sizeof(*root->variables.data));
+
+  root->trees.data = a404m_malloc((nodes->size - root->variables.size) *
+                                  sizeof(*root->variables.data));
+  root->trees.size = 0;
 
   AstTreeVariables *variables = &root->variables;
   constexpr size_t variables_size = 1;
@@ -1175,114 +1186,136 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
   }
 
   for (size_t i = 0; i < nodes->size; ++i) {
+    ParserNode *eol = nodes->data[i];
+    if (eol->token != PARSER_TOKEN_SYMBOL_EOL) {
+      printError(eol->str_begin, eol->str_end, "Did you forgot semicolon?",
+                 PARSER_TOKEN_STRINGS[eol->token]);
+      goto RETURN_ERROR;
+    }
+    ParserNode *node = (ParserNodeSingleChildMetadata *)eol->metadata;
+    if (node->token == PARSER_TOKEN_KEYWORD_COMPTIME) {
+      AstTree *tree = astTreeParse(node, &helper);
+      if (tree == NULL) {
+        goto RETURN_ERROR;
+      }
+      root->trees.data[root->trees.size] = tree;
+      root->trees.size += 1;
+    } else {
+      continue;
+    }
+  }
+
+  for (size_t i = 0; i < nodes->size; ++i) {
     helper.variable = root->variables.data[i];
     ParserNode *node =
         (ParserNodeSingleChildMetadata *)nodes->data[i]->metadata;
     ParserNodeVariableMetadata *node_metadata = node->metadata;
 
-    if (node->token != PARSER_TOKEN_CONSTANT &&
-        node->token != PARSER_TOKEN_VARIABLE) {
+    if (node->token == PARSER_TOKEN_KEYWORD_COMPTIME) {
+      continue;
+    } else if (node->token == PARSER_TOKEN_CONSTANT ||
+               node->token == PARSER_TOKEN_VARIABLE) {
+      if (node_metadata->value == NULL) {
+        printError(node->str_begin, node->str_end,
+                   "Variables must be initialized");
+        goto RETURN_ERROR;
+      }
+
+      switch (node_metadata->value->token) {
+      case PARSER_TOKEN_KEYWORD_NULL:
+      case PARSER_TOKEN_KEYWORD_UNDEFINED:
+      case PARSER_TOKEN_VALUE_BOOL:
+      case PARSER_TOKEN_VALUE_INT:
+      case PARSER_TOKEN_VALUE_FLOAT:
+      case PARSER_TOKEN_FUNCTION_DEFINITION:
+      case PARSER_TOKEN_FUNCTION_CALL:
+      case PARSER_TOKEN_IDENTIFIER:
+      case PARSER_TOKEN_OPERATOR_ACCESS:
+      case PARSER_TOKEN_OPERATOR_ASSIGN:
+      case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:
+      case PARSER_TOKEN_OPERATOR_SUB_ASSIGN:
+      case PARSER_TOKEN_OPERATOR_MULTIPLY_ASSIGN:
+      case PARSER_TOKEN_OPERATOR_DIVIDE_ASSIGN:
+      case PARSER_TOKEN_OPERATOR_MODULO_ASSIGN:
+      case PARSER_TOKEN_OPERATOR_PLUS:
+      case PARSER_TOKEN_OPERATOR_MINUS:
+      case PARSER_TOKEN_OPERATOR_SUM:
+      case PARSER_TOKEN_OPERATOR_SUB:
+      case PARSER_TOKEN_OPERATOR_MULTIPLY:
+      case PARSER_TOKEN_OPERATOR_DIVIDE:
+      case PARSER_TOKEN_OPERATOR_MODULO:
+      case PARSER_TOKEN_OPERATOR_EQUAL:
+      case PARSER_TOKEN_OPERATOR_NOT_EQUAL:
+      case PARSER_TOKEN_OPERATOR_GREATER:
+      case PARSER_TOKEN_OPERATOR_SMALLER:
+      case PARSER_TOKEN_OPERATOR_GREATER_OR_EQUAL:
+      case PARSER_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
+      case PARSER_TOKEN_SYMBOL_PARENTHESIS:
+      case PARSER_TOKEN_KEYWORD_IF:
+      case PARSER_TOKEN_KEYWORD_WHILE:
+      case PARSER_TOKEN_KEYWORD_COMPTIME:
+      case PARSER_TOKEN_TYPE_TYPE:
+      case PARSER_TOKEN_TYPE_FUNCTION:
+      case PARSER_TOKEN_TYPE_VOID:
+      case PARSER_TOKEN_TYPE_I8:
+      case PARSER_TOKEN_TYPE_U8:
+      case PARSER_TOKEN_TYPE_I16:
+      case PARSER_TOKEN_TYPE_U16:
+      case PARSER_TOKEN_TYPE_I32:
+      case PARSER_TOKEN_TYPE_U32:
+      case PARSER_TOKEN_TYPE_I64:
+      case PARSER_TOKEN_TYPE_U64:
+      case PARSER_TOKEN_TYPE_F16:
+      case PARSER_TOKEN_TYPE_F32:
+      case PARSER_TOKEN_TYPE_F64:
+      case PARSER_TOKEN_TYPE_F128:
+      case PARSER_TOKEN_TYPE_BOOL:
+      case PARSER_TOKEN_OPERATOR_POINTER:
+      case PARSER_TOKEN_OPERATOR_ADDRESS:
+      case PARSER_TOKEN_OPERATOR_DEREFERENCE:
+      case PARSER_TOKEN_KEYWORD_STRUCT:
+        goto AFTER_SWITCH;
+      case PARSER_TOKEN_ROOT:
+      case PARSER_TOKEN_KEYWORD_PRINT_U64:
+      case PARSER_TOKEN_KEYWORD_RETURN:
+      case PARSER_TOKEN_CONSTANT:
+      case PARSER_TOKEN_VARIABLE:
+      case PARSER_TOKEN_SYMBOL_EOL:
+      case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
+      case PARSER_TOKEN_SYMBOL_COMMA:
+        printError(node->str_begin, node->str_end, "Should not be here %s",
+                   PARSER_TOKEN_STRINGS[node->token]);
+        goto RETURN_ERROR;
+      case PARSER_TOKEN_NONE:
+      }
+      printError(node_metadata->value->str_begin, node_metadata->value->str_end,
+                 "Bad token %d", node_metadata->value->token);
+      goto RETURN_ERROR;
+
+    AFTER_SWITCH:
+
+      AstTree *value = astTreeParse(node_metadata->value, &helper);
+      if (value == NULL) {
+        goto RETURN_ERROR;
+      }
+
+      AstTree *type;
+      if (node_metadata->type != NULL) {
+        type = astTreeParse(node_metadata->type, &helper);
+        if (type == NULL) {
+          goto RETURN_ERROR;
+        }
+      } else {
+        type = NULL;
+      }
+
+      root->variables.data[i]->type = type;
+      root->variables.data[i]->value = value;
+    } else {
       printError(node->str_begin, node->str_end,
                  "Only variables are allowed here");
       goto RETURN_ERROR;
     }
-
-    if (node_metadata->value == NULL) {
-      printError(node->str_begin, node->str_end,
-                 "Variables must be initialized");
-      goto RETURN_ERROR;
-    }
-
-    switch (node_metadata->value->token) {
-    case PARSER_TOKEN_KEYWORD_NULL:
-    case PARSER_TOKEN_KEYWORD_UNDEFINED:
-    case PARSER_TOKEN_VALUE_BOOL:
-    case PARSER_TOKEN_VALUE_INT:
-    case PARSER_TOKEN_VALUE_FLOAT:
-    case PARSER_TOKEN_FUNCTION_DEFINITION:
-    case PARSER_TOKEN_FUNCTION_CALL:
-    case PARSER_TOKEN_IDENTIFIER:
-    case PARSER_TOKEN_OPERATOR_ACCESS:
-    case PARSER_TOKEN_OPERATOR_ASSIGN:
-    case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:
-    case PARSER_TOKEN_OPERATOR_SUB_ASSIGN:
-    case PARSER_TOKEN_OPERATOR_MULTIPLY_ASSIGN:
-    case PARSER_TOKEN_OPERATOR_DIVIDE_ASSIGN:
-    case PARSER_TOKEN_OPERATOR_MODULO_ASSIGN:
-    case PARSER_TOKEN_OPERATOR_PLUS:
-    case PARSER_TOKEN_OPERATOR_MINUS:
-    case PARSER_TOKEN_OPERATOR_SUM:
-    case PARSER_TOKEN_OPERATOR_SUB:
-    case PARSER_TOKEN_OPERATOR_MULTIPLY:
-    case PARSER_TOKEN_OPERATOR_DIVIDE:
-    case PARSER_TOKEN_OPERATOR_MODULO:
-    case PARSER_TOKEN_OPERATOR_EQUAL:
-    case PARSER_TOKEN_OPERATOR_NOT_EQUAL:
-    case PARSER_TOKEN_OPERATOR_GREATER:
-    case PARSER_TOKEN_OPERATOR_SMALLER:
-    case PARSER_TOKEN_OPERATOR_GREATER_OR_EQUAL:
-    case PARSER_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
-    case PARSER_TOKEN_SYMBOL_PARENTHESIS:
-    case PARSER_TOKEN_KEYWORD_IF:
-    case PARSER_TOKEN_KEYWORD_WHILE:
-    case PARSER_TOKEN_KEYWORD_COMPTIME:
-    case PARSER_TOKEN_TYPE_TYPE:
-    case PARSER_TOKEN_TYPE_FUNCTION:
-    case PARSER_TOKEN_TYPE_VOID:
-    case PARSER_TOKEN_TYPE_I8:
-    case PARSER_TOKEN_TYPE_U8:
-    case PARSER_TOKEN_TYPE_I16:
-    case PARSER_TOKEN_TYPE_U16:
-    case PARSER_TOKEN_TYPE_I32:
-    case PARSER_TOKEN_TYPE_U32:
-    case PARSER_TOKEN_TYPE_I64:
-    case PARSER_TOKEN_TYPE_U64:
-    case PARSER_TOKEN_TYPE_F16:
-    case PARSER_TOKEN_TYPE_F32:
-    case PARSER_TOKEN_TYPE_F64:
-    case PARSER_TOKEN_TYPE_F128:
-    case PARSER_TOKEN_TYPE_BOOL:
-    case PARSER_TOKEN_OPERATOR_POINTER:
-    case PARSER_TOKEN_OPERATOR_ADDRESS:
-    case PARSER_TOKEN_OPERATOR_DEREFERENCE:
-    case PARSER_TOKEN_KEYWORD_STRUCT:
-      goto AFTER_SWITCH;
-    case PARSER_TOKEN_ROOT:
-    case PARSER_TOKEN_KEYWORD_PRINT_U64:
-    case PARSER_TOKEN_KEYWORD_RETURN:
-    case PARSER_TOKEN_CONSTANT:
-    case PARSER_TOKEN_VARIABLE:
-    case PARSER_TOKEN_SYMBOL_EOL:
-    case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
-    case PARSER_TOKEN_SYMBOL_COMMA:
-      printError(node->str_begin, node->str_end, "Should not be here %s",
-                 PARSER_TOKEN_STRINGS[node->token]);
-      goto RETURN_ERROR;
-    case PARSER_TOKEN_NONE:
-    }
-    printError(node_metadata->value->str_begin, node_metadata->value->str_end,
-               "Bad token %d", node_metadata->value->token);
-    goto RETURN_ERROR;
-
-  AFTER_SWITCH:
-
-    AstTree *value = astTreeParse(node_metadata->value, &helper);
-    if (value == NULL) {
-      goto RETURN_ERROR;
-    }
-
-    AstTree *type;
-    if (node_metadata->type != NULL) {
-      type = astTreeParse(node_metadata->type, &helper);
-      if (type == NULL) {
-        goto RETURN_ERROR;
-      }
-    } else {
-      type = NULL;
-    }
-
-    root->variables.data[i]->type = type;
-    root->variables.data[i]->value = value;
   }
 
   helper.variable = NULL;
@@ -1298,6 +1331,10 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
   return root;
 
 RETURN_ERROR:
+  for (size_t i = 0; i < root->trees.size; ++i) {
+    astTreeDelete(root->trees.data[i]);
+  }
+  free(root->trees.data);
   free(root->variables.data);
   free(root);
   return NULL;
@@ -3032,6 +3069,13 @@ bool setAllTypesRoot(AstTreeRoot *root, AstTreeHelper *helper) {
       .lookingType = NULL,
       .treeHelper = helper,
   };
+
+  for (size_t i = 0; i < root->trees.size; ++i) {
+    AstTree *tree = root->trees.data[i];
+    if (!setAllTypes(tree, setTypesHelper, NULL)) {
+      return false;
+    }
+  }
 
   for (size_t i = 0; i < root->variables.size; ++i) {
     AstTreeVariable *variable = root->variables.data[i];

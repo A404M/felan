@@ -109,8 +109,14 @@ typedef struct AstTreeVariables {
   size_t size;
 } AstTreeVariables;
 
+typedef struct AstTrees {
+  AstTree **data;
+  size_t size;
+} AstTrees;
+
 typedef struct AstTreeRoot {
   AstTreeVariables variables;
+  AstTrees trees;
 } AstTreeRoot;
 
 typedef struct AstTreeScope {
@@ -277,7 +283,7 @@ bool isFunction(AstTree *value);
 bool isConst(AstTree *tree);
 bool isConstByValue(AstTree *tree);
 AstTree *makeTypeOf(AstTree *value);
-bool typeIsEqual(AstTree *type0,AstTree *type1);
+bool typeIsEqual(AstTree *type0, AstTree *type1);
 bool typeIsEqualBack(const AstTree *type0, const AstTree *type1);
 AstTree *getValue(AstTree *tree);
 
