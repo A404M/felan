@@ -30,6 +30,11 @@ void runnerVariableSetValue(AstTreeVariable *variable, AstTree *value) {
   if (variable->isConst) {
     UNREACHABLE;
   }
+  runnerVariableSetValueWihtoutConstCheck(variable, value);
+}
+
+void runnerVariableSetValueWihtoutConstCheck(AstTreeVariable *variable,
+                                             AstTree *value) {
   if (variable->value != NULL) {
     astTreeDelete(variable->value);
   }
@@ -71,7 +76,7 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTreeFunctionCallParam *arguments,
     AstTreeFunctionCallParam param = arguments[i];
     AstTreeVariable *arg = function->arguments.data[i];
     AstTree *value = runExpression(param.value, &shouldRet, false);
-    runnerVariableSetValue(arg, value);
+    runnerVariableSetValueWihtoutConstCheck(arg, value);
   }
 
   shouldRet = false;

@@ -1555,7 +1555,7 @@ AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *p_helper) {
     argument->type = type;
     argument->name_begin = arg_metadata->name->str_begin;
     argument->name_end = arg_metadata->name->str_end;
-    argument->isConst = false; // all arguments are not constants
+    argument->isConst = true; // all arguments are constants
 
     if (!pushVariable(&helper, &function->arguments, argument)) {
       astTreeVariableDelete(argument);
@@ -2532,6 +2532,10 @@ AstTree *makeTypeOf(AstTree *value) {
 bool typeIsEqual(AstTree *type0, AstTree *type1) {
   AstTree *left = getValue(type0);
   AstTree *right = getValue(type1);
+  if (left == NULL || right == NULL) {
+    printLog("Can't check types");
+    UNREACHABLE;
+  }
 
   bool ret = typeIsEqualBack(left, right);
 
@@ -3231,6 +3235,9 @@ bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper _helper,
         .lookingType = getValue(function->returnType),
         .treeHelper = _helper.treeHelper,
     };
+    if (helper.lookingType == NULL) {
+      return false;
+    }
     if (!setAllTypes(metadata->value, helper, NULL)) {
       return false;
     }
@@ -3628,6 +3635,9 @@ bool setTypesComptime(AstTree *tree, AstTreeSetTypesHelper helper) {
   }
 
   AstTree *newTree = getValue(operand);
+  if (newTree == NULL) {
+    return false;
+  }
 
   if (operand != newTree) {
     astTreeDelete(operand);

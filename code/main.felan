@@ -1,20 +1,33 @@
-st :: struct {
-  a : u64;
-  b : f64;
+byte :: i8;
+ubyte :: u8;
+
+short :: i16;
+ushort :: u16;
+
+int :: i32;
+uint :: u32;
+
+long :: i64;
+ulong :: u64;
+
+short_float :: f16;
+float :: f32;
+double :: f64;
+long_double :: f128;
+
+usize :: u64;
+
+array :: (t:type) -> type {
+  return struct {
+    ptr : *t;
+    length : usize;
+  };
 };
 
-newSt :: (a : u64,b : f64) -> st {
-  value : st = undefined;
-  value.a = a;
-  value.b = b;
-  return value;
-};
+array_int :: array(u64);
 
 main :: () -> void {
-  a := newSt(a = 2,b = 3);
-  print(a);
-};
-
-print :: (value:st) -> void {
-  print_u64 value.a;
+  a : array_int = undefined;
+  b :u64 =2;
+  a.length = 1;
 };

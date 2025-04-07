@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 void runnerVariableSetValue(AstTreeVariable *variable,AstTree *value);
+void runnerVariableSetValueWihtoutConstCheck(AstTreeVariable *variable,AstTree *value);
 
 bool runAstTree(AstTreeRoot *root);
 
