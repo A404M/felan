@@ -51,7 +51,6 @@ int run(const char *filePath, bool shouldPrint) {
 }
 
 int main(int argc, char *argv[]) {
-  checkTypes();
   fileInit();
 
   if (argc < 2) {

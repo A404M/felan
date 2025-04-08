@@ -28,7 +28,8 @@ typedef long double f128;
 typedef u8 bool;
 #define false (bool)0
 #define true (bool)1
+
+#define static_assert _Static_assert
 #endif
 #endif
 
-void checkTypes();
