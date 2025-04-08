@@ -42,8 +42,8 @@ void runnerVariableSetValueWihtoutConstCheck(AstTreeVariable *variable,
 }
 
 bool runAstTree(AstTreeRoot *root) {
-  constexpr char MAIN_STR[] = "main";
-  constexpr size_t MAIN_STR_SIZE =
+  static const char MAIN_STR[] = "main";
+  static const size_t MAIN_STR_SIZE =
       (sizeof(MAIN_STR) / sizeof(*MAIN_STR)) - sizeof(*MAIN_STR);
 
   for (size_t i = 0; i < root->variables.size; ++i) {
@@ -206,8 +206,10 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
       doLeftOperation(operand, +, AstTreeFloat, f64);
     } else if (operand->type == &AST_TREE_F32_TYPE) {
       doLeftOperation(operand, +, AstTreeFloat, f32);
+#ifdef FLOAT_16_SUPPORT
     } else if (operand->type == &AST_TREE_F16_TYPE) {
       doLeftOperation(operand, +, AstTreeFloat, f16);
+#endif
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
       UNREACHABLE;
@@ -239,8 +241,10 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
       doLeftOperation(operand, -, AstTreeFloat, f64);
     } else if (operand->type == &AST_TREE_F32_TYPE) {
       doLeftOperation(operand, -, AstTreeFloat, f32);
+#ifdef FLOAT_16_SUPPORT
     } else if (operand->type == &AST_TREE_F16_TYPE) {
       doLeftOperation(operand, -, AstTreeFloat, f16);
+#endif
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
       UNREACHABLE;
@@ -284,9 +288,11 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
     } else if (left->type == &AST_TREE_F32_TYPE &&
                right->type == &AST_TREE_F32_TYPE) {
       doOperation(left, right, +, AstTreeFloat, f32);
+#ifdef FLOAT_16_SUPPORT
     } else if (left->type == &AST_TREE_F16_TYPE &&
                right->type == &AST_TREE_F16_TYPE) {
       doOperation(left, right, +, AstTreeFloat, f16);
+#endif
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
       UNREACHABLE;
@@ -331,9 +337,11 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
     } else if (left->type == &AST_TREE_F32_TYPE &&
                right->type == &AST_TREE_F32_TYPE) {
       doOperation(left, right, -, AstTreeFloat, f32);
+#ifdef FLOAT_16_SUPPORT
     } else if (left->type == &AST_TREE_F16_TYPE &&
                right->type == &AST_TREE_F16_TYPE) {
       doOperation(left, right, -, AstTreeFloat, f16);
+#endif
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
       UNREACHABLE;
@@ -378,9 +386,11 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
     } else if (left->type == &AST_TREE_F32_TYPE &&
                right->type == &AST_TREE_F32_TYPE) {
       doOperation(left, right, *, AstTreeFloat, f32);
+#ifdef FLOAT_16_SUPPORT
     } else if (left->type == &AST_TREE_F16_TYPE &&
                right->type == &AST_TREE_F16_TYPE) {
       doOperation(left, right, *, AstTreeFloat, f16);
+#endif
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
       UNREACHABLE;
@@ -425,9 +435,11 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
     } else if (left->type == &AST_TREE_F32_TYPE &&
                right->type == &AST_TREE_F32_TYPE) {
       doOperation(left, right, /, AstTreeFloat, f32);
+#ifdef FLOAT_16_SUPPORT
     } else if (left->type == &AST_TREE_F16_TYPE &&
                right->type == &AST_TREE_F16_TYPE) {
       doOperation(left, right, /, AstTreeFloat, f16);
+#endif
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
       UNREACHABLE;
@@ -507,9 +519,11 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
     } else if (left->type == &AST_TREE_F32_TYPE &&
                right->type == &AST_TREE_F32_TYPE) {
       doLogicalOperation(left, right, ==, AstTreeFloat, f32);
+#ifdef FLOAT_16_SUPPORT
     } else if (left->type == &AST_TREE_F16_TYPE &&
                right->type == &AST_TREE_F16_TYPE) {
       doLogicalOperation(left, right, ==, AstTreeFloat, f16);
+#endif
     } else if (left->type == &AST_TREE_TYPE_TYPE) {
       bool *res = a404m_malloc(sizeof(*res));
       *res = typeIsEqual(left, right);
@@ -560,9 +574,11 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
     } else if (left->type == &AST_TREE_F32_TYPE &&
                right->type == &AST_TREE_F32_TYPE) {
       doLogicalOperation(left, right, !=, AstTreeFloat, f32);
+#ifdef FLOAT_16_SUPPORT
     } else if (left->type == &AST_TREE_F16_TYPE &&
                right->type == &AST_TREE_F16_TYPE) {
       doLogicalOperation(left, right, !=, AstTreeFloat, f16);
+#endif
     } else if (left->type == &AST_TREE_TYPE_TYPE) {
       bool *res = a404m_malloc(sizeof(*res));
       *res = !typeIsEqual(left, right);
@@ -613,9 +629,11 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
     } else if (left->type == &AST_TREE_F32_TYPE &&
                right->type == &AST_TREE_F32_TYPE) {
       doLogicalOperation(left, right, >, AstTreeFloat, f32);
+#ifdef FLOAT_16_SUPPORT
     } else if (left->type == &AST_TREE_F16_TYPE &&
                right->type == &AST_TREE_F16_TYPE) {
       doLogicalOperation(left, right, >, AstTreeFloat, f16);
+#endif
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
       UNREACHABLE;
@@ -660,9 +678,11 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
     } else if (left->type == &AST_TREE_F32_TYPE &&
                right->type == &AST_TREE_F32_TYPE) {
       doLogicalOperation(left, right, <, AstTreeFloat, f32);
+#ifdef FLOAT_16_SUPPORT
     } else if (left->type == &AST_TREE_F16_TYPE &&
                right->type == &AST_TREE_F16_TYPE) {
       doLogicalOperation(left, right, <, AstTreeFloat, f16);
+#endif
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
       UNREACHABLE;
@@ -707,9 +727,11 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
     } else if (left->type == &AST_TREE_F32_TYPE &&
                right->type == &AST_TREE_F32_TYPE) {
       doLogicalOperation(left, right, >=, AstTreeFloat, f32);
+#ifdef FLOAT_16_SUPPORT
     } else if (left->type == &AST_TREE_F16_TYPE &&
                right->type == &AST_TREE_F16_TYPE) {
       doLogicalOperation(left, right, >=, AstTreeFloat, f16);
+#endif
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
       UNREACHABLE;
@@ -754,9 +776,11 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
     } else if (left->type == &AST_TREE_F32_TYPE &&
                right->type == &AST_TREE_F32_TYPE) {
       doLogicalOperation(left, right, <=, AstTreeFloat, f32);
+#ifdef FLOAT_16_SUPPORT
     } else if (left->type == &AST_TREE_F16_TYPE &&
                right->type == &AST_TREE_F16_TYPE) {
       doLogicalOperation(left, right, <=, AstTreeFloat, f16);
+        #endif
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
       UNREACHABLE;
@@ -776,7 +800,9 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   case AST_TREE_TOKEN_TYPE_U32:
   case AST_TREE_TOKEN_TYPE_I64:
   case AST_TREE_TOKEN_TYPE_U64:
+#ifdef FLOAT_16_SUPPORT
   case AST_TREE_TOKEN_TYPE_F16:
+    #endif
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:

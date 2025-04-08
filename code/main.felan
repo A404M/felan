@@ -10,7 +10,7 @@ uint :: u32;
 long :: i64;
 ulong :: u64;
 
-short_float :: f16;
+// short_float :: f16;
 float :: f32;
 double :: f64;
 long_double :: f128;
@@ -34,5 +34,4 @@ main :: () -> void {
 };
 
 comptime {
-  main();
 };

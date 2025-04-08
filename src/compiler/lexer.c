@@ -4,7 +4,6 @@
 #include "utils/memory.h"
 #include "utils/string.h"
 
-#include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,7 +21,9 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_KEYWORD_U32",
     "LEXER_TOKEN_KEYWORD_I64",
     "LEXER_TOKEN_KEYWORD_U64",
+#ifdef FLOAT_16_SUPPORT
     "LEXER_TOKEN_KEYWORD_F16",
+#endif
     "LEXER_TOKEN_KEYWORD_F32",
     "LEXER_TOKEN_KEYWORD_F64",
     "LEXER_TOKEN_KEYWORD_F128",
@@ -115,25 +116,32 @@ const size_t LEXER_SYMBOL_SIZE =
     sizeof(LEXER_SYMBOL_TOKENS) / sizeof(*LEXER_SYMBOL_TOKENS);
 
 const char *LEXER_KEYWORD_STRINGS[] = {
-    "type",  "void",      "i8",     "u8",     "i16",       "u16", "i32",
-    "u32",   "i64",       "u64",    "f16",    "f32",       "f64", "f128",
-    "bool",  "print_u64", "return", "true",   "false",     "if",  "else",
-    "while", "comptime",  "null",   "struct", "undefined",
+    "type",   "void",     "i8",    "u8",     "i16",
+    "u16",    "i32",      "u32",   "i64",    "u64",
+#ifdef FLOAT_16_SUPPORT
+    "f16",
+#endif
+    "f32",    "f64",      "f128",  "bool",   "print_u64",
+    "return", "true",     "false", "if",     "else",
+    "while",  "comptime", "null",  "struct", "undefined",
 };
 const LexerToken LEXER_KEYWORD_TOKENS[] = {
-    LEXER_TOKEN_KEYWORD_TYPE,     LEXER_TOKEN_KEYWORD_VOID,
-    LEXER_TOKEN_KEYWORD_I8,       LEXER_TOKEN_KEYWORD_U8,
-    LEXER_TOKEN_KEYWORD_I16,      LEXER_TOKEN_KEYWORD_U16,
-    LEXER_TOKEN_KEYWORD_I32,      LEXER_TOKEN_KEYWORD_U32,
-    LEXER_TOKEN_KEYWORD_I64,      LEXER_TOKEN_KEYWORD_U64,
-    LEXER_TOKEN_KEYWORD_F16,      LEXER_TOKEN_KEYWORD_F32,
-    LEXER_TOKEN_KEYWORD_F64,      LEXER_TOKEN_KEYWORD_F128,
-    LEXER_TOKEN_KEYWORD_BOOL,     LEXER_TOKEN_KEYWORD_PRINT_U64,
-    LEXER_TOKEN_KEYWORD_RETURN,   LEXER_TOKEN_KEYWORD_TRUE,
-    LEXER_TOKEN_KEYWORD_FALSE,    LEXER_TOKEN_KEYWORD_IF,
-    LEXER_TOKEN_KEYWORD_ELSE,     LEXER_TOKEN_KEYWORD_WHILE,
-    LEXER_TOKEN_KEYWORD_COMPTIME, LEXER_TOKEN_KEYWORD_NULL,
-    LEXER_TOKEN_KEYWORD_STRUCT,   LEXER_TOKEN_KEYWORD_UNDEFINED,
+    LEXER_TOKEN_KEYWORD_TYPE,      LEXER_TOKEN_KEYWORD_VOID,
+    LEXER_TOKEN_KEYWORD_I8,        LEXER_TOKEN_KEYWORD_U8,
+    LEXER_TOKEN_KEYWORD_I16,       LEXER_TOKEN_KEYWORD_U16,
+    LEXER_TOKEN_KEYWORD_I32,       LEXER_TOKEN_KEYWORD_U32,
+    LEXER_TOKEN_KEYWORD_I64,       LEXER_TOKEN_KEYWORD_U64,
+#ifdef FLOAT_16_SUPPORT
+    LEXER_TOKEN_KEYWORD_F16,
+#endif
+    LEXER_TOKEN_KEYWORD_F32,       LEXER_TOKEN_KEYWORD_F64,
+    LEXER_TOKEN_KEYWORD_F128,      LEXER_TOKEN_KEYWORD_BOOL,
+    LEXER_TOKEN_KEYWORD_PRINT_U64, LEXER_TOKEN_KEYWORD_RETURN,
+    LEXER_TOKEN_KEYWORD_TRUE,      LEXER_TOKEN_KEYWORD_FALSE,
+    LEXER_TOKEN_KEYWORD_IF,        LEXER_TOKEN_KEYWORD_ELSE,
+    LEXER_TOKEN_KEYWORD_WHILE,     LEXER_TOKEN_KEYWORD_COMPTIME,
+    LEXER_TOKEN_KEYWORD_NULL,      LEXER_TOKEN_KEYWORD_STRUCT,
+    LEXER_TOKEN_KEYWORD_UNDEFINED,
 };
 const size_t LEXER_KEYWORD_SIZE =
     sizeof(LEXER_KEYWORD_TOKENS) / sizeof(*LEXER_KEYWORD_TOKENS);
@@ -273,7 +281,9 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_KEYWORD_U32:
   case LEXER_TOKEN_KEYWORD_I64:
   case LEXER_TOKEN_KEYWORD_U64:
+#ifdef FLOAT_16_SUPPORT
   case LEXER_TOKEN_KEYWORD_F16:
+#endif
   case LEXER_TOKEN_KEYWORD_F32:
   case LEXER_TOKEN_KEYWORD_F64:
   case LEXER_TOKEN_KEYWORD_F128:
@@ -382,4 +392,13 @@ bool isCompleteSymbol(char *str, size_t str_size) {
                              str_size) != LEXER_SYMBOL_SIZE;
 }
 
-bool isSpace(char c) { return isspace(c); }
+bool isSpace(char c) {
+  switch (c) {
+  case ' ':
+  case '\n':
+  case '\t':
+    return true;
+  default:
+    return false;
+  }
+}

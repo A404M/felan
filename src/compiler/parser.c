@@ -30,7 +30,9 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_TYPE_U32",
     "PARSER_TOKEN_TYPE_I64",
     "PARSER_TOKEN_TYPE_U64",
+#ifdef FLOAT_16_SUPPORT
     "PARSER_TOKEN_TYPE_F16",
+#endif
     "PARSER_TOKEN_TYPE_F32",
     "PARSER_TOKEN_TYPE_F64",
     "PARSER_TOKEN_TYPE_F128",
@@ -87,7 +89,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
   .size = sizeof((LexerToken[]){__VA_ARGS__}) / sizeof(LexerToken),            \
   .data = {__VA_ARGS__}
 
-static constexpr ParserOrder PARSER_ORDER[] = {
+static const ParserOrder PARSER_ORDER[] = {
     {
         .ltr = true,
         ORDER_ARRAY(LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET, ),
@@ -100,12 +102,14 @@ static constexpr ParserOrder PARSER_ORDER[] = {
                     LEXER_TOKEN_KEYWORD_U8, LEXER_TOKEN_KEYWORD_I16,
                     LEXER_TOKEN_KEYWORD_U16, LEXER_TOKEN_KEYWORD_I32,
                     LEXER_TOKEN_KEYWORD_U32, LEXER_TOKEN_KEYWORD_I64,
-                    LEXER_TOKEN_KEYWORD_F16, LEXER_TOKEN_KEYWORD_F32,
-                    LEXER_TOKEN_KEYWORD_F64, LEXER_TOKEN_KEYWORD_F128,
-                    LEXER_TOKEN_KEYWORD_U64, LEXER_TOKEN_KEYWORD_BOOL,
-                    LEXER_TOKEN_KEYWORD_TRUE, LEXER_TOKEN_KEYWORD_FALSE,
-                    LEXER_TOKEN_KEYWORD_NULL, LEXER_TOKEN_NUMBER,
-                    LEXER_TOKEN_KEYWORD_UNDEFINED, ),
+#ifdef FLOAT_16_SUPPORT
+                    LEXER_TOKEN_KEYWORD_F16,
+#endif
+                    LEXER_TOKEN_KEYWORD_F32, LEXER_TOKEN_KEYWORD_F64,
+                    LEXER_TOKEN_KEYWORD_F128, LEXER_TOKEN_KEYWORD_U64,
+                    LEXER_TOKEN_KEYWORD_BOOL, LEXER_TOKEN_KEYWORD_TRUE,
+                    LEXER_TOKEN_KEYWORD_FALSE, LEXER_TOKEN_KEYWORD_NULL,
+                    LEXER_TOKEN_NUMBER, LEXER_TOKEN_KEYWORD_UNDEFINED, ),
     },
     {
         .ltr = false,
@@ -165,7 +169,7 @@ static constexpr ParserOrder PARSER_ORDER[] = {
     },
 };
 
-static constexpr size_t PARSER_ORDER_SIZE =
+static const size_t PARSER_ORDER_SIZE =
     sizeof(PARSER_ORDER) / sizeof(*PARSER_ORDER);
 
 void parserNodePrint(const ParserNode *node, int indent) {
@@ -206,7 +210,9 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_TYPE_U32:
   case PARSER_TOKEN_TYPE_I64:
   case PARSER_TOKEN_TYPE_U64:
+#ifdef FLOAT_16_SUPPORT
   case PARSER_TOKEN_TYPE_F16:
+#endif
   case PARSER_TOKEN_TYPE_F32:
   case PARSER_TOKEN_TYPE_F64:
   case PARSER_TOKEN_TYPE_F128:
@@ -459,7 +465,9 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_TYPE_U32:
   case PARSER_TOKEN_TYPE_I64:
   case PARSER_TOKEN_TYPE_U64:
+#ifdef FLOAT_16_SUPPORT
   case PARSER_TOKEN_TYPE_F16:
+#endif
   case PARSER_TOKEN_TYPE_F32:
   case PARSER_TOKEN_TYPE_F64:
   case PARSER_TOKEN_TYPE_F128:
@@ -706,8 +714,10 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_U64);
   case LEXER_TOKEN_KEYWORD_BOOL:
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_BOOL);
+#ifdef FLOAT_16_SUPPORT
   case LEXER_TOKEN_KEYWORD_F16:
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_F16);
+#endif
   case LEXER_TOKEN_KEYWORD_F32:
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_F32);
   case LEXER_TOKEN_KEYWORD_F64:
@@ -1220,7 +1230,9 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_TYPE_U32:
       case PARSER_TOKEN_TYPE_I64:
       case PARSER_TOKEN_TYPE_U64:
+#ifdef FLOAT_16_SUPPORT
       case PARSER_TOKEN_TYPE_F16:
+#endif
       case PARSER_TOKEN_TYPE_F32:
       case PARSER_TOKEN_TYPE_F64:
       case PARSER_TOKEN_TYPE_F128:
@@ -1703,7 +1715,9 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_TYPE_U32:
   case PARSER_TOKEN_TYPE_I64:
   case PARSER_TOKEN_TYPE_U64:
+#ifdef FLOAT_16_SUPPORT
   case PARSER_TOKEN_TYPE_F16:
+#endif
   case PARSER_TOKEN_TYPE_F32:
   case PARSER_TOKEN_TYPE_F64:
   case PARSER_TOKEN_TYPE_F128:
@@ -1734,7 +1748,9 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_TYPE_U32:
   case PARSER_TOKEN_TYPE_I64:
   case PARSER_TOKEN_TYPE_U64:
+#ifdef FLOAT_16_SUPPORT
   case PARSER_TOKEN_TYPE_F16:
+#endif
   case PARSER_TOKEN_TYPE_F32:
   case PARSER_TOKEN_TYPE_F64:
   case PARSER_TOKEN_TYPE_F128:
@@ -1833,7 +1849,9 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_TYPE_U32:
   case PARSER_TOKEN_TYPE_I64:
   case PARSER_TOKEN_TYPE_U64:
+#ifdef FLOAT_16_SUPPORT
   case PARSER_TOKEN_TYPE_F16:
+#endif
   case PARSER_TOKEN_TYPE_F32:
   case PARSER_TOKEN_TYPE_F64:
   case PARSER_TOKEN_TYPE_F128:

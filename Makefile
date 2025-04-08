@@ -2,6 +2,7 @@ PROJECT_NAME := felan
 
 CC := gcc
 # CC := tcc
+# CC := clang
 
 BUILD_DIR := ./build
 SRC_DIR := ./src

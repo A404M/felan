@@ -1,5 +1,6 @@
 #pragma once
 
+#include "utils/type.h"
 #include <stddef.h>
 
 typedef enum LexerToken {
@@ -15,7 +16,9 @@ typedef enum LexerToken {
   LEXER_TOKEN_KEYWORD_U32,
   LEXER_TOKEN_KEYWORD_I64,
   LEXER_TOKEN_KEYWORD_U64,
+#ifdef FLOAT_16_SUPPORT
   LEXER_TOKEN_KEYWORD_F16,
+#endif
   LEXER_TOKEN_KEYWORD_F32,
   LEXER_TOKEN_KEYWORD_F64,
   LEXER_TOKEN_KEYWORD_F128,

@@ -1,5 +1,11 @@
 #pragma once
 
+#include "utils/type.h"
+
+#ifndef __FILE_NAME__
+#define __FILE_NAME__ __FILE__
+#endif
+
 #define printLog(format,...) _printLogBack(format, __FILE_NAME__, __LINE__, ## __VA_ARGS__)
 #define printError(begin,end,format,...) _printErrorWarningBack(__FILE_NAME__, __LINE__, begin, end, true, format, ## __VA_ARGS__)
 #define printWarning(begin,end,format,...) _printErrorWarningBack(__FILE_NAME__, __LINE__, begin, end, false, format, ## __VA_ARGS__)
