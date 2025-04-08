@@ -41,6 +41,7 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_KEYWORD_UNDEFINED",
 
     "LEXER_TOKEN_NUMBER",
+    "LEXER_TOKEN_CHAR",
 
     "LEXER_TOKEN_SYMBOL",
     "LEXER_TOKEN_SYMBOL_EOL",
@@ -193,12 +194,15 @@ LexerNodeArray lexer(char *str) {
                        &node_token, LEXER_TOKEN_NONE);
         ++iter;
         int in = 1;
+        char *openingIter = iter - 2;
+
         for (; in != 0; ++iter) {
           if (*iter == '*' && *(iter + 1) == '/') {
             --in;
           } else if (*iter == '/' && *(iter + 1) == '*') {
             ++in;
           } else if (*iter == '\0') {
+            printError(openingIter, openingIter + 2, "No closing */ found");
             goto RETURN_ERROR;
           }
         }
@@ -211,6 +215,23 @@ LexerNodeArray lexer(char *str) {
     if (isSpace(c)) {
       lexerPushClear(&result, &result_size, iter, &node_str_begin, &node_token,
                      LEXER_TOKEN_NONE);
+    } else if (isString(c)) {
+      lexerPushClear(&result, &result_size, iter, &node_str_begin, &node_token,
+                     LEXER_TOKEN_CHAR);
+      const char opening = c;
+      char *openingIter = iter;
+      ++iter;
+      for (;; ++iter) {
+        if (*iter == '\0') {
+          printError(openingIter, openingIter + 1, "No closing `%c` found",
+                     opening);
+          goto RETURN_ERROR;
+        } else if (*iter == '\\') {
+          ++iter;
+        } else if (*iter == '\'') {
+          break;
+        }
+      }
     } else if (isIdentifier(c) ||
                (node_token == LEXER_TOKEN_IDENTIFIER && isNumber(c))) {
       if (node_token != LEXER_TOKEN_IDENTIFIER &&
@@ -300,6 +321,7 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_KEYWORD_STRUCT:
   case LEXER_TOKEN_KEYWORD_UNDEFINED:
   case LEXER_TOKEN_NUMBER:
+  case LEXER_TOKEN_CHAR:
   case LEXER_TOKEN_SYMBOL_EOL:
   case LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS:
   case LEXER_TOKEN_SYMBOL_CLOSE_PARENTHESIS:
@@ -397,6 +419,17 @@ bool isSpace(char c) {
   case ' ':
   case '\n':
   case '\t':
+  case '\v':
+    return true;
+  default:
+    return false;
+  }
+}
+
+extern bool isString(char c) {
+  switch (c) {
+  case '\'':
+  case '\"':
     return true;
   default:
     return false;

@@ -17,6 +17,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_VALUE_INT",
     "PARSER_TOKEN_VALUE_FLOAT",
     "PARSER_TOKEN_VALUE_BOOL",
+    "PARSER_TOKEN_VALUE_CHAR",
 
     "PARSER_TOKEN_TYPE_TYPE",
     "PARSER_TOKEN_TYPE_FUNCTION",
@@ -109,7 +110,8 @@ static const ParserOrder PARSER_ORDER[] = {
                     LEXER_TOKEN_KEYWORD_F128, LEXER_TOKEN_KEYWORD_U64,
                     LEXER_TOKEN_KEYWORD_BOOL, LEXER_TOKEN_KEYWORD_TRUE,
                     LEXER_TOKEN_KEYWORD_FALSE, LEXER_TOKEN_KEYWORD_NULL,
-                    LEXER_TOKEN_NUMBER, LEXER_TOKEN_KEYWORD_UNDEFINED, ),
+                    LEXER_TOKEN_NUMBER, LEXER_TOKEN_CHAR,
+                    LEXER_TOKEN_KEYWORD_UNDEFINED, ),
     },
     {
         .ltr = false,
@@ -232,6 +234,11 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_VALUE_BOOL: {
     ParserNodeBoolMetadata *metadata = node->metadata;
     printf(",value=%b", *metadata);
+  }
+    goto RETURN_SUCCESS;
+  case PARSER_TOKEN_VALUE_CHAR: {
+    ParserNodeCharMetadata *metadata = node->metadata;
+    printf(",value=%c", (char)*metadata);
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_CONSTANT:
@@ -479,7 +486,6 @@ void parserNodeDelete(ParserNode *node) {
     free(metadata);
   }
     goto RETURN_SUCCESS;
-
   case PARSER_TOKEN_VALUE_INT: {
     ParserNodeIntMetadata *metadata = node->metadata;
     free(metadata);
@@ -487,6 +493,11 @@ void parserNodeDelete(ParserNode *node) {
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_VALUE_FLOAT: {
     ParserNodeFloatMetadata *metadata = node->metadata;
+    free(metadata);
+  }
+    goto RETURN_SUCCESS;
+  case PARSER_TOKEN_VALUE_CHAR: {
+    ParserNodeCharMetadata *metadata = node->metadata;
     free(metadata);
   }
     goto RETURN_SUCCESS;
@@ -749,6 +760,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserComma(node, begin, parent);
   case LEXER_TOKEN_NUMBER:
     return parserNumber(node, parent);
+  case LEXER_TOKEN_CHAR:
+    return parserChar(node, parent);
   case LEXER_TOKEN_SYMBOL_ASSIGN:
     return parserBinaryOperator(node, begin, end, parent,
                                 PARSER_TOKEN_OPERATOR_ASSIGN);
@@ -1011,6 +1024,22 @@ ParserNode *parserNumber(LexerNode *node, ParserNode *parent) {
   return node->parserNode = parserNode;
 }
 
+ParserNode *parserChar(LexerNode *node, ParserNode *parent) {
+  const size_t size = node->str_end - 1 - node->str_begin - 1;
+  ParserNodeCharMetadata *metadata = a404m_malloc(sizeof(*metadata));
+  if (size == 1) {
+    *metadata = *(node->str_begin + 1);
+  } else if (size > 1) {
+    NOT_IMPLEMENTED;
+  } else {
+    printError(node->str_begin, node->str_end,
+               "Bad character: Character can't be empty");
+  }
+  return node->parserNode =
+             newParserNode(PARSER_TOKEN_VALUE_CHAR, node->str_begin,
+                           node->str_end, metadata, parent);
+}
+
 ParserNode *parserBoolValue(LexerNode *node, ParserNode *parent) {
   ParserNodeBoolMetadata *metadata = a404m_malloc(sizeof(*metadata));
   *metadata = node->token == LEXER_TOKEN_KEYWORD_TRUE;
@@ -1218,6 +1247,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_VALUE_INT:
       case PARSER_TOKEN_VALUE_FLOAT:
       case PARSER_TOKEN_VALUE_BOOL:
+      case PARSER_TOKEN_VALUE_CHAR:
       case PARSER_TOKEN_TYPE_TYPE:
       case PARSER_TOKEN_TYPE_FUNCTION:
       case PARSER_TOKEN_TYPE_VOID:
@@ -1700,6 +1730,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_VALUE_INT:
   case PARSER_TOKEN_VALUE_FLOAT:
   case PARSER_TOKEN_VALUE_BOOL:
+  case PARSER_TOKEN_VALUE_CHAR:
   case PARSER_TOKEN_KEYWORD_IF:
   case PARSER_TOKEN_KEYWORD_WHILE:
   case PARSER_TOKEN_KEYWORD_COMPTIME:
@@ -1777,6 +1808,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_VALUE_INT:
   case PARSER_TOKEN_VALUE_FLOAT:
   case PARSER_TOKEN_VALUE_BOOL:
+  case PARSER_TOKEN_VALUE_CHAR:
   case PARSER_TOKEN_KEYWORD_PRINT_U64:
   case PARSER_TOKEN_KEYWORD_RETURN:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
@@ -1813,6 +1845,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_VALUE_INT:
   case PARSER_TOKEN_VALUE_FLOAT:
   case PARSER_TOKEN_VALUE_BOOL:
+  case PARSER_TOKEN_VALUE_CHAR:
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_OPERATOR_ACCESS:
   case PARSER_TOKEN_OPERATOR_ASSIGN:

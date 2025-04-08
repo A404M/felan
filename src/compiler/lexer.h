@@ -36,6 +36,7 @@ typedef enum LexerToken {
   LEXER_TOKEN_KEYWORD_UNDEFINED,
 
   LEXER_TOKEN_NUMBER,
+  LEXER_TOKEN_CHAR,
 
   LEXER_TOKEN_SYMBOL,
   LEXER_TOKEN_SYMBOL_EOL,
@@ -114,3 +115,4 @@ extern bool isNumber(char c);
 extern bool isSymbol(char c);
 extern bool isCompleteSymbol(char *str, size_t str_size);
 extern bool isSpace(char c);
+extern bool isString(char c);

@@ -13,6 +13,7 @@ typedef enum ParserToken {
   PARSER_TOKEN_VALUE_INT,
   PARSER_TOKEN_VALUE_FLOAT,
   PARSER_TOKEN_VALUE_BOOL,
+  PARSER_TOKEN_VALUE_CHAR,
 
   PARSER_TOKEN_TYPE_TYPE,
   PARSER_TOKEN_TYPE_FUNCTION,
@@ -28,7 +29,7 @@ typedef enum ParserToken {
   PARSER_TOKEN_TYPE_U64,
 #ifdef FLOAT_16_SUPPORT
   PARSER_TOKEN_TYPE_F16,
-  #endif
+#endif
   PARSER_TOKEN_TYPE_F32,
   PARSER_TOKEN_TYPE_F64,
   PARSER_TOKEN_TYPE_F128,
@@ -86,7 +87,7 @@ extern const char *PARSER_TOKEN_STRINGS[];
 typedef struct ParserOrder {
   bool ltr;
   size_t size;
-  LexerToken data[22];
+  LexerToken data[23];
 } ParserOrder;
 
 typedef struct ParserNode {
@@ -129,6 +130,8 @@ typedef ParserNode ParserNodeSingleChildMetadata;
 typedef u64 ParserNodeIntMetadata;
 
 typedef f128 ParserNodeFloatMetadata;
+
+typedef ParserNodeIntMetadata ParserNodeCharMetadata;
 
 typedef struct ParserNodeInfixMetadata {
   ParserNode *left;
@@ -177,6 +180,7 @@ ParserNode *parserNoMetadata(LexerNode *node, ParserNode *parent,
 ParserNode *parserPrintU64(LexerNode *node, LexerNode *end, ParserNode *parent);
 ParserNode *parserReturn(LexerNode *node, LexerNode *end, ParserNode *parent);
 ParserNode *parserNumber(LexerNode *node, ParserNode *parent);
+ParserNode *parserChar(LexerNode *node, ParserNode *parent);
 ParserNode *parserBoolValue(LexerNode *node, ParserNode *parent);
 ParserNode *parserEol(LexerNode *node, LexerNode *begin, ParserNode *parent);
 ParserNode *parserComma(LexerNode *node, LexerNode *begin, ParserNode *parent);

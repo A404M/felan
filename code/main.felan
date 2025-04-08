@@ -17,21 +17,7 @@ long_double :: f128;
 
 usize :: u64;
 
-array :: (t:type) -> type {
-  return struct {
-    ptr : *t;
-    length : usize;
-  };
-};
-
-array_int :: array(u64);
-array_int1 :: array(u64);
-array_int2 :: array(i64);
-
 main :: () -> void {
-  print_u64 (if array_int == array_int1 1 else 0);
-  print_u64 (if array_int == array_int2 1 else 0);
-};
-
-comptime {
+  a := 'a';
+  print_u64 (if a == 97 1 else 0);
 };

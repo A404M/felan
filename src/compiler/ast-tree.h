@@ -260,7 +260,7 @@ AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
                                   AstTreeHelper *helper);
 AstTree *astTreeParseIdentifier(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseValue(ParserNode *parserNode, AstTreeToken token,
-                           size_t metadata_size);
+                           size_t metadata_size,AstTree *type);
 AstTree *astTreeParseKeyword(ParserNode *parserNode, AstTreeToken token);
 AstTree *astTreeParsePrintU64(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseReturn(ParserNode *parserNode, AstTreeHelper *helper);
