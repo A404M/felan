@@ -2,7 +2,9 @@
 
 #include <stdint.h>
 
-// #define FLOAT_16_SUPPORT
+#ifdef __FLT16_MIN__
+#define FLOAT_16_SUPPORT
+#endif
 
 typedef int8_t i8;
 typedef int16_t i16;
