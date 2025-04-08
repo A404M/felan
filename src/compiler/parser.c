@@ -38,7 +38,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_TYPE_F64",
     "PARSER_TOKEN_TYPE_F128",
 
-    "PARSER_TOKEN_KEYWORD_PRINT_U64",
+    "PARSER_TOKEN_KEYWORD_PUTC",
     "PARSER_TOKEN_KEYWORD_RETURN",
     "PARSER_TOKEN_KEYWORD_IF",
     "PARSER_TOKEN_KEYWORD_WHILE",
@@ -158,7 +158,7 @@ static const ParserOrder PARSER_ORDER[] = {
     },
     {
         .ltr = false,
-        ORDER_ARRAY(LEXER_TOKEN_KEYWORD_RETURN, LEXER_TOKEN_KEYWORD_PRINT_U64,
+        ORDER_ARRAY(LEXER_TOKEN_KEYWORD_RETURN, LEXER_TOKEN_KEYWORD_PUTC,
                     LEXER_TOKEN_KEYWORD_COMPTIME, ),
     },
     {
@@ -270,7 +270,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_OPERATOR_DEREFERENCE:
   case PARSER_TOKEN_OPERATOR_PLUS:
   case PARSER_TOKEN_OPERATOR_MINUS:
-  case PARSER_TOKEN_KEYWORD_PRINT_U64:
+  case PARSER_TOKEN_KEYWORD_PUTC:
   case PARSER_TOKEN_KEYWORD_COMPTIME:
   case PARSER_TOKEN_SYMBOL_COMMA:
   case PARSER_TOKEN_SYMBOL_EOL: {
@@ -516,7 +516,7 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_DEREFERENCE:
   case PARSER_TOKEN_OPERATOR_PLUS:
   case PARSER_TOKEN_OPERATOR_MINUS:
-  case PARSER_TOKEN_KEYWORD_PRINT_U64:
+  case PARSER_TOKEN_KEYWORD_PUTC:
   case PARSER_TOKEN_KEYWORD_COMPTIME:
   case PARSER_TOKEN_SYMBOL_COMMA:
   case PARSER_TOKEN_SYMBOL_EOL: {
@@ -739,8 +739,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserNoMetadata(node, parent, PARSER_TOKEN_KEYWORD_NULL);
   case LEXER_TOKEN_KEYWORD_UNDEFINED:
     return parserNoMetadata(node, parent, PARSER_TOKEN_KEYWORD_UNDEFINED);
-  case LEXER_TOKEN_KEYWORD_PRINT_U64:
-    return parserPrintU64(node, end, parent);
+  case LEXER_TOKEN_KEYWORD_PUTC:
+    return parserPutc(node, end, parent);
   case LEXER_TOKEN_KEYWORD_RETURN:
     return parserReturn(node, end, parent);
   case LEXER_TOKEN_KEYWORD_TRUE:
@@ -943,7 +943,7 @@ ParserNode *parserNoMetadata(LexerNode *node, ParserNode *parent,
              newParserNode(token, node->str_begin, node->str_end, NULL, parent);
 }
 
-ParserNode *parserPrintU64(LexerNode *node, LexerNode *end,
+ParserNode *parserPutc(LexerNode *node, LexerNode *end,
                            ParserNode *parent) {
   LexerNode *afterNode = node + 1;
   if (afterNode >= end) {
@@ -961,7 +961,7 @@ ParserNode *parserPrintU64(LexerNode *node, LexerNode *end,
   }
 
   return operand->parent = node->parserNode = newParserNode(
-             PARSER_TOKEN_KEYWORD_PRINT_U64, node->str_begin, node->str_end,
+             PARSER_TOKEN_KEYWORD_PUTC, node->str_begin, node->str_end,
              (ParserNodeSingleChildMetadata *)operand, parent);
 }
 
@@ -1268,7 +1268,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_TYPE_F128:
       case PARSER_TOKEN_KEYWORD_NULL:
       case PARSER_TOKEN_KEYWORD_UNDEFINED:
-      case PARSER_TOKEN_KEYWORD_PRINT_U64:
+      case PARSER_TOKEN_KEYWORD_PUTC:
       case PARSER_TOKEN_KEYWORD_RETURN:
       case PARSER_TOKEN_KEYWORD_STRUCT:
       case PARSER_TOKEN_CONSTANT:
@@ -1702,7 +1702,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
   case PARSER_TOKEN_FUNCTION_DEFINITION:
   case PARSER_TOKEN_FUNCTION_CALL:
-  case PARSER_TOKEN_KEYWORD_PRINT_U64:
+  case PARSER_TOKEN_KEYWORD_PUTC:
   case PARSER_TOKEN_KEYWORD_RETURN:
   case PARSER_TOKEN_OPERATOR_ACCESS:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
@@ -1809,7 +1809,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_VALUE_FLOAT:
   case PARSER_TOKEN_VALUE_BOOL:
   case PARSER_TOKEN_VALUE_CHAR:
-  case PARSER_TOKEN_KEYWORD_PRINT_U64:
+  case PARSER_TOKEN_KEYWORD_PUTC:
   case PARSER_TOKEN_KEYWORD_RETURN:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:
@@ -1901,7 +1901,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_SYMBOL_EOL:
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
   case PARSER_TOKEN_SYMBOL_COMMA:
-  case PARSER_TOKEN_KEYWORD_PRINT_U64:
+  case PARSER_TOKEN_KEYWORD_PUTC:
   case PARSER_TOKEN_KEYWORD_RETURN:
   case PARSER_TOKEN_KEYWORD_WHILE:
     return false;

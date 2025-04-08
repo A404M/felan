@@ -109,7 +109,7 @@ AstTree AST_TREE_VOID_VALUE = {
 const char *AST_TREE_TOKEN_STRINGS[] = {
     "AST_TREE_TOKEN_FUNCTION",
 
-    "AST_TREE_TOKEN_KEYWORD_PRINT_U64",
+    "AST_TREE_TOKEN_KEYWORD_PUTC",
     "AST_TREE_TOKEN_KEYWORD_RETURN",
     "AST_TREE_TOKEN_KEYWORD_IF",
     "AST_TREE_TOKEN_KEYWORD_WHILE",
@@ -239,7 +239,7 @@ void astTreePrint(const AstTree *tree, int indent) {
   case AST_TREE_TOKEN_OPERATOR_DEREFERENCE:
   case AST_TREE_TOKEN_OPERATOR_PLUS:
   case AST_TREE_TOKEN_OPERATOR_MINUS:
-  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_KEYWORD_PUTC:
   case AST_TREE_TOKEN_KEYWORD_COMPTIME: {
     AstTreeSingleChild *metadata = tree->metadata;
     printf(",\n");
@@ -607,7 +607,7 @@ void astTreeDestroy(AstTree tree) {
   case AST_TREE_TOKEN_OPERATOR_DEREFERENCE:
   case AST_TREE_TOKEN_OPERATOR_PLUS:
   case AST_TREE_TOKEN_OPERATOR_MINUS:
-  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_KEYWORD_PUTC:
   case AST_TREE_TOKEN_KEYWORD_COMPTIME: {
     AstTreeSingleChild *metadata = tree.metadata;
     astTreeDelete(metadata);
@@ -947,7 +947,7 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
   case AST_TREE_TOKEN_OPERATOR_DEREFERENCE:
   case AST_TREE_TOKEN_OPERATOR_PLUS:
   case AST_TREE_TOKEN_OPERATOR_MINUS:
-  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_KEYWORD_PUTC:
   case AST_TREE_TOKEN_KEYWORD_COMPTIME: {
     AstTreeSingleChild *metadata = tree->metadata;
     AstTreeSingleChild *new_metadata =
@@ -1289,7 +1289,7 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
       case PARSER_TOKEN_KEYWORD_STRUCT:
         goto AFTER_SWITCH;
       case PARSER_TOKEN_ROOT:
-      case PARSER_TOKEN_KEYWORD_PRINT_U64:
+      case PARSER_TOKEN_KEYWORD_PUTC:
       case PARSER_TOKEN_KEYWORD_RETURN:
       case PARSER_TOKEN_CONSTANT:
       case PARSER_TOKEN_VARIABLE:
@@ -1477,7 +1477,7 @@ AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper) {
     return astTreeParseKeyword(parserNode, AST_TREE_TOKEN_VALUE_NULL);
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
     return astTreeParseKeyword(parserNode, AST_TREE_TOKEN_VALUE_UNDEFINED);
-  case PARSER_TOKEN_KEYWORD_PRINT_U64:
+  case PARSER_TOKEN_KEYWORD_PUTC:
     return astTreeParsePrintU64(parserNode, helper);
   case PARSER_TOKEN_KEYWORD_RETURN:
     return astTreeParseReturn(parserNode, helper);
@@ -1680,7 +1680,7 @@ AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *p_helper) {
     case PARSER_TOKEN_TYPE_F64:
     case PARSER_TOKEN_TYPE_F128:
     case PARSER_TOKEN_TYPE_BOOL:
-    case PARSER_TOKEN_KEYWORD_PRINT_U64:
+    case PARSER_TOKEN_KEYWORD_PUTC:
     case PARSER_TOKEN_KEYWORD_RETURN:
     case PARSER_TOKEN_KEYWORD_COMPTIME:
     case PARSER_TOKEN_KEYWORD_STRUCT:
@@ -1919,7 +1919,7 @@ AstTree *astTreeParsePrintU64(ParserNode *parserNode, AstTreeHelper *helper) {
     return NULL;
   }
 
-  return newAstTree(AST_TREE_TOKEN_KEYWORD_PRINT_U64,
+  return newAstTree(AST_TREE_TOKEN_KEYWORD_PUTC,
                     (AstTreeSingleChild *)operand, NULL, parserNode->str_begin,
                     parserNode->str_end);
 }
@@ -2227,7 +2227,7 @@ AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
     case PARSER_TOKEN_TYPE_F64:
     case PARSER_TOKEN_TYPE_F128:
     case PARSER_TOKEN_TYPE_BOOL:
-    case PARSER_TOKEN_KEYWORD_PRINT_U64:
+    case PARSER_TOKEN_KEYWORD_PUTC:
     case PARSER_TOKEN_KEYWORD_RETURN:
     case PARSER_TOKEN_KEYWORD_COMPTIME:
     case PARSER_TOKEN_KEYWORD_STRUCT:
@@ -2462,7 +2462,7 @@ bool isConst(AstTree *tree) {
     return true;
   }
   case AST_TREE_TOKEN_KEYWORD_WHILE:
-  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_KEYWORD_PUTC:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
@@ -2561,7 +2561,7 @@ bool isConstByValue(AstTree *tree) {
     return true;
   }
   case AST_TREE_TOKEN_KEYWORD_WHILE:
-  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_KEYWORD_PUTC:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
@@ -2714,7 +2714,7 @@ AstTree *makeTypeOf(AstTree *value) {
   }
   case AST_TREE_TOKEN_VALUE_OBJECT:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
-  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_KEYWORD_PUTC:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
   case AST_TREE_TOKEN_KEYWORD_IF:
   case AST_TREE_TOKEN_KEYWORD_WHILE:
@@ -2749,7 +2749,7 @@ bool typeIsEqual(AstTree *type0, AstTree *type1) {
 bool typeIsEqualBack(const AstTree *type0, const AstTree *type1) {
   switch (type0->token) {
   case AST_TREE_TOKEN_FUNCTION:
-  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_KEYWORD_PUTC:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
   case AST_TREE_TOKEN_KEYWORD_IF:
   case AST_TREE_TOKEN_KEYWORD_WHILE:
@@ -2921,7 +2921,7 @@ AstTree *getValue(AstTree *tree) {
   case AST_TREE_TOKEN_FUNCTION: {
     return tree;
   }
-  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_KEYWORD_PUTC:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_NONE:
@@ -3045,7 +3045,7 @@ bool isCircularDependenciesBack(AstTreeHelper *helper,
     return false;
   }
   case AST_TREE_TOKEN_SCOPE:
-  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_KEYWORD_PUTC:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_KEYWORD_IF:
@@ -3162,7 +3162,7 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
     return setTypesValueObject(tree, helper);
   case AST_TREE_TOKEN_FUNCTION:
     return setTypesFunction(tree, helper);
-  case AST_TREE_TOKEN_KEYWORD_PRINT_U64:
+  case AST_TREE_TOKEN_KEYWORD_PUTC:
     return setTypesPrintU64(tree, helper);
   case AST_TREE_TOKEN_KEYWORD_RETURN:
     return setTypesReturn(tree, helper, function);
@@ -3438,12 +3438,12 @@ bool setTypesFunction(AstTree *tree, AstTreeSetTypesHelper helper) {
 bool setTypesPrintU64(AstTree *tree, AstTreeSetTypesHelper _helper) {
   AstTreeSingleChild *metadata = tree->metadata;
   AstTreeSetTypesHelper helper = {
-      .lookingType = &AST_TREE_U64_TYPE,
+      .lookingType = &AST_TREE_U8_TYPE,
       .treeHelper = _helper.treeHelper,
   };
   if (!setAllTypes(metadata, helper, NULL)) {
     return false;
-  } else if (!typeIsEqual(metadata->type, &AST_TREE_U64_TYPE)) {
+  } else if (!typeIsEqual(metadata->type, &AST_TREE_U8_TYPE)) {
     printError(tree->str_begin, tree->str_end, "Type mismatch");
     return false;
   } else {

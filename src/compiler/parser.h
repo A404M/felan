@@ -34,7 +34,7 @@ typedef enum ParserToken {
   PARSER_TOKEN_TYPE_F64,
   PARSER_TOKEN_TYPE_F128,
 
-  PARSER_TOKEN_KEYWORD_PRINT_U64,
+  PARSER_TOKEN_KEYWORD_PUTC,
   PARSER_TOKEN_KEYWORD_RETURN,
   PARSER_TOKEN_KEYWORD_IF,
   PARSER_TOKEN_KEYWORD_WHILE,
@@ -177,7 +177,7 @@ LexerNode *getNextLexerNodeUsingCommonParent(LexerNode *node, LexerNode *end,
 
 ParserNode *parserNoMetadata(LexerNode *node, ParserNode *parent,
                              ParserToken token);
-ParserNode *parserPrintU64(LexerNode *node, LexerNode *end, ParserNode *parent);
+ParserNode *parserPutc(LexerNode *node, LexerNode *end, ParserNode *parent);
 ParserNode *parserReturn(LexerNode *node, LexerNode *end, ParserNode *parent);
 ParserNode *parserNumber(LexerNode *node, ParserNode *parent);
 ParserNode *parserChar(LexerNode *node, ParserNode *parent);

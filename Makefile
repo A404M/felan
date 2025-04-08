@@ -68,8 +68,8 @@ test/big.felan: Makefile
 	echo "main :: () -> void {" > $@
 	for((n = 0;n < 100000;n++)); do echo "  print(1);" >> $@; done
 	echo "};" >> $@
-	echo "print :: (value:u64) -> void {" >> $@
-	echo "  print_u64 value;" >> $@
+	echo "print :: (value:u8) -> void {" >> $@
+	echo "  putc '0'+value;" >> $@
 	echo "};" >> $@
 
 # $@ = left hand of :

@@ -19,5 +19,5 @@ usize :: u64;
 
 main :: () -> void {
   a := 'a';
-  print_u64 (if a == 97 1 else 0);
+  putc a;
 };

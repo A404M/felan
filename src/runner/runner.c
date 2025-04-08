@@ -96,10 +96,10 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTreeFunctionCallParam *arguments,
 
 AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   switch (expr->token) {
-  case AST_TREE_TOKEN_KEYWORD_PRINT_U64: {
+  case AST_TREE_TOKEN_KEYWORD_PUTC: {
     AstTreeSingleChild *metadata = expr->metadata;
     AstTree *tree = runExpression(metadata, shouldRet, false);
-    printf("%lu", *(AstTreeInt *)tree->metadata);
+    printf("%c", (u8)*(AstTreeInt *)tree->metadata);
     astTreeDelete(tree);
     return &AST_TREE_VOID_VALUE;
   }
@@ -780,7 +780,7 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
     } else if (left->type == &AST_TREE_F16_TYPE &&
                right->type == &AST_TREE_F16_TYPE) {
       doLogicalOperation(left, right, <=, AstTreeFloat, f16);
-        #endif
+#endif
     } else {
       printError(expr->str_begin, expr->str_end, "Not supported");
       UNREACHABLE;
@@ -802,7 +802,7 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   case AST_TREE_TOKEN_TYPE_U64:
 #ifdef FLOAT_16_SUPPORT
   case AST_TREE_TOKEN_TYPE_F16:
-    #endif
+#endif
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
