@@ -117,14 +117,13 @@ const size_t LEXER_SYMBOL_SIZE =
     sizeof(LEXER_SYMBOL_TOKENS) / sizeof(*LEXER_SYMBOL_TOKENS);
 
 const char *LEXER_KEYWORD_STRINGS[] = {
-    "type",   "void",     "i8",    "u8",     "i16",
-    "u16",    "i32",      "u32",   "i64",    "u64",
+    "type", "void", "i8",    "u8",       "i16",  "u16",    "i32",       "u32",
+    "i64",  "u64",
 #ifdef FLOAT_16_SUPPORT
     "f16",
 #endif
-    "f32",    "f64",      "f128",  "bool",   "putc",
-    "return", "true",     "false", "if",     "else",
-    "while",  "comptime", "null",  "struct", "undefined",
+    "f32",  "f64",  "f128",  "bool",     "putc", "return", "true",      "false",
+    "if",   "else", "while", "comptime", "null", "struct", "undefined",
 };
 const LexerToken LEXER_KEYWORD_TOKENS[] = {
     LEXER_TOKEN_KEYWORD_TYPE,      LEXER_TOKEN_KEYWORD_VOID,
@@ -137,7 +136,7 @@ const LexerToken LEXER_KEYWORD_TOKENS[] = {
 #endif
     LEXER_TOKEN_KEYWORD_F32,       LEXER_TOKEN_KEYWORD_F64,
     LEXER_TOKEN_KEYWORD_F128,      LEXER_TOKEN_KEYWORD_BOOL,
-    LEXER_TOKEN_KEYWORD_PUTC, LEXER_TOKEN_KEYWORD_RETURN,
+    LEXER_TOKEN_KEYWORD_PUTC,      LEXER_TOKEN_KEYWORD_RETURN,
     LEXER_TOKEN_KEYWORD_TRUE,      LEXER_TOKEN_KEYWORD_FALSE,
     LEXER_TOKEN_KEYWORD_IF,        LEXER_TOKEN_KEYWORD_ELSE,
     LEXER_TOKEN_KEYWORD_WHILE,     LEXER_TOKEN_KEYWORD_COMPTIME,
@@ -216,9 +215,15 @@ LexerNodeArray lexer(char *str) {
       lexerPushClear(&result, &result_size, iter, &node_str_begin, &node_token,
                      LEXER_TOKEN_NONE);
     } else if (isString(c)) {
-      lexerPushClear(&result, &result_size, iter, &node_str_begin, &node_token,
-                     LEXER_TOKEN_CHAR);
       const char opening = c;
+      LexerToken token;
+      if (opening == '\'') {
+        token = LEXER_TOKEN_CHAR;
+      } else {
+        UNREACHABLE;
+      }
+      lexerPushClear(&result, &result_size, iter, &node_str_begin, &node_token,
+                     token);
       char *openingIter = iter;
       ++iter;
       for (;; ++iter) {
