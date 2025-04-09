@@ -943,8 +943,7 @@ ParserNode *parserNoMetadata(LexerNode *node, ParserNode *parent,
              newParserNode(token, node->str_begin, node->str_end, NULL, parent);
 }
 
-ParserNode *parserPutc(LexerNode *node, LexerNode *end,
-                           ParserNode *parent) {
+ParserNode *parserPutc(LexerNode *node, LexerNode *end, ParserNode *parent) {
   LexerNode *afterNode = node + 1;
   if (afterNode >= end) {
     printError(node->str_begin, node->str_end, "No param");
@@ -1027,14 +1026,58 @@ ParserNode *parserNumber(LexerNode *node, ParserNode *parent) {
 ParserNode *parserChar(LexerNode *node, ParserNode *parent) {
   const size_t size = node->str_end - 1 - node->str_begin - 1;
   ParserNodeCharMetadata *metadata = a404m_malloc(sizeof(*metadata));
-  if (size == 1) {
-    *metadata = *(node->str_begin + 1);
-  } else if (size > 1) {
-    NOT_IMPLEMENTED;
-  } else {
+  char c = node->str_begin[1];
+  if (size == 0) {
     printError(node->str_begin, node->str_end,
                "Bad character: Character can't be empty");
+    return NULL;
+  } else if (size == 1) {
+    // knowingly left empty
+  } else if (size == 2 && c == '\\') {
+    c = node->str_begin[2];
+    switch (c) {
+    case 'a':
+      c = '\a';
+      break;
+    case 'b':
+      c = '\b';
+      break;
+    case 'e':
+      c = '\e';
+      break;
+    case 'f':
+      c = '\f';
+      break;
+    case 'n':
+      c = '\n';
+      break;
+    case 'r':
+      c = '\r';
+      break;
+    case 't':
+      c = '\t';
+      break;
+    case 'v':
+      c = '\v';
+      break;
+    case '\\':
+      c = '\\';
+      break;
+    case '\'':
+      c = '\'';
+      break;
+    case '"':
+      c = '\"';
+      break;
+    default:
+      printError(node->str_begin, node->str_end, "Bad escape character");
+      return NULL;
+    }
+  } else {
+    printError(node->str_begin, node->str_end, "Bad character");
+    return NULL;
   }
+  *metadata = c;
   return node->parserNode =
              newParserNode(PARSER_TOKEN_VALUE_CHAR, node->str_begin,
                            node->str_end, metadata, parent);

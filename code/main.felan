@@ -20,4 +20,5 @@ usize :: u64;
 main :: () -> void {
   a := 'a';
   putc a;
+  putc '\n';
 };
