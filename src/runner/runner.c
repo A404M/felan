@@ -99,7 +99,7 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   case AST_TREE_TOKEN_KEYWORD_PUTC: {
     AstTreeSingleChild *metadata = expr->metadata;
     AstTree *tree = runExpression(metadata, shouldRet, false);
-    printf("%c", (u8)*(AstTreeInt *)tree->metadata);
+    putchar((u8) * (AstTreeInt *)tree->metadata);
     astTreeDelete(tree);
     return &AST_TREE_VOID_VALUE;
   }
