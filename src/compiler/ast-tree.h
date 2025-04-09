@@ -65,6 +65,9 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_OPERATOR_ADDRESS,
   AST_TREE_TOKEN_OPERATOR_DEREFERENCE,
   AST_TREE_TOKEN_OPERATOR_ACCESS,
+  AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT,
+  AST_TREE_TOKEN_OPERATOR_LOGICAL_AND,
+  AST_TREE_TOKEN_OPERATOR_LOGICAL_OR,
 
   AST_TREE_TOKEN_SCOPE,
 
@@ -260,7 +263,7 @@ AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
                                   AstTreeHelper *helper);
 AstTree *astTreeParseIdentifier(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseValue(ParserNode *parserNode, AstTreeToken token,
-                           size_t metadata_size,AstTree *type);
+                           size_t metadata_size, AstTree *type);
 AstTree *astTreeParseKeyword(ParserNode *parserNode, AstTreeToken token);
 AstTree *astTreeParsePrintU64(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseReturn(ParserNode *parserNode, AstTreeHelper *helper);
@@ -320,7 +323,13 @@ bool setTypesOperatorAssign(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorInfix(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorInfixWithRet(AstTree *tree, AstTree *retType,
                                   AstTreeSetTypesHelper helper);
+bool setTypesOperatorInfixWithRetAndLooking(AstTree *tree, AstTree *lookingType,
+                                            AstTree *retType,
+                                            AstTreeSetTypesHelper helper);
 bool setTypesOperatorUnary(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesOperatorUnaryWithRetAndLooking(AstTree *tree, AstTree *lookingType,
+                                            AstTree *retType,
+                                            AstTreeSetTypesHelper helper);
 bool setTypesOperatorPointer(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorAddress(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorDereference(AstTree *tree, AstTreeSetTypesHelper helper);

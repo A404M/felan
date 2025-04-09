@@ -47,6 +47,7 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_PLUS",
     "LEXER_TOKEN_SYMBOL_MINUS",
     "LEXER_TOKEN_SYMBOL_ADDRESS",
+    "LEXER_TOKEN_SYMBOL_LOGICAL_NOT",
 
     "LEXER_TOKEN_SYMBOL_MULTIPLY",
     "LEXER_TOKEN_SYMBOL_DIVIDE",
@@ -61,6 +62,9 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_SMALLER",
     "LEXER_TOKEN_SYMBOL_GREATER_OR_EQUAL",
     "LEXER_TOKEN_SYMBOL_SMALLER_OR_EQUAL",
+
+    "LEXER_TOKEN_SYMBOL_LOGICAL_AND",
+    "LEXER_TOKEN_SYMBOL_LOGICAL_OR",
 
     "LEXER_TOKEN_SYMBOL_COLON",
 
@@ -91,8 +95,9 @@ const char *LEXER_TOKEN_STRINGS[] = {
 };
 
 const char *LEXER_SYMBOL_STRINGS[] = {
-    ";", "(", ")", "{", "}", "->", ":",  "=", "+=", "-=", "*=", "/=", "%=", ",",
-    "+", "-", "*", "/", "%", "==", "!=", ">", ">=", "<",  "<=", "&",  ".*", ".",
+    ";",  "(",  ")",  "{", "}",  "->", ":", "=",  "+=", "-=", "*=",
+    "/=", "%=", ",",  "+", "-",  "*",  "/", "%",  "==", "!=", ">",
+    ">=", "<",  "<=", "&", ".*", ".",  "!", "&&", "||",
 };
 const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_EOL,
@@ -123,6 +128,9 @@ const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_ADDRESS,
     LEXER_TOKEN_SYMBOL_DEREFERENCE,
     LEXER_TOKEN_SYMBOL_ACCESS,
+    LEXER_TOKEN_SYMBOL_LOGICAL_NOT,
+    LEXER_TOKEN_SYMBOL_LOGICAL_AND,
+    LEXER_TOKEN_SYMBOL_LOGICAL_OR,
 };
 const size_t LEXER_SYMBOL_SIZE =
     sizeof(LEXER_SYMBOL_TOKENS) / sizeof(*LEXER_SYMBOL_TOKENS);
@@ -369,6 +377,9 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_SYMBOL_ADDRESS:
   case LEXER_TOKEN_SYMBOL_DEREFERENCE:
   case LEXER_TOKEN_SYMBOL_ACCESS:
+  case LEXER_TOKEN_SYMBOL_LOGICAL_NOT:
+  case LEXER_TOKEN_SYMBOL_LOGICAL_AND:
+  case LEXER_TOKEN_SYMBOL_LOGICAL_OR:
     if (*array_size == array->size) {
       *array_size += 1 + *array_size / 2;
       array->data =
@@ -412,6 +423,7 @@ bool isSymbol(char c) {
   case '=':
   case '!':
   case '&':
+  case '|':
   case ';':
   case ':':
   case ',':

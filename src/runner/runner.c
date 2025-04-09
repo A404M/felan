@@ -154,7 +154,7 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   }
   case AST_TREE_TOKEN_KEYWORD_WHILE: {
     AstTreeWhile *metadata = expr->metadata;
-    AstTree *ret = NULL;
+    AstTree *ret = &AST_TREE_VOID_VALUE;
     while (!*shouldRet) {
       AstTree *tree = runExpression(metadata->condition, shouldRet, false);
       bool conti = *(AstTreeBool *)tree->metadata;
@@ -249,6 +249,13 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
       printError(expr->str_begin, expr->str_end, "Not supported");
       UNREACHABLE;
     }
+    return operand;
+  }
+  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT: {
+    AstTreeSingleChild *operand =
+        runExpression(expr->metadata, shouldRet, false);
+
+    *(AstTreeBool *)operand->metadata = !*((AstTreeBool *)operand->metadata);
     return operand;
   }
   case AST_TREE_TOKEN_OPERATOR_SUM: {
@@ -785,6 +792,28 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
       printError(expr->str_begin, expr->str_end, "Not supported");
       UNREACHABLE;
     }
+    astTreeDelete(right);
+    return left;
+  }
+  case AST_TREE_TOKEN_OPERATOR_LOGICAL_AND: {
+    AstTreeInfix *metadata = expr->metadata;
+    AstTree *left = runExpression(&metadata->left, shouldRet, false);
+    AstTree *right = runExpression(&metadata->right, shouldRet, false);
+
+    *(AstTreeBool *)left->metadata =
+        *(AstTreeBool *)left->metadata && *(AstTreeBool *)right->metadata;
+
+    astTreeDelete(right);
+    return left;
+  }
+  case AST_TREE_TOKEN_OPERATOR_LOGICAL_OR: {
+    AstTreeInfix *metadata = expr->metadata;
+    AstTree *left = runExpression(&metadata->left, shouldRet, false);
+    AstTree *right = runExpression(&metadata->right, shouldRet, false);
+
+    *(AstTreeBool *)left->metadata =
+        *(AstTreeBool *)left->metadata || *(AstTreeBool *)right->metadata;
+
     astTreeDelete(right);
     return left;
   }
