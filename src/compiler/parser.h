@@ -86,8 +86,8 @@ extern const char *PARSER_TOKEN_STRINGS[];
 
 typedef struct ParserOrder {
   bool ltr;
-  size_t size;
-  LexerToken data[23];
+  LexerToken begin;
+  LexerToken end;
 } ParserOrder;
 
 typedef struct ParserNode {

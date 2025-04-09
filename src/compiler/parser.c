@@ -86,88 +86,71 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_NONE",
 };
 
-#define ORDER_ARRAY(...)                                                       \
-  .size = sizeof((LexerToken[]){__VA_ARGS__}) / sizeof(LexerToken),            \
-  .data = {__VA_ARGS__}
-
 static const ParserOrder PARSER_ORDER[] = {
     {
         .ltr = true,
-        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET, ),
+        .begin = LEXER_TOKEN_ORDER0,
+        .end = LEXER_TOKEN_ORDER1,
     },
     {
         .ltr = true,
-        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_CLOSE_PARENTHESIS,
-                    LEXER_TOKEN_IDENTIFIER, LEXER_TOKEN_KEYWORD_TYPE,
-                    LEXER_TOKEN_KEYWORD_VOID, LEXER_TOKEN_KEYWORD_I8,
-                    LEXER_TOKEN_KEYWORD_U8, LEXER_TOKEN_KEYWORD_I16,
-                    LEXER_TOKEN_KEYWORD_U16, LEXER_TOKEN_KEYWORD_I32,
-                    LEXER_TOKEN_KEYWORD_U32, LEXER_TOKEN_KEYWORD_I64,
-#ifdef FLOAT_16_SUPPORT
-                    LEXER_TOKEN_KEYWORD_F16,
-#endif
-                    LEXER_TOKEN_KEYWORD_F32, LEXER_TOKEN_KEYWORD_F64,
-                    LEXER_TOKEN_KEYWORD_F128, LEXER_TOKEN_KEYWORD_U64,
-                    LEXER_TOKEN_KEYWORD_BOOL, LEXER_TOKEN_KEYWORD_TRUE,
-                    LEXER_TOKEN_KEYWORD_FALSE, LEXER_TOKEN_KEYWORD_NULL,
-                    LEXER_TOKEN_NUMBER, LEXER_TOKEN_CHAR,
-                    LEXER_TOKEN_KEYWORD_UNDEFINED, ),
+        .begin = LEXER_TOKEN_ORDER1,
+        .end = LEXER_TOKEN_ORDER2,
     },
     {
         .ltr = false,
-        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_FUNCTION_ARROW,
-                    LEXER_TOKEN_SYMBOL_POINTER, LEXER_TOKEN_KEYWORD_STRUCT, ),
+        .begin = LEXER_TOKEN_ORDER2,
+        .end = LEXER_TOKEN_ORDER3,
     },
     {
         .ltr = true,
-        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_DEREFERENCE,
-                    LEXER_TOKEN_SYMBOL_ACCESS, ),
+        .begin = LEXER_TOKEN_ORDER3,
+        .end = LEXER_TOKEN_ORDER4,
     },
     {
         .ltr = false,
-        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_PLUS, LEXER_TOKEN_SYMBOL_MINUS,
-                    LEXER_TOKEN_SYMBOL_ADDRESS, ),
+        .begin = LEXER_TOKEN_ORDER4,
+        .end = LEXER_TOKEN_ORDER5,
     },
     {
         .ltr = true,
-        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_MULTIPLY, LEXER_TOKEN_SYMBOL_DIVIDE,
-                    LEXER_TOKEN_SYMBOL_MODULO, ),
+        .begin = LEXER_TOKEN_ORDER5,
+        .end = LEXER_TOKEN_ORDER6,
     },
     {
         .ltr = true,
-        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_SUM, LEXER_TOKEN_SYMBOL_SUB, ),
+        .begin = LEXER_TOKEN_ORDER6,
+        .end = LEXER_TOKEN_ORDER7,
     },
     {
         .ltr = true,
-        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_EQUAL, LEXER_TOKEN_SYMBOL_NOT_EQUAL,
-                    LEXER_TOKEN_SYMBOL_GREATER, LEXER_TOKEN_SYMBOL_SMALLER,
-                    LEXER_TOKEN_SYMBOL_GREATER_OR_EQUAL,
-                    LEXER_TOKEN_SYMBOL_SMALLER_OR_EQUAL, ),
+        .begin = LEXER_TOKEN_ORDER7,
+        .end = LEXER_TOKEN_ORDER8,
     },
     {
         .ltr = true,
-        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_COLON, ),
+        .begin = LEXER_TOKEN_ORDER8,
+        .end = LEXER_TOKEN_ORDER9,
     },
     {
         .ltr = false,
-        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_ASSIGN, LEXER_TOKEN_SYMBOL_SUM_ASSIGN,
-                    LEXER_TOKEN_SYMBOL_SUB_ASSIGN,
-                    LEXER_TOKEN_SYMBOL_MULTIPLY_ASSIGN,
-                    LEXER_TOKEN_SYMBOL_DIVIDE_ASSIGN,
-                    LEXER_TOKEN_SYMBOL_MODULO_ASSIGN, ),
+        .begin = LEXER_TOKEN_ORDER9,
+        .end = LEXER_TOKEN_ORDER10,
     },
     {
         .ltr = false,
-        ORDER_ARRAY(LEXER_TOKEN_KEYWORD_RETURN, LEXER_TOKEN_KEYWORD_PUTC,
-                    LEXER_TOKEN_KEYWORD_COMPTIME, ),
+        .begin = LEXER_TOKEN_ORDER10,
+        .end = LEXER_TOKEN_ORDER11,
     },
     {
         .ltr = true,
-        ORDER_ARRAY(LEXER_TOKEN_SYMBOL_EOL, LEXER_TOKEN_SYMBOL_COMMA, ),
+        .begin = LEXER_TOKEN_ORDER11,
+        .end = LEXER_TOKEN_ORDER12,
     },
     {
         .ltr = false,
-        ORDER_ARRAY(LEXER_TOKEN_KEYWORD_IF, LEXER_TOKEN_KEYWORD_WHILE, ),
+        .begin = LEXER_TOKEN_ORDER12,
+        .end = LEXER_TOKEN_END_ORDERS,
     },
 };
 
@@ -640,19 +623,12 @@ bool parserNodeArray(LexerNode *begin, LexerNode *end, ParserNode *parent) {
 
     for (LexerNode *iter = orders.ltr ? begin : end - 1;
          iter < end && iter >= begin; orders.ltr ? ++iter : --iter) {
-
-      if (iter->parserNode != NULL) {
-        continue;
-      }
-
-      for (size_t order_index = 0; order_index < orders.size; ++order_index) {
-        const LexerToken order = orders.data[order_index];
-        if (iter->token == order) {
-          bool conti = false;
-          ParserNode *parserNode = parseNode(iter, begin, end, parent, &conti);
-          if (parserNode == NULL && !conti) {
-            goto RETURN_ERROR;
-          }
+      if (iter->parserNode == NULL && orders.begin <= iter->token &&
+          iter->token < orders.end) {
+        bool conti = false;
+        ParserNode *parserNode = parseNode(iter, begin, end, parent, &conti);
+        if (parserNode == NULL && !conti) {
+          goto RETURN_ERROR;
         }
       }
     }

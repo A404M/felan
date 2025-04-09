@@ -6,7 +6,7 @@
 #include <time.h>
 
 // #define PRINT_COMPILE_TREE
-// #define PRINT_STATISTICS
+#define PRINT_STATISTICS
 
 #ifdef PRINT_STATISTICS
 static struct timespec diff(struct timespec end, struct timespec start) {
@@ -30,19 +30,20 @@ static struct timespec add(struct timespec left, struct timespec right) {
 }
 
 static void printTime(struct timespec time) {
-  printf("%02ld:%02ld.%09ldns", time.tv_sec / 60, time.tv_sec % 60, time.tv_nsec);
+  printf("%02ld:%02ld.%09ldns", time.tv_sec / 60, time.tv_sec % 60,
+         time.tv_nsec);
 }
 #endif
 
 static int runWithoutRead(char *code) {
 #ifdef PRINT_STATISTICS
   struct timespec start, end;
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
   struct timespec lexTime;
   struct timespec parseTime;
   struct timespec astTime;
   struct timespec runTime;
   struct timespec totalTime = {0};
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 #endif
   LexerNodeArray lexed = lexer(code);
   if (lexerNodeArrayIsError(lexed)) {
@@ -108,7 +109,7 @@ static int runWithoutRead(char *code) {
 #endif
 
 #ifdef PRINT_STATISTICS
-  printf("\nlexTime:   ");
+  printf("----\nlexTime:   ");
   printTime(lexTime);
   printf("\nparseTime: ");
   printTime(parseTime);
