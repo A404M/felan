@@ -94,6 +94,269 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTreeFunctionCallParam *arguments,
   return &AST_TREE_VOID_VALUE;
 }
 
+AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeFunctionCallParam *arguments,
+                           size_t arguments_size) {
+  AstTreeBuiltin *metadata = tree->metadata;
+
+  AstTrees args = {
+      .data = a404m_malloc(arguments_size * sizeof(*args.data)),
+      .size = arguments_size,
+  };
+
+  bool shouldRet = false;
+
+  for (size_t i = 0; i < arguments_size; ++i) {
+    AstTreeFunctionCallParam param = arguments[i];
+    args.data[i] = runExpression(param.value, &shouldRet, false);
+  }
+
+  if (shouldRet) {
+    UNREACHABLE;
+  }
+
+  AstTree *ret;
+
+  switch (metadata->token) {
+  case AST_TREE_BUILTIN_TOKEN_CAST: {
+    AstTree *from = args.data[0];
+    AstTree *to = args.data[1];
+
+    if (from->token == AST_TREE_TOKEN_VALUE_INT) {
+      AstTreeInt value = *(AstTreeInt *)from->metadata;
+      if (typeIsEqual(to, &AST_TREE_U8_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (u8)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_U8_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_U16_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (u16)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_U16_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_U32_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (u32)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_U32_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_U64_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (u64)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_U64_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_I8_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (i8)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I8_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_I16_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (i16)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I16_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_I32_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (i32)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I32_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_I64_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (i64)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I64_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_F16_TYPE)) {
+        AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (f16)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
+                         &AST_TREE_F16_TYPE, NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_F32_TYPE)) {
+        AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (f32)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
+                         &AST_TREE_F32_TYPE, NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_F64_TYPE)) {
+        AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (f64)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
+                         &AST_TREE_F64_TYPE, NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_F128_TYPE)) {
+        AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (f128)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
+                         &AST_TREE_F128_TYPE, NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_BOOL_TYPE)) {
+        AstTreeBool *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (bool)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_BOOL, newValue,
+                         &AST_TREE_BOOL_TYPE, NULL, NULL);
+      } else {
+        printError(to->str_begin, to->str_end, "Bad type %s",
+                   AST_TREE_TOKEN_STRINGS[to->token]);
+        UNREACHABLE;
+      }
+    } else if (from->token == AST_TREE_TOKEN_VALUE_FLOAT) {
+      AstTreeFloat value = *(AstTreeFloat *)from->metadata;
+      if (typeIsEqual(to, &AST_TREE_U8_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (u8)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_U8_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_U16_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (u16)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_U16_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_U32_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (u32)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_U32_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_U64_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (u64)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_U64_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_I8_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (i8)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I8_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_I16_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (i16)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I16_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_I32_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (i32)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I32_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_I64_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (i64)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I64_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_F16_TYPE)) {
+        AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (f16)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
+                         &AST_TREE_F16_TYPE, NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_F32_TYPE)) {
+        AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (f32)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
+                         &AST_TREE_F32_TYPE, NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_F64_TYPE)) {
+        AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (f64)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
+                         &AST_TREE_F64_TYPE, NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_F128_TYPE)) {
+        AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (f128)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
+                         &AST_TREE_F128_TYPE, NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_BOOL_TYPE)) {
+        AstTreeBool *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (bool)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_BOOL, newValue,
+                         &AST_TREE_BOOL_TYPE, NULL, NULL);
+      } else {
+        printError(to->str_begin, to->str_end, "Bad type %s",
+                   AST_TREE_TOKEN_STRINGS[to->token]);
+        UNREACHABLE;
+      }
+    } else if (from->token == AST_TREE_TOKEN_VALUE_BOOL) {
+      AstTreeBool value = *(AstTreeBool *)from->metadata;
+      if (typeIsEqual(to, &AST_TREE_U8_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (u8)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_U8_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_U16_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (u16)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_U16_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_U32_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (u32)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_U32_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_U64_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (u64)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_U64_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_I8_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (i8)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I8_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_I16_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (i16)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I16_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_I32_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (i32)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I32_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_I64_TYPE)) {
+        AstTreeInt *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (i64)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I64_TYPE,
+                         NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_F16_TYPE)) {
+        AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (f16)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
+                         &AST_TREE_F16_TYPE, NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_F32_TYPE)) {
+        AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (f32)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
+                         &AST_TREE_F32_TYPE, NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_F64_TYPE)) {
+        AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (f64)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
+                         &AST_TREE_F64_TYPE, NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_F128_TYPE)) {
+        AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (f128)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
+                         &AST_TREE_F128_TYPE, NULL, NULL);
+      } else if (typeIsEqual(to, &AST_TREE_BOOL_TYPE)) {
+        AstTreeBool *newValue = a404m_malloc(sizeof(*newValue));
+        *newValue = (bool)value;
+        ret = newAstTree(AST_TREE_TOKEN_VALUE_BOOL, newValue,
+                         &AST_TREE_BOOL_TYPE, NULL, NULL);
+      } else {
+        printError(to->str_begin, to->str_end, "Bad type %s",
+                   AST_TREE_TOKEN_STRINGS[to->token]);
+        UNREACHABLE;
+      }
+    } else {
+      printError(to->str_begin, to->str_end, "Bad token %s",
+                 AST_TREE_TOKEN_STRINGS[from->token]);
+      UNREACHABLE;
+    }
+    goto RETURN;
+  }
+  case AST_TREE_BUILTIN_TOKEN__SIZE__:
+  }
+  UNREACHABLE;
+
+RETURN:
+  for (size_t i = 0; i < args.size; ++i) {
+    astTreeDelete(args.data[i]);
+  }
+  free(args.data);
+
+  return ret;
+}
+
 AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   switch (expr->token) {
   case AST_TREE_TOKEN_KEYWORD_PUTC: {
@@ -106,8 +369,16 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = expr->metadata;
     AstTree *function = runExpression(metadata->function, shouldRet, false);
-    AstTree *result = runAstTreeFunction(function, metadata->parameters,
-                                         metadata->parameters_size);
+    AstTree *result;
+    if (function->token == AST_TREE_TOKEN_FUNCTION) {
+      result = runAstTreeFunction(function, metadata->parameters,
+                                  metadata->parameters_size);
+    } else if (function->token == AST_TREE_TOKEN_BUILTIN) {
+      result = runAstTreeBuiltin(function, metadata->parameters,
+                                 metadata->parameters_size);
+    } else {
+      UNREACHABLE;
+    }
     astTreeDelete(function);
     return result;
   }
@@ -843,6 +1114,7 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   case AST_TREE_TOKEN_VALUE_FLOAT:
   case AST_TREE_TOKEN_VALUE_OBJECT:
   case AST_TREE_TOKEN_FUNCTION:
+  case AST_TREE_TOKEN_BUILTIN:
     return copyAstTree(expr);
   case AST_TREE_TOKEN_OPERATOR_ADDRESS: {
     AstTreeSingleChild *metadata = expr->metadata;

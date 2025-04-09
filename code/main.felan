@@ -19,17 +19,15 @@ usize :: u64;
 
 
 main :: () -> void {
-  print_u64(1234);
+  print_u64_rev(1234);
 };
 
-print_u64 :: (value:u64) -> void {
+print_u64_rev :: (value:u64) -> void {
   value := value;
-  digit : u64 = undefined;
   first_time := true;
   while {
     first_time = false;
-    digit = value % 10;
-    putc 'a';
+    putc '0' + @cast(value % 10,u8);
     value /= 10;
     value != 0;
   } {}

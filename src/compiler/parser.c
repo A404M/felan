@@ -13,6 +13,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_ROOT",
 
     "PARSER_TOKEN_IDENTIFIER",
+    "PARSER_TOKEN_BUILTIN",
 
     "PARSER_TOKEN_VALUE_INT",
     "PARSER_TOKEN_VALUE_FLOAT",
@@ -192,6 +193,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_IDENTIFIER:
+  case PARSER_TOKEN_BUILTIN:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_BOOL:
@@ -455,6 +457,7 @@ void parserNodeDelete(ParserNode *node) {
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_IDENTIFIER:
+  case PARSER_TOKEN_BUILTIN:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_BOOL:
@@ -693,6 +696,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
   switch (node->token) {
   case LEXER_TOKEN_IDENTIFIER:
     return parserNoMetadata(node, parent, PARSER_TOKEN_IDENTIFIER);
+  case LEXER_TOKEN_BUILTIN:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_BUILTIN);
   case LEXER_TOKEN_KEYWORD_TYPE:
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_TYPE);
   case LEXER_TOKEN_KEYWORD_VOID:
@@ -1286,6 +1291,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
         continue;
       case PARSER_TOKEN_ROOT:
       case PARSER_TOKEN_IDENTIFIER:
+      case PARSER_TOKEN_BUILTIN:
       case PARSER_TOKEN_VALUE_INT:
       case PARSER_TOKEN_VALUE_FLOAT:
       case PARSER_TOKEN_VALUE_BOOL:
@@ -1742,6 +1748,7 @@ bool isAllArguments(const ParserNodeArray *nodes) {
 bool isExpression(ParserNode *node) {
   switch (node->token) {
   case PARSER_TOKEN_IDENTIFIER:
+  case PARSER_TOKEN_BUILTIN:
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_VARIABLE:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
@@ -1835,6 +1842,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_TYPE_F128:
   case PARSER_TOKEN_TYPE_BOOL:
   case PARSER_TOKEN_IDENTIFIER:
+  case PARSER_TOKEN_BUILTIN:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
   case PARSER_TOKEN_FUNCTION_CALL:
   case PARSER_TOKEN_KEYWORD_IF:
@@ -1898,6 +1906,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_VALUE_BOOL:
   case PARSER_TOKEN_VALUE_CHAR:
   case PARSER_TOKEN_IDENTIFIER:
+  case PARSER_TOKEN_BUILTIN:
   case PARSER_TOKEN_OPERATOR_ACCESS:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:

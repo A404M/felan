@@ -7,6 +7,7 @@
 
 typedef enum AstTreeToken {
   AST_TREE_TOKEN_FUNCTION,
+  AST_TREE_TOKEN_BUILTIN,
 
   AST_TREE_TOKEN_KEYWORD_PUTC,
   AST_TREE_TOKEN_KEYWORD_RETURN,
@@ -226,6 +227,17 @@ typedef struct AstTreeAccess {
   } member;
 } AstTreeAccess;
 
+typedef enum AstTreeBuiltinToken {
+  AST_TREE_BUILTIN_TOKEN_CAST,
+  AST_TREE_BUILTIN_TOKEN__SIZE__,
+} AstTreeBuiltinToken;
+
+extern const char *AST_TREE_BUILTIN_TOKEN_STRINGS[];
+
+typedef struct AstTreeBuiltin {
+  AstTreeBuiltinToken token;
+} AstTreeBuiltin;
+
 void astTreePrint(const AstTree *tree, int indent);
 void astTreeVariablePrint(const AstTreeVariable *variable, int indent);
 void astTreeRootPrint(const AstTreeRoot *root);
@@ -285,6 +297,7 @@ AstTree *astTreeParseParenthesis(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseStruct(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseAccessOperator(ParserNode *parserNode,
                                     AstTreeHelper *helper, AstTreeToken token);
+AstTree *astTreeParseBuiltin(ParserNode *parserNode, AstTreeHelper *helper);
 
 bool isFunction(AstTree *value);
 bool isConst(AstTree *tree);
@@ -305,7 +318,7 @@ bool isCircularDependenciesVariable(AstTreeHelper *helper,
 
 bool setAllTypesRoot(AstTreeRoot *root, AstTreeHelper *helper);
 bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
-                 AstTreeFunction *function);
+                 AstTreeFunction *function, AstTreeFunctionCall *functionCall);
 bool setTypesValueBool(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesValueFloat(AstTree *tree, AstTreeSetTypesHelper helper);
@@ -343,6 +356,8 @@ bool setTypesScope(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesComptime(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesStruct(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesBuiltin(AstTree *tree, AstTreeSetTypesHelper helper,
+                     AstTreeFunctionCall *functionCall);
 
 bool setTypesAstVariable(AstTreeVariable *variable,
                          AstTreeSetTypesHelper helper);

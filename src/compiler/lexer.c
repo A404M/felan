@@ -13,6 +13,7 @@ const char *LEXER_TOKEN_STRINGS[] = {
 
     "LEXER_TOKEN_SYMBOL_CLOSE_PARENTHESIS",
     "LEXER_TOKEN_IDENTIFIER",
+    "LEXER_TOKEN_BUILTIN",
     "LEXER_TOKEN_KEYWORD_TYPE",
     "LEXER_TOKEN_KEYWORD_VOID",
     "LEXER_TOKEN_KEYWORD_I8",
@@ -257,8 +258,10 @@ LexerNodeArray lexer(char *str) {
         }
       }
     } else if (isIdentifier(c) ||
-               (node_token == LEXER_TOKEN_IDENTIFIER && isNumber(c))) {
+               (node_token == LEXER_TOKEN_IDENTIFIER && isNumber(c)) ||
+               (node_token == LEXER_TOKEN_BUILTIN && isNumber(c))) {
       if (node_token != LEXER_TOKEN_IDENTIFIER &&
+          node_token != LEXER_TOKEN_BUILTIN &&
           node_token != LEXER_TOKEN_NUMBER) {
         lexerPushClear(&result, &result_size, iter, &node_str_begin,
                        &node_token, LEXER_TOKEN_IDENTIFIER);
@@ -274,6 +277,9 @@ LexerNodeArray lexer(char *str) {
         lexerPushClear(&result, &result_size, iter, &node_str_begin,
                        &node_token, LEXER_TOKEN_SYMBOL);
       }
+    } else if (c == '@') {
+      lexerPushClear(&result, &result_size, iter, &node_str_begin, &node_token,
+                     LEXER_TOKEN_BUILTIN);
     } else {
     RETURN_ERROR:
       free(result.data);
@@ -380,6 +386,7 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_SYMBOL_LOGICAL_NOT:
   case LEXER_TOKEN_SYMBOL_LOGICAL_AND:
   case LEXER_TOKEN_SYMBOL_LOGICAL_OR:
+  case LEXER_TOKEN_BUILTIN:
     if (*array_size == array->size) {
       *array_size += 1 + *array_size / 2;
       array->data =
