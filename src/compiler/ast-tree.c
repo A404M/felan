@@ -4060,88 +4060,102 @@ bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper) {
 
 bool setTypesBuiltin(AstTree *tree, AstTreeSetTypesHelper helper,
                      AstTreeFunctionCall *functionCall) {
-  if (functionCall->parameters_size != 2) {
-    return false;
-  }
-  AstTreeTypeFunction *type_metadata = a404m_malloc(sizeof(*type_metadata));
-  type_metadata->arguments_size = 2;
-  type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
-                                          sizeof(*type_metadata->arguments));
+  AstTreeBuiltin *metadata = tree->metadata;
 
-  AstTree *from = NULL;
-  AstTree *to = NULL;
+  switch (metadata->token) {
+  case AST_TREE_BUILTIN_TOKEN_CAST: {
+    if (functionCall->parameters_size == 2) {
+      AstTree *from = NULL;
+      AstTree *to = NULL;
 
-  static char FROM_STR[] = "from";
-  static const size_t FROM_STR_SIZE =
-      sizeof(FROM_STR) / sizeof(*FROM_STR) - sizeof(*FROM_STR);
-  static char TO_STR[] = "to";
-  static const size_t TO_STR_SIZE =
-      sizeof(TO_STR) / sizeof(*TO_STR) - sizeof(*TO_STR);
+      static char FROM_STR[] = "from";
+      static const size_t FROM_STR_SIZE =
+          sizeof(FROM_STR) / sizeof(*FROM_STR) - sizeof(*FROM_STR);
+      static char TO_STR[] = "to";
+      static const size_t TO_STR_SIZE =
+          sizeof(TO_STR) / sizeof(*TO_STR) - sizeof(*TO_STR);
 
-  for (size_t i = 0; i < functionCall->parameters_size; ++i) {
-    AstTreeFunctionCallParam param = functionCall->parameters[i];
-    const size_t param_name_size = param.nameEnd - param.nameBegin;
+      for (size_t i = 0; i < functionCall->parameters_size; ++i) {
+        AstTreeFunctionCallParam param = functionCall->parameters[i];
+        const size_t param_name_size = param.nameEnd - param.nameBegin;
 
-    if (param_name_size == 0) {
-      if (from == NULL) {
-        from = param.value;
-      } else if (to == NULL) {
-        to = param.value;
-      } else {
-        printError(param.value->str_begin, param.value->str_end,
-                   "Bad paramter");
+        if (param_name_size == 0) {
+          if (from == NULL) {
+            from = param.value;
+          } else if (to == NULL) {
+            to = param.value;
+          } else {
+            printError(param.value->str_begin, param.value->str_end,
+                       "Bad paramter");
+            return false;
+          }
+        } else if (param_name_size == FROM_STR_SIZE &&
+                   strncmp(param.nameBegin, FROM_STR, FROM_STR_SIZE) == 0 &&
+                   from == NULL) {
+          from = param.value;
+        } else if (param_name_size == TO_STR_SIZE &&
+                   strncmp(param.nameBegin, TO_STR, TO_STR_SIZE) == 0 &&
+                   to == NULL) {
+          to = param.value;
+        } else {
+          printError(param.value->str_begin, param.value->str_end,
+                     "Bad paramter");
+          return false;
+        }
+      }
+
+      if (from == NULL || to == NULL ||
+          !setAllTypes(from,
+                       (AstTreeSetTypesHelper){
+                           .lookingType = NULL,
+                           .treeHelper = helper.treeHelper,
+                       },
+                       NULL, NULL) ||
+          !setAllTypes(to,
+                       (AstTreeSetTypesHelper){
+                           .lookingType = NULL,
+                           .treeHelper = helper.treeHelper,
+                       },
+                       NULL, NULL)) {
         return false;
       }
-    } else if (param_name_size == FROM_STR_SIZE &&
-               strncmp(param.nameBegin, FROM_STR, FROM_STR_SIZE) == 0 &&
-               from == NULL) {
-      from = param.value;
-    } else if (param_name_size == TO_STR_SIZE &&
-               strncmp(param.nameBegin, TO_STR, TO_STR_SIZE) == 0 &&
-               to == NULL) {
-      to = param.value;
+
+      AstTreeTypeFunction *type_metadata = a404m_malloc(sizeof(*type_metadata));
+      type_metadata->arguments_size = 2;
+      type_metadata->arguments = a404m_malloc(
+          type_metadata->arguments_size * sizeof(*type_metadata->arguments));
+
+      type_metadata->returnType = copyAstTree(to);
+
+      type_metadata->arguments[0] = (AstTreeTypeFunctionArgument){
+          .type = copyAstTree(from->type),
+          .name_begin = FROM_STR,
+          .name_end = FROM_STR + FROM_STR_SIZE,
+          .str_begin = NULL,
+          .str_end = NULL,
+      };
+
+      type_metadata->arguments[1] = (AstTreeTypeFunctionArgument){
+          .type = copyAstTree(to->type),
+          .name_begin = TO_STR,
+          .name_end = TO_STR + TO_STR_SIZE,
+          .str_begin = NULL,
+          .str_end = NULL,
+      };
+
+      tree->type = newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, type_metadata,
+                              &AST_TREE_TYPE_TYPE, NULL, NULL);
+      return true;
     } else {
-      printError(param.value->str_begin, param.value->str_end, "Bad paramter");
+      printError(tree->str_begin, tree->str_end,
+                 "Too many or too few arguments");
       return false;
     }
-  }
-
-  if (!setAllTypes(from,
-                   (AstTreeSetTypesHelper){
-                       .lookingType = NULL,
-                       .treeHelper = helper.treeHelper,
-                   },
-                   NULL, NULL) ||
-      !setAllTypes(to,
-                   (AstTreeSetTypesHelper){
-                       .lookingType = NULL,
-                       .treeHelper = helper.treeHelper,
-                   },
-                   NULL, NULL)) {
     return false;
   }
-
-  type_metadata->returnType = copyAstTree(to);
-
-  type_metadata->arguments[0] = (AstTreeTypeFunctionArgument){
-      .type = copyAstTree(from->type),
-      .name_begin = FROM_STR,
-      .name_end = FROM_STR + FROM_STR_SIZE,
-      .str_begin = NULL,
-      .str_end = NULL,
-  };
-
-  type_metadata->arguments[1] = (AstTreeTypeFunctionArgument){
-      .type = copyAstTree(to->type),
-      .name_begin = TO_STR,
-      .name_end = TO_STR + TO_STR_SIZE,
-      .str_begin = NULL,
-      .str_end = NULL,
-  };
-
-  tree->type = newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, type_metadata,
-                          &AST_TREE_TYPE_TYPE, NULL, NULL);
-  return true;
+  case AST_TREE_BUILTIN_TOKEN__SIZE__:
+  }
+  UNREACHABLE;
 }
 
 bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper helper) {

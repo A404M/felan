@@ -19,7 +19,11 @@ usize :: u64;
 
 
 main :: () -> void {
-  print_u64_rev(1234);
+  a:u64 = 97;
+  b := @cast(a,u16);
+  putc @cast(a,u8);
+  putc @cast(b,u8);
+  // print_u64_rev(1234);
 };
 
 print_u64_rev :: (value:u64) -> void {
