@@ -4031,6 +4031,7 @@ bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper) {
 
 bool setTypesBuiltin(AstTree *tree, AstTreeSetTypesHelper helper,
                      AstTreeFunctionCall *functionCall) {
+  (void)helper;
   AstTreeBuiltin *metadata = tree->metadata;
 
   switch (metadata->token) {
@@ -4075,19 +4076,7 @@ bool setTypesBuiltin(AstTree *tree, AstTreeSetTypesHelper helper,
         }
       }
 
-      if (from == NULL || to == NULL ||
-          !setAllTypes(from,
-                       (AstTreeSetTypesHelper){
-                           .lookingType = NULL,
-                           .treeHelper = helper.treeHelper,
-                       },
-                       NULL, NULL) ||
-          !setAllTypes(to,
-                       (AstTreeSetTypesHelper){
-                           .lookingType = NULL,
-                           .treeHelper = helper.treeHelper,
-                       },
-                       NULL, NULL)) {
+      if (from == NULL || to == NULL) {
         return false;
       }
 
