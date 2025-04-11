@@ -1361,7 +1361,7 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
     }
   }
 
-  if (!setAllTypesRoot(root, &helper)) {
+  if (!setAllTypesRoot(root)) {
     goto RETURN_ERROR;
   }
 
@@ -2998,10 +2998,9 @@ AstTree *getValue(AstTree *tree) {
   UNREACHABLE;
 }
 
-bool setAllTypesRoot(AstTreeRoot *root, AstTreeHelper *helper) {
+bool setAllTypesRoot(AstTreeRoot *root) {
   AstTreeSetTypesHelper setTypesHelper = {
       .lookingType = NULL,
-      .treeHelper = helper,
       .dependencies =
           {
               .data = NULL,
@@ -3331,14 +3330,31 @@ bool setTypesFunction(AstTree *tree, AstTreeSetTypesHelper helper) {
 
   tree->type = makeTypeOf(tree);
 
-  for (size_t i = 0; i < metadata->scope.expressions_size; ++i) {
-    if (!setAllTypes(metadata->scope.expressions[i], helper, metadata, NULL)) {
+  AstTreeVariable *deps[helper.dependencies.size];
+  size_t deps_size = 0;
+  for (size_t i = 0; i < helper.dependencies.size; ++i) {
+    AstTreeVariable *var = helper.dependencies.data[i];
+    if (var->value == tree) {
+      continue;
+    }
+    deps[deps_size] = helper.dependencies.data[i];
+    deps_size += 1;
+  }
+
+  AstTreeSetTypesHelper newHelper = {
+      .lookingType = NULL,
+      .dependencies.data = deps,
+      .dependencies.size = deps_size,
+  };
+
+  for (size_t i = 0; i < metadata->scope.variables.size; ++i) {
+    if (!setTypesAstVariable(metadata->scope.variables.data[i], newHelper)) {
       return false;
     }
   }
 
-  for (size_t i = 0; i < metadata->scope.variables.size; ++i) {
-    if (!setTypesAstVariable(metadata->scope.variables.data[i], helper)) {
+  for (size_t i = 0; i < metadata->scope.expressions_size; ++i) {
+    if (!setAllTypes(metadata->scope.expressions[i], newHelper, metadata, NULL)) {
       return false;
     }
   }
@@ -3350,7 +3366,6 @@ bool setTypesPrintU64(AstTree *tree, AstTreeSetTypesHelper _helper) {
   AstTreeSingleChild *metadata = tree->metadata;
   AstTreeSetTypesHelper helper = {
       .lookingType = &AST_TREE_U8_TYPE,
-      .treeHelper = _helper.treeHelper,
       .dependencies = _helper.dependencies,
   };
   if (!setAllTypes(metadata, helper, NULL, NULL)) {
@@ -3374,7 +3389,6 @@ bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper _helper,
   if (metadata->value != NULL) {
     AstTreeSetTypesHelper helper = {
         .lookingType = getValue(function->returnType),
-        .treeHelper = _helper.treeHelper,
         .dependencies = _helper.dependencies,
     };
     if (helper.lookingType == NULL) {
@@ -3424,7 +3438,6 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
 
   AstTreeSetTypesHelper helper = {
       .lookingType = NULL,
-      .treeHelper = _helper.treeHelper,
       .dependencies = _helper.dependencies,
   };
 
@@ -3716,7 +3729,6 @@ bool setTypesOperatorInfixWithRetAndLooking(AstTree *tree, AstTree *lookingType,
                                             AstTreeSetTypesHelper _helper) {
   AstTreeSetTypesHelper helper = {
       .lookingType = lookingType,
-      .treeHelper = _helper.treeHelper,
       .dependencies = _helper.dependencies,
   };
   AstTreeInfix *infix = tree->metadata;
@@ -3746,7 +3758,6 @@ bool setTypesOperatorUnaryWithRetAndLooking(AstTree *tree, AstTree *lookingType,
                                             AstTreeSetTypesHelper _helper) {
   AstTreeSetTypesHelper helper = {
       .lookingType = lookingType,
-      .treeHelper = _helper.treeHelper,
       .dependencies = _helper.dependencies,
   };
   AstTreeSingleChild *operand = tree->metadata;
@@ -3828,7 +3839,6 @@ bool setTypesAstVariable(AstTreeVariable *variable,
 
   AstTreeSetTypesHelper helper = {
       .lookingType = &AST_TREE_TYPE_TYPE,
-      .treeHelper = _helper.treeHelper,
       .dependencies =
           {
               .data = deps,
@@ -4118,15 +4128,17 @@ bool setTypesBuiltin(AstTree *tree, AstTreeSetTypesHelper helper,
   UNREACHABLE;
 }
 
-bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper helper) {
+bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper _helper) {
+  AstTreeSetTypesHelper helper = {
+      .lookingType = NULL,
+      .dependencies = _helper.dependencies,
+  };
+
   if (!setAllTypes(&infix->left, helper, NULL, NULL)) {
     return false;
   }
-  AstTreeSetTypesHelper newHelper = {
-      .lookingType = infix->left.type,
-      .treeHelper = helper.treeHelper,
-      .dependencies = helper.dependencies,
-  };
 
-  return setAllTypes(&infix->right, newHelper, NULL, NULL);
+  helper.lookingType = infix->left.type;
+
+  return setAllTypes(&infix->right, helper, NULL, NULL);
 }

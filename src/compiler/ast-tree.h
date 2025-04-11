@@ -214,7 +214,6 @@ typedef struct AstTreeHelper {
 
 typedef struct AstTreeSetTypesHelper {
   AstTree *lookingType;
-  AstTreeHelper *treeHelper;
   AstTreeVariables dependencies;
 } AstTreeSetTypesHelper;
 
@@ -316,7 +315,7 @@ bool typeIsEqual(AstTree *type0, AstTree *type1);
 bool typeIsEqualBack(const AstTree *type0, const AstTree *type1);
 AstTree *getValue(AstTree *tree);
 
-bool setAllTypesRoot(AstTreeRoot *root, AstTreeHelper *helper);
+bool setAllTypesRoot(AstTreeRoot *root);
 bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
                  AstTreeFunction *function, AstTreeFunctionCall *functionCall);
 bool setTypesValueBool(AstTree *tree, AstTreeSetTypesHelper helper);
