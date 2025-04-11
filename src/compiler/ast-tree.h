@@ -200,13 +200,12 @@ typedef struct AstTreeWhile {
 typedef struct AstTreeHelper {
   AstTreeVariables **variables;
   size_t variables_size;
-  AstTreeVariable *variable;
-  AstTreeVariables *globalDeps;
 } AstTreeHelper;
 
 typedef struct AstTreeSetTypesHelper {
   AstTree *lookingType;
   AstTreeHelper *treeHelper;
+  AstTreeVariables dependencies;
 } AstTreeSetTypesHelper;
 
 typedef struct AstTreeStruct {
@@ -264,8 +263,8 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot);
 
 bool pushVariable(AstTreeHelper *helper, AstTreeVariables *variables,
                   AstTreeVariable *variable);
-AstTreeVariable *getVariable(AstTreeHelper *helper, char *name_begin,
-                             char *name_end);
+AstTreeVariables *getAllVariables(AstTreeHelper *helper, char *name_begin,
+                                  char *name_end);
 
 AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *helper);
@@ -307,15 +306,6 @@ bool typeIsEqual(AstTree *type0, AstTree *type1);
 bool typeIsEqualBack(const AstTree *type0, const AstTree *type1);
 AstTree *getValue(AstTree *tree);
 
-bool isCircularDependencies(AstTreeHelper *helper, AstTreeVariable *variable);
-bool isCircularDependenciesBack(AstTreeHelper *helper,
-                                AstTreeVariable *variable, AstTree *tree,
-                                AstTreeVariables *checkedVariables);
-bool isCircularDependenciesVariable(AstTreeHelper *helper,
-                                    AstTreeVariable *toBeFound,
-                                    AstTreeVariable *currentVariable,
-                                    AstTreeVariables *checkedVariables);
-
 bool setAllTypesRoot(AstTreeRoot *root, AstTreeHelper *helper);
 bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
                  AstTreeFunction *function, AstTreeFunctionCall *functionCall);
@@ -331,7 +321,8 @@ bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper helper,
                     AstTreeFunction *function);
 bool setTypesTypeFunction(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper);
-bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper,
+                      AstTreeFunctionCall *functionCall);
 bool setTypesOperatorAssign(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorInfix(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorInfixWithRet(AstTree *tree, AstTree *retType,

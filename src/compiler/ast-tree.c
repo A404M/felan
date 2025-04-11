@@ -1176,6 +1176,14 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
       a404m_malloc(nodes->size * sizeof(*root->variables.data));
   root->variables.size = 0;
 
+  AstTreeVariables *variables = &root->variables;
+  static const size_t variables_size = 1;
+
+  AstTreeHelper helper = {
+      .variables = &variables,
+      .variables_size = variables_size,
+  };
+
   for (size_t i = 0; i < nodes->size; ++i) {
     ParserNode *eol = nodes->data[i];
     if (eol->token != PARSER_TOKEN_SYMBOL_EOL) {
@@ -1195,7 +1203,7 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
       variable->name_end = node_metadata->name->str_end;
       variable->isConst = node->token == PARSER_TOKEN_CONSTANT;
 
-      if (!pushVariable(NULL, &root->variables, variable)) {
+      if (!pushVariable(&helper, &root->variables, variable)) {
         astTreeVariableDelete(variable);
         goto RETURN_ERROR;
       }
@@ -1213,22 +1221,6 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
   root->trees.data = a404m_malloc((nodes->size - root->variables.size) *
                                   sizeof(*root->variables.data));
   root->trees.size = 0;
-
-  AstTreeVariables *variables = &root->variables;
-  static const size_t variables_size = 1;
-
-  AstTreeHelper helper = {
-      .variables = &variables,
-      .variables_size = variables_size,
-      .variable = NULL,
-      .globalDeps = a404m_malloc(variables->size * sizeof(*helper.globalDeps)),
-  };
-
-  for (size_t i = 0; i < variables->size; ++i) {
-    helper.globalDeps[i].size = 0;
-    helper.globalDeps[i].data =
-        a404m_malloc(helper.globalDeps->size * sizeof(*helper.globalDeps));
-  }
 
   for (size_t i = 0; i < nodes->size; ++i) {
     ParserNode *eol = nodes->data[i];
@@ -1251,7 +1243,6 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
   }
 
   for (size_t i = 0; i < nodes->size; ++i) {
-    helper.variable = root->variables.data[i];
     ParserNode *node =
         (ParserNodeSingleChildMetadata *)nodes->data[i]->metadata;
     ParserNodeVariableMetadata *node_metadata = node->metadata;
@@ -1370,15 +1361,9 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
     }
   }
 
-  helper.variable = NULL;
   if (!setAllTypesRoot(root, &helper)) {
     goto RETURN_ERROR;
   }
-
-  for (size_t i = 0; i < variables->size; ++i) {
-    free(helper.globalDeps[i].data);
-  }
-  free(helper.globalDeps);
 
   return root;
 
@@ -1394,16 +1379,17 @@ RETURN_ERROR:
 
 bool pushVariable(AstTreeHelper *helper, AstTreeVariables *variables,
                   AstTreeVariable *variable) {
-  (void)helper;
-  for (size_t j = 0; j < variables->size; ++j) {
-    char *var_begin = variables->data[j]->name_begin;
-    char *var_end = variables->data[j]->name_end;
+  if (helper->variables[0] != variables) {
+    for (size_t j = 0; j < variables->size; ++j) {
+      char *var_begin = variables->data[j]->name_begin;
+      char *var_end = variables->data[j]->name_end;
 
-    if (variable->name_end - variable->name_begin == var_end - var_begin &&
-        strncmp(var_begin, variable->name_begin,
-                variable->name_end - variable->name_begin) == 0) {
-      printError(variable->name_begin, variable->name_end, "Variable exists");
-      return false;
+      if (variable->name_end - variable->name_begin == var_end - var_begin &&
+          strncmp(var_begin, variable->name_begin,
+                  variable->name_end - variable->name_begin) == 0) {
+        printError(variable->name_begin, variable->name_end, "Variable exists");
+        return false;
+      }
     }
   }
 
@@ -1419,8 +1405,13 @@ bool pushVariable(AstTreeHelper *helper, AstTreeVariables *variables,
   return true;
 }
 
-AstTreeVariable *getVariable(AstTreeHelper *helper, char *name_begin,
-                             char *name_end) {
+AstTreeVariables *getAllVariables(AstTreeHelper *helper, char *name_begin,
+                                  char *name_end) {
+  size_t variables_size = 0;
+  AstTreeVariables *variables = a404m_malloc(sizeof(*variables));
+  variables->data = a404m_malloc(variables_size * sizeof(*variables->data));
+  variables->size = 0;
+
   for (size_t i = helper->variables_size - 1; i != (size_t)-1ULL; --i) {
     AstTreeVariables vars = *helper->variables[i];
     for (size_t j = 0; j < vars.size; ++j) {
@@ -1431,31 +1422,18 @@ AstTreeVariable *getVariable(AstTreeHelper *helper, char *name_begin,
 
       if (name_end - name_begin == var_end - var_begin &&
           strncmp(var_begin, name_begin, name_end - name_begin) == 0) {
-
-        if (i == 0 && helper->variable != NULL) {
-          for (size_t i = 0; i < helper->variables[0]->size; ++i) {
-            if (helper->variables[0]->data[i] == helper->variable) {
-              size_t globalDeps_size =
-                  a404m_malloc_usable_size(helper->globalDeps[i].data) /
-                  sizeof(*helper->globalDeps[i].data);
-              if (globalDeps_size == helper->globalDeps[i].size) {
-                globalDeps_size += globalDeps_size / 2 + 1;
-                helper->globalDeps[i].data = a404m_realloc(
-                    helper->globalDeps[i].data,
-                    globalDeps_size * sizeof(*helper->globalDeps[i].data));
-              }
-              helper->globalDeps[i].data[helper->globalDeps[i].size] = variable;
-              helper->globalDeps[i].size += 1;
-            }
-          }
+        if (variables_size == variables->size) {
+          variables_size += variables_size / 2 + 1;
+          variables->data = a404m_realloc(
+              variables->data, variables_size * sizeof(*variables->data));
         }
-
-        return variable;
+        variables->data[variables->size] = variable;
+        variables->size += 1;
       }
     }
   }
 
-  return NULL;
+  return variables;
 }
 
 AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper) {
@@ -1657,8 +1635,6 @@ AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *p_helper) {
   AstTreeHelper helper = {
       .variables = variables,
       .variables_size = variables_size,
-      .variable = p_helper->variable,
-      .globalDeps = p_helper->globalDeps,
   };
 
   for (size_t i = 0; i < node_arguments->size; ++i) {
@@ -1936,15 +1912,15 @@ AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
 }
 
 AstTree *astTreeParseIdentifier(ParserNode *parserNode, AstTreeHelper *helper) {
-  AstTreeVariable *var =
-      getVariable(helper, parserNode->str_begin, parserNode->str_end);
-  if (var == NULL) {
+  AstTreeVariables *variables =
+      getAllVariables(helper, parserNode->str_begin, parserNode->str_end);
+  if (variables->size == 0) {
     printError(parserNode->str_begin, parserNode->str_end,
                "Variable not found");
     return NULL;
   }
-  return newAstTree(AST_TREE_TOKEN_VARIABLE, var, NULL, parserNode->str_begin,
-                    parserNode->str_end);
+  return newAstTree(AST_TREE_TOKEN_VARIABLE, variables, NULL,
+                    parserNode->str_begin, parserNode->str_end);
 }
 
 AstTree *astTreeParseValue(ParserNode *parserNode, AstTreeToken token,
@@ -2239,8 +2215,6 @@ AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
   AstTreeHelper helper = {
       .variables = variables,
       .variables_size = variables_size,
-      .variable = p_helper->variable,
-      .globalDeps = p_helper->globalDeps,
   };
 
   for (size_t i = 0; i < body->size; ++i) {
@@ -3023,197 +2997,27 @@ AstTree *getValue(AstTree *tree) {
   UNREACHABLE;
 }
 
-bool isCircularDependencies(AstTreeHelper *helper, AstTreeVariable *variable) {
-  AstTreeVariables checkedVariables = {
-      .data = a404m_malloc(0),
-      .size = 0,
-  };
-  bool ret = isCircularDependenciesBack(helper, variable, variable->value,
-                                        &checkedVariables);
-  free(checkedVariables.data);
-  return ret;
-}
-
-bool isCircularDependenciesBack(AstTreeHelper *helper,
-                                AstTreeVariable *variable, AstTree *tree,
-                                AstTreeVariables *checkedVariables) {
-  switch (tree->token) {
-  case AST_TREE_TOKEN_BUILTIN:
-  case AST_TREE_TOKEN_TYPE_TYPE:
-  case AST_TREE_TOKEN_TYPE_FUNCTION:
-  case AST_TREE_TOKEN_TYPE_VOID:
-  case AST_TREE_TOKEN_TYPE_I8:
-  case AST_TREE_TOKEN_TYPE_U8:
-  case AST_TREE_TOKEN_TYPE_I16:
-  case AST_TREE_TOKEN_TYPE_U16:
-  case AST_TREE_TOKEN_TYPE_I32:
-  case AST_TREE_TOKEN_TYPE_U32:
-  case AST_TREE_TOKEN_TYPE_I64:
-  case AST_TREE_TOKEN_TYPE_U64:
-#ifdef FLOAT_16_SUPPORT
-  case AST_TREE_TOKEN_TYPE_F16:
-#endif
-  case AST_TREE_TOKEN_TYPE_F32:
-  case AST_TREE_TOKEN_TYPE_F64:
-  case AST_TREE_TOKEN_TYPE_F128:
-  case AST_TREE_TOKEN_TYPE_BOOL:
-  case AST_TREE_TOKEN_VALUE_NULL:
-  case AST_TREE_TOKEN_VALUE_UNDEFINED:
-  case AST_TREE_TOKEN_VALUE_VOID:
-  case AST_TREE_TOKEN_VALUE_INT:
-  case AST_TREE_TOKEN_VALUE_FLOAT:
-  case AST_TREE_TOKEN_VALUE_BOOL:
-  case AST_TREE_TOKEN_OPERATOR_ACCESS:
-    return false;
-  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
-  case AST_TREE_TOKEN_OPERATOR_POINTER:
-  case AST_TREE_TOKEN_OPERATOR_ADDRESS:
-  case AST_TREE_TOKEN_OPERATOR_DEREFERENCE:
-  case AST_TREE_TOKEN_KEYWORD_COMPTIME:
-  case AST_TREE_TOKEN_OPERATOR_PLUS:
-  case AST_TREE_TOKEN_OPERATOR_MINUS: {
-    AstTreeSingleChild *metadata = tree->metadata;
-    return isCircularDependenciesBack(helper, variable, metadata,
-                                      checkedVariables);
-  }
-  case AST_TREE_TOKEN_OPERATOR_LOGICAL_AND:
-  case AST_TREE_TOKEN_OPERATOR_LOGICAL_OR:
-  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
-  case AST_TREE_TOKEN_OPERATOR_SUM:
-  case AST_TREE_TOKEN_OPERATOR_SUB:
-  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
-  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
-  case AST_TREE_TOKEN_OPERATOR_MODULO:
-  case AST_TREE_TOKEN_OPERATOR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_GREATER:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER:
-  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL: {
-    AstTreeInfix *metadata = tree->metadata;
-    return isCircularDependenciesBack(helper, variable, &metadata->left,
-                                      checkedVariables) ||
-           isCircularDependenciesBack(helper, variable, &metadata->right,
-                                      checkedVariables);
-  }
-  case AST_TREE_TOKEN_FUNCTION_CALL: {
-    AstTreeFunctionCall *metadata = tree->metadata;
-    for (size_t i = 0; i < metadata->parameters_size; ++i) {
-      if (isCircularDependenciesBack(helper, variable,
-                                     metadata->parameters[i].value,
-                                     checkedVariables)) {
-        return true;
-      }
-    }
-    return isCircularDependenciesBack(helper, variable, metadata->function,
-                                      checkedVariables);
-  }
-  case AST_TREE_TOKEN_VARIABLE: {
-    AstTreeVariable *metadata = tree->metadata;
-    for (size_t index = 0; index < helper->variables[0]->size; ++index) {
-      if (helper->variables[0]->data[index] == metadata) {
-        for (size_t i = 0; i < helper->globalDeps[index].size; ++i) {
-          AstTreeVariable *currentVariable = helper->globalDeps[index].data[i];
-          if (currentVariable == variable ||
-              isCircularDependenciesVariable(helper, variable, currentVariable,
-                                             checkedVariables)) {
-            return true;
-          }
-        }
-        break;
-      }
-    }
-    return false;
-  }
-  case AST_TREE_TOKEN_VALUE_OBJECT: {
-    AstTreeObject *metadata = tree->metadata;
-    for (size_t i = 0; i < metadata->variables.size; ++i) {
-      AstTreeVariable *variable = metadata->variables.data[i];
-      if (variable->value != NULL) {
-        if (isCircularDependenciesBack(helper, variable, variable->value,
-                                       checkedVariables)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-  case AST_TREE_TOKEN_KEYWORD_STRUCT:
-  case AST_TREE_TOKEN_FUNCTION: {
-    return false;
-  }
-  case AST_TREE_TOKEN_SCOPE:
-  case AST_TREE_TOKEN_KEYWORD_PUTC:
-  case AST_TREE_TOKEN_KEYWORD_RETURN:
-  case AST_TREE_TOKEN_VARIABLE_DEFINE:
-  case AST_TREE_TOKEN_KEYWORD_IF:
-  case AST_TREE_TOKEN_KEYWORD_WHILE:
-  case AST_TREE_TOKEN_NONE:
-  }
-  UNREACHABLE;
-}
-
-bool isCircularDependenciesVariable(AstTreeHelper *helper,
-                                    AstTreeVariable *toBeFound,
-                                    AstTreeVariable *currentVariable,
-                                    AstTreeVariables *checkedVariables) {
-  for (size_t i = 0; i < checkedVariables->size; ++i) {
-    if (currentVariable == checkedVariables->data[i]) {
-      return false;
-    }
-  }
-
-  const size_t capacity = a404m_malloc_usable_size(checkedVariables->data) /
-                          sizeof(*checkedVariables->data);
-
-  if (capacity == checkedVariables->size) {
-    checkedVariables->data = a404m_realloc(checkedVariables->data,
-                                           (capacity + capacity / 2 + 1) *
-                                               sizeof(*checkedVariables->data));
-  }
-  checkedVariables->data[checkedVariables->size] = currentVariable;
-  checkedVariables->size += 1;
-
-  for (size_t index = 0; index < helper->variables[0]->size; ++index) {
-    if (helper->variables[0]->data[index] == currentVariable) {
-      for (size_t i = 0; i < helper->globalDeps[index].size; ++i) {
-        AstTreeVariable *var = helper->globalDeps[index].data[i];
-        if (var == toBeFound || isCircularDependenciesVariable(
-                                    helper, toBeFound, var, checkedVariables)) {
-          return true;
-        }
-      }
-      break;
-    }
-  }
-  return false;
-}
-
 bool setAllTypesRoot(AstTreeRoot *root, AstTreeHelper *helper) {
-  for (size_t i = 0; i < root->variables.size; ++i) {
-    AstTreeVariable *variable = root->variables.data[i];
-    if (isCircularDependencies(helper, variable)) {
-      printError(variable->name_begin, variable->name_end,
-                 "Circular dependecies");
-      return false;
-    }
-  }
-
   AstTreeSetTypesHelper setTypesHelper = {
       .lookingType = NULL,
       .treeHelper = helper,
+      .dependencies =
+          {
+              .data = NULL,
+              .size = 0,
+          },
   };
-
-  for (size_t i = 0; i < root->trees.size; ++i) {
-    AstTree *tree = root->trees.data[i];
-    if (!setAllTypes(tree, setTypesHelper, NULL, NULL)) {
-      return false;
-    }
-  }
 
   for (size_t i = 0; i < root->variables.size; ++i) {
     AstTreeVariable *variable = root->variables.data[i];
     if (!setTypesAstVariable(variable, setTypesHelper)) {
+      return false;
+    }
+  }
+
+  for (size_t i = 0; i < root->trees.size; ++i) {
+    AstTree *tree = root->trees.data[i];
+    if (!setAllTypes(tree, setTypesHelper, NULL, NULL)) {
       return false;
     }
   }
@@ -3269,7 +3073,7 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
   case AST_TREE_TOKEN_FUNCTION_CALL:
     return setTypesFunctionCall(tree, helper);
   case AST_TREE_TOKEN_VARIABLE:
-    return setTypesVariable(tree, helper);
+    return setTypesVariable(tree, helper, functionCall);
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
     return setTypesOperatorAssign(tree, helper);
   case AST_TREE_TOKEN_OPERATOR_PLUS:
@@ -3546,6 +3350,7 @@ bool setTypesPrintU64(AstTree *tree, AstTreeSetTypesHelper _helper) {
   AstTreeSetTypesHelper helper = {
       .lookingType = &AST_TREE_U8_TYPE,
       .treeHelper = _helper.treeHelper,
+      .dependencies = _helper.dependencies,
   };
   if (!setAllTypes(metadata, helper, NULL, NULL)) {
     return false;
@@ -3569,6 +3374,7 @@ bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper _helper,
     AstTreeSetTypesHelper helper = {
         .lookingType = getValue(function->returnType),
         .treeHelper = _helper.treeHelper,
+        .dependencies = _helper.dependencies,
     };
     if (helper.lookingType == NULL) {
       return false;
@@ -3612,8 +3418,21 @@ bool setTypesTypeFunction(AstTree *tree, AstTreeSetTypesHelper helper) {
   return true;
 }
 
-bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper) {
+bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
   AstTreeFunctionCall *metadata = tree->metadata;
+
+  AstTreeSetTypesHelper helper = {
+      .lookingType = NULL,
+      .treeHelper = _helper.treeHelper,
+      .dependencies = _helper.dependencies,
+  };
+
+  for (size_t i = 0; i < metadata->parameters_size; ++i) {
+    AstTreeFunctionCallParam param = metadata->parameters[i];
+    if (!setAllTypes(param.value, helper, NULL, NULL)) {
+      return false;
+    }
+  }
 
   if (!setAllTypes(metadata->function, helper, NULL, metadata)) {
     return false;
@@ -3651,6 +3470,7 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper) {
           AstTreeSetTypesHelper newHelper = {
               .lookingType = arg.type,
               .treeHelper = helper.treeHelper,
+              .dependencies = helper.dependencies,
           };
 
           if (!setAllTypes(param.value, newHelper, NULL, NULL)) {
@@ -3676,6 +3496,7 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper) {
           AstTreeSetTypesHelper newHelper = {
               .lookingType = arg.type,
               .treeHelper = helper.treeHelper,
+              .dependencies = helper.dependencies,
           };
 
           if (!setAllTypes(param.value, newHelper, NULL, NULL)) {
@@ -3707,13 +3528,102 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper) {
   return true;
 }
 
-bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper) {
-  AstTreeVariable *metadata = tree->metadata;
-  if (!setTypesAstVariable(metadata, helper)) {
+bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper,
+                      AstTreeFunctionCall *functionCall) {
+  AstTreeVariables *variables = tree->metadata;
+
+  AstTreeVariable *variable;
+  if (variables->size == 1 || functionCall == NULL) {
+    variable = variables->data[0];
+  } else {
+    for (size_t i = 0; i < variables->size; ++i) {
+      AstTreeVariable *var = variables->data[i];
+      if (!setTypesAstVariable(var, helper)) {
+        goto RETURN_ERROR;
+      }
+
+      if (var->type->token != AST_TREE_TOKEN_TYPE_FUNCTION) {
+        continue;
+      }
+
+      AstTreeTypeFunction *function = var->type->metadata;
+
+      AstTreeFunctionCallParam initedArguments[function->arguments_size];
+      size_t initedArguments_size = function->arguments_size;
+
+      for (size_t i = 0; i < initedArguments_size; ++i) {
+        initedArguments[i].value = NULL;
+      }
+
+      for (size_t i = 0; i < functionCall->parameters_size; ++i) {
+        AstTreeFunctionCallParam param = functionCall->parameters[i];
+        if (param.nameBegin != param.nameEnd) {
+          const size_t param_name_size = param.nameEnd - param.nameBegin;
+          for (size_t j = 0; j < function->arguments_size; ++j) {
+            AstTreeTypeFunctionArgument arg = function->arguments[j];
+            if ((size_t)(arg.name_end - arg.name_begin) == param_name_size &&
+                strncmp(arg.name_begin, param.nameBegin, param_name_size) ==
+                    0) {
+              if (!typeIsEqual(arg.type, param.value->type)) {
+                goto CONTINUE_OUTER;
+              }
+              initedArguments[j] = param;
+              goto END_OF_NAMED_FOR;
+            }
+          }
+          goto CONTINUE_OUTER;
+        }
+      END_OF_NAMED_FOR:
+      }
+
+      for (size_t i = 0; i < functionCall->parameters_size; ++i) {
+        AstTreeFunctionCallParam param = functionCall->parameters[i];
+        if (param.nameBegin == param.nameEnd) {
+          for (size_t j = 0; j < function->arguments_size; ++j) {
+            AstTreeTypeFunctionArgument arg = function->arguments[j];
+            if (initedArguments[j].value == NULL) {
+              if (!typeIsEqual(arg.type, param.value->type)) {
+                goto CONTINUE_OUTER;
+              }
+              initedArguments[j] = param;
+              goto END_OF_UNNAMED_FOR;
+            }
+          }
+          goto CONTINUE_OUTER;
+        }
+      END_OF_UNNAMED_FOR:
+      }
+
+      for (size_t i = 0; i < function->arguments_size; ++i) {
+        if (initedArguments[i].value == NULL) {
+          goto CONTINUE_OUTER;
+        }
+      }
+      variable = var;
+      goto END;
+    CONTINUE_OUTER:
+    }
+    printError(tree->str_begin, tree->str_end, "No candidate found");
+    goto RETURN_ERROR;
+  }
+
+END:
+  tree->metadata = variable;
+
+  free(variables->data);
+  free(variables);
+
+  if (!setTypesAstVariable(variable, helper)) {
     return false;
   }
-  tree->type = copyAstTree(metadata->type);
+  tree->type = copyAstTree(variable->type);
   return true;
+
+RETURN_ERROR:
+  tree->metadata = variables->data[0]; // for safe delete
+  free(variables->data);
+  free(variables);
+  return false;
 }
 
 bool setTypesOperatorAssign(AstTree *tree, AstTreeSetTypesHelper helper) {
@@ -3766,6 +3676,7 @@ bool setTypesOperatorInfixWithRetAndLooking(AstTree *tree, AstTree *lookingType,
   AstTreeSetTypesHelper helper = {
       .lookingType = lookingType,
       .treeHelper = _helper.treeHelper,
+      .dependencies = helper.dependencies,
   };
   AstTreeInfix *infix = tree->metadata;
   if (!setTypesAstInfix(infix, helper)) {
@@ -3795,6 +3706,7 @@ bool setTypesOperatorUnaryWithRetAndLooking(AstTree *tree, AstTree *lookingType,
   AstTreeSetTypesHelper helper = {
       .lookingType = lookingType,
       .treeHelper = _helper.treeHelper,
+      .dependencies = helper.dependencies,
   };
   AstTreeSingleChild *operand = tree->metadata;
   if (!setAllTypes(operand, helper, NULL, NULL)) {
@@ -3860,9 +3772,27 @@ bool setTypesVariableDefine(AstTree *tree, AstTreeSetTypesHelper helper) {
 
 bool setTypesAstVariable(AstTreeVariable *variable,
                          AstTreeSetTypesHelper _helper) {
+  AstTreeVariable *deps[_helper.dependencies.size + 1];
+
+  for (size_t i = 0; i < _helper.dependencies.size; ++i) {
+    AstTreeVariable *depVar = _helper.dependencies.data[i];
+    if (variable == depVar) {
+      printError(variable->name_begin, variable->name_end,
+                 "Circular dependency found");
+      return false;
+    }
+    deps[i] = depVar;
+  }
+  deps[_helper.dependencies.size] = variable;
+
   AstTreeSetTypesHelper helper = {
       .lookingType = &AST_TREE_TYPE_TYPE,
       .treeHelper = _helper.treeHelper,
+      .dependencies =
+          {
+              .data = deps,
+              .size = _helper.dependencies.size + 1,
+          },
   };
 
   if (variable->type != NULL) {
@@ -4165,6 +4095,7 @@ bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper helper) {
   AstTreeSetTypesHelper newHelper = {
       .lookingType = infix->left.type,
       .treeHelper = helper.treeHelper,
+      .dependencies = helper.dependencies,
   };
 
   return setAllTypes(&infix->right, newHelper, NULL, NULL);

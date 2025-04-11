@@ -754,7 +754,8 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
                right->type == &AST_TREE_I8_TYPE) {
       doOperation(left, right, %, AstTreeInt, i8);
     } else {
-      printError(expr->str_begin, expr->str_end, "Not supported");
+      printError(expr->str_begin, expr->str_end, "Not supported %s",
+                 AST_TREE_TOKEN_STRINGS[right->type->token]);
       UNREACHABLE;
     }
     astTreeDelete(right);

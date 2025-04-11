@@ -17,20 +17,32 @@ long_double :: f128;
 
 usize :: u64;
 
-
 main :: () -> void {
-  a:u64 = 97;
-  b := @cast(a,u16);
-  putc @cast(a,u8);
-  putc @cast(b,u8);
-  // print_u64_rev(1234);
+  a :i64 = 12;
+  b :u64 = 34;
+  print_rev(a);
+  print_rev(b);
+  a();
 };
 
-print_u64_rev :: (value:u64) -> void {
+a :: () -> void {
+  putc 'x';
+};
+
+print_rev :: (value:u64) -> void {
+  putc 'a';
   value := value;
-  first_time := true;
   while {
-    first_time = false;
+    putc '0' + @cast(value % 10,u8);
+    value /= 10;
+    value != 0;
+  } {}
+};
+
+print_rev :: (value:i64) -> void {
+  putc 'b';
+  value := value;
+  while {
     putc '0' + @cast(value % 10,u8);
     value /= 10;
     value != 0;
