@@ -344,6 +344,11 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeFunctionCallParam *arguments,
     }
     goto RETURN;
   }
+  case AST_TREE_BUILTIN_TOKEN_TYPE_OF: {
+    AstTree *variable = args.data[0];
+    ret = copyAstTree(variable->type);
+  }
+    goto RETURN;
   case AST_TREE_BUILTIN_TOKEN__SIZE__:
   }
   UNREACHABLE;
@@ -384,13 +389,13 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   }
   case AST_TREE_TOKEN_OPERATOR_ASSIGN: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *l = runExpression(&metadata->left, shouldRet, true);
+    AstTree *l = runExpression(metadata->left, shouldRet, true);
     if (l->token != AST_TREE_TOKEN_VARIABLE) {
       UNREACHABLE;
     }
     AstTreeVariable *left = l->metadata;
     runnerVariableSetValue(left,
-                           runExpression(&metadata->right, shouldRet, false));
+                           runExpression(metadata->right, shouldRet, false));
     astTreeDelete(l);
     return copyAstTree(left->value);
   }
@@ -531,8 +536,8 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   }
   case AST_TREE_TOKEN_OPERATOR_SUM: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, shouldRet, false);
-    AstTree *right = runExpression(&metadata->right, shouldRet, false);
+    AstTree *left = runExpression(metadata->left, shouldRet, false);
+    AstTree *right = runExpression(metadata->right, shouldRet, false);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doOperation(left, right, +, AstTreeInt, u64);
@@ -580,8 +585,8 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   }
   case AST_TREE_TOKEN_OPERATOR_SUB: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, shouldRet, false);
-    AstTree *right = runExpression(&metadata->right, shouldRet, false);
+    AstTree *left = runExpression(metadata->left, shouldRet, false);
+    AstTree *right = runExpression(metadata->right, shouldRet, false);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doOperation(left, right, -, AstTreeInt, u64);
@@ -629,8 +634,8 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   }
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, shouldRet, false);
-    AstTree *right = runExpression(&metadata->right, shouldRet, false);
+    AstTree *left = runExpression(metadata->left, shouldRet, false);
+    AstTree *right = runExpression(metadata->right, shouldRet, false);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doOperation(left, right, *, AstTreeInt, u64);
@@ -678,8 +683,8 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   }
   case AST_TREE_TOKEN_OPERATOR_DIVIDE: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, shouldRet, false);
-    AstTree *right = runExpression(&metadata->right, shouldRet, false);
+    AstTree *left = runExpression(metadata->left, shouldRet, false);
+    AstTree *right = runExpression(metadata->right, shouldRet, false);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doOperation(left, right, /, AstTreeInt, u64);
@@ -727,8 +732,8 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   }
   case AST_TREE_TOKEN_OPERATOR_MODULO: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, shouldRet, false);
-    AstTree *right = runExpression(&metadata->right, shouldRet, false);
+    AstTree *left = runExpression(metadata->left, shouldRet, false);
+    AstTree *right = runExpression(metadata->right, shouldRet, false);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doOperation(left, right, %, AstTreeInt, u64);
@@ -763,8 +768,8 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   }
   case AST_TREE_TOKEN_OPERATOR_EQUAL: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, shouldRet, false);
-    AstTree *right = runExpression(&metadata->right, shouldRet, false);
+    AstTree *left = runExpression(metadata->left, shouldRet, false);
+    AstTree *right = runExpression(metadata->right, shouldRet, false);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doLogicalOperation(left, right, ==, AstTreeInt, u64);
@@ -818,8 +823,8 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   }
   case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, shouldRet, false);
-    AstTree *right = runExpression(&metadata->right, shouldRet, false);
+    AstTree *left = runExpression(metadata->left, shouldRet, false);
+    AstTree *right = runExpression(metadata->right, shouldRet, false);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doLogicalOperation(left, right, !=, AstTreeInt, u64);
@@ -873,8 +878,8 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   }
   case AST_TREE_TOKEN_OPERATOR_GREATER: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, shouldRet, false);
-    AstTree *right = runExpression(&metadata->right, shouldRet, false);
+    AstTree *left = runExpression(metadata->left, shouldRet, false);
+    AstTree *right = runExpression(metadata->right, shouldRet, false);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doLogicalOperation(left, right, >, AstTreeInt, u64);
@@ -922,8 +927,8 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   }
   case AST_TREE_TOKEN_OPERATOR_SMALLER: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, shouldRet, false);
-    AstTree *right = runExpression(&metadata->right, shouldRet, false);
+    AstTree *left = runExpression(metadata->left, shouldRet, false);
+    AstTree *right = runExpression(metadata->right, shouldRet, false);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doLogicalOperation(left, right, <, AstTreeInt, u64);
@@ -971,8 +976,8 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   }
   case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, shouldRet, false);
-    AstTree *right = runExpression(&metadata->right, shouldRet, false);
+    AstTree *left = runExpression(metadata->left, shouldRet, false);
+    AstTree *right = runExpression(metadata->right, shouldRet, false);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doLogicalOperation(left, right, >=, AstTreeInt, u64);
@@ -1020,8 +1025,8 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   }
   case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, shouldRet, false);
-    AstTree *right = runExpression(&metadata->right, shouldRet, false);
+    AstTree *left = runExpression(metadata->left, shouldRet, false);
+    AstTree *right = runExpression(metadata->right, shouldRet, false);
 
     if (left->type == &AST_TREE_U64_TYPE && right->type == &AST_TREE_U64_TYPE) {
       doLogicalOperation(left, right, <=, AstTreeInt, u64);
@@ -1069,8 +1074,8 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   }
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_AND: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, shouldRet, false);
-    AstTree *right = runExpression(&metadata->right, shouldRet, false);
+    AstTree *left = runExpression(metadata->left, shouldRet, false);
+    AstTree *right = runExpression(metadata->right, shouldRet, false);
 
     *(AstTreeBool *)left->metadata =
         *(AstTreeBool *)left->metadata && *(AstTreeBool *)right->metadata;
@@ -1080,8 +1085,8 @@ AstTree *runExpression(AstTree *expr, bool *shouldRet, bool isLeft) {
   }
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_OR: {
     AstTreeInfix *metadata = expr->metadata;
-    AstTree *left = runExpression(&metadata->left, shouldRet, false);
-    AstTree *right = runExpression(&metadata->right, shouldRet, false);
+    AstTree *left = runExpression(metadata->left, shouldRet, false);
+    AstTree *right = runExpression(metadata->right, shouldRet, false);
 
     *(AstTreeBool *)left->metadata =
         *(AstTreeBool *)left->metadata || *(AstTreeBool *)right->metadata;

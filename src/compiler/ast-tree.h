@@ -188,8 +188,8 @@ typedef struct AstTreeObject {
 typedef AstTree AstTreeSingleChild;
 
 typedef struct AstTreeInfix {
-  AstTree left;
-  AstTree right;
+  AstTree *left;
+  AstTree *right;
 } AstTreeInfix;
 
 typedef struct AstTreeReturn {
@@ -237,6 +237,7 @@ typedef struct AstTreeAccess {
 
 typedef enum AstTreeBuiltinToken {
   AST_TREE_BUILTIN_TOKEN_CAST,
+  AST_TREE_BUILTIN_TOKEN_TYPE_OF,
   AST_TREE_BUILTIN_TOKEN__SIZE__,
 } AstTreeBuiltinToken;
 
@@ -272,8 +273,8 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot);
 
 bool pushVariable(AstTreeHelper *helper, AstTreeVariables *variables,
                   AstTreeVariable *variable);
-AstTreeVariableCandidates *getAllVariables(AstTreeHelper *helper, char *name_begin,
-                                  char *name_end);
+AstTreeVariableCandidates *getAllVariables(AstTreeHelper *helper,
+                                           char *name_begin, char *name_end);
 
 AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *helper);
