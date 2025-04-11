@@ -22,11 +22,16 @@ main :: () -> void {
   b :u64 = 34;
   print_rev(a);
   print_rev(b);
+  print_rev();
   a();
 };
 
 a :: () -> void {
   putc 'x';
+};
+
+print_rev :: ()-> void {
+  putc 'c';
 };
 
 print_rev :: (value:u64) -> void {

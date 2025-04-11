@@ -1405,10 +1405,10 @@ bool pushVariable(AstTreeHelper *helper, AstTreeVariables *variables,
   return true;
 }
 
-AstTreeVariables *getAllVariables(AstTreeHelper *helper, char *name_begin,
-                                  char *name_end) {
+AstTreeVariableCandidates *getAllVariables(AstTreeHelper *helper,
+                                           char *name_begin, char *name_end) {
   size_t variables_size = 0;
-  AstTreeVariables *variables = a404m_malloc(sizeof(*variables));
+  AstTreeVariableCandidates *variables = a404m_malloc(sizeof(*variables));
   variables->data = a404m_malloc(variables_size * sizeof(*variables->data));
   variables->size = 0;
 
@@ -1427,7 +1427,8 @@ AstTreeVariables *getAllVariables(AstTreeHelper *helper, char *name_begin,
           variables->data = a404m_realloc(
               variables->data, variables_size * sizeof(*variables->data));
         }
-        variables->data[variables->size] = variable;
+        variables->data[variables->size].variable = variable;
+        variables->data[variables->size].index = i;
         variables->size += 1;
       }
     }
@@ -1912,7 +1913,7 @@ AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
 }
 
 AstTree *astTreeParseIdentifier(ParserNode *parserNode, AstTreeHelper *helper) {
-  AstTreeVariables *variables =
+  AstTreeVariableCandidates *variables =
       getAllVariables(helper, parserNode->str_begin, parserNode->str_end);
   if (variables->size == 0) {
     printError(parserNode->str_begin, parserNode->str_end,
@@ -3530,14 +3531,32 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
 
 bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper,
                       AstTreeFunctionCall *functionCall) {
-  AstTreeVariables *variables = tree->metadata;
+  AstTreeVariableCandidates *variables = tree->metadata;
 
-  AstTreeVariable *variable;
-  if (variables->size == 1 || functionCall == NULL) {
-    variable = variables->data[0];
+  AstTreeVariable *variable = NULL;
+  size_t variable_index = -1ULL;
+  if (functionCall == NULL) {
+    for (size_t i = 0; i < variables->size; ++i) {
+      AstTreeVariable *var = variables->data[i].variable;
+      size_t index = variables->data[i].index;
+
+      if (variable != NULL) {
+        if (variable_index > index) {
+          continue;
+        } else if (variable != NULL && variable_index == index) {
+          printError(tree->str_begin, tree->str_end,
+                     "Multiple candidate found");
+          goto RETURN_ERROR;
+        }
+      }
+
+      variable = var;
+      variable_index = index;
+    }
   } else {
     for (size_t i = 0; i < variables->size; ++i) {
-      AstTreeVariable *var = variables->data[i];
+      AstTreeVariable *var = variables->data[i].variable;
+      size_t index = variables->data[i].index;
       if (!setTypesAstVariable(var, helper)) {
         goto RETURN_ERROR;
       }
@@ -3599,15 +3618,25 @@ bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper,
           goto CONTINUE_OUTER;
         }
       }
+      if (variable != NULL) {
+        if (variable_index > index) {
+          continue;
+        } else if (variable != NULL && variable_index == index) {
+          printError(tree->str_begin, tree->str_end,
+                     "Multiple candidate found");
+          goto RETURN_ERROR;
+        }
+      }
       variable = var;
-      goto END;
+      variable_index = index;
     CONTINUE_OUTER:
     }
+  }
+  if (variable == NULL) {
     printError(tree->str_begin, tree->str_end, "No candidate found");
     goto RETURN_ERROR;
   }
 
-END:
   tree->metadata = variable;
 
   free(variables->data);
@@ -3620,7 +3649,7 @@ END:
   return true;
 
 RETURN_ERROR:
-  tree->metadata = variables->data[0]; // for safe delete
+  tree->metadata = variables->data[0].variable; // for safe delete
   free(variables->data);
   free(variables);
   return false;
@@ -3676,7 +3705,7 @@ bool setTypesOperatorInfixWithRetAndLooking(AstTree *tree, AstTree *lookingType,
   AstTreeSetTypesHelper helper = {
       .lookingType = lookingType,
       .treeHelper = _helper.treeHelper,
-      .dependencies = helper.dependencies,
+      .dependencies = _helper.dependencies,
   };
   AstTreeInfix *infix = tree->metadata;
   if (!setTypesAstInfix(infix, helper)) {
@@ -3706,7 +3735,7 @@ bool setTypesOperatorUnaryWithRetAndLooking(AstTree *tree, AstTree *lookingType,
   AstTreeSetTypesHelper helper = {
       .lookingType = lookingType,
       .treeHelper = _helper.treeHelper,
-      .dependencies = helper.dependencies,
+      .dependencies = _helper.dependencies,
   };
   AstTreeSingleChild *operand = tree->metadata;
   if (!setAllTypes(operand, helper, NULL, NULL)) {
