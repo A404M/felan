@@ -23,6 +23,8 @@ main :: () -> void {
   print_rev(a);
   print_rev(b);
   print_rev();
+  c : ()->void = a;
+  c();
   a();
 };
 

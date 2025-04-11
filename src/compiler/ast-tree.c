@@ -3468,15 +3468,6 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
         if ((size_t)(arg.name_end - arg.name_begin) == param_name_size &&
             strncmp(arg.name_begin, param.nameBegin, param_name_size) == 0) {
           initedArguments[j] = param;
-          AstTreeSetTypesHelper newHelper = {
-              .lookingType = arg.type,
-              .treeHelper = helper.treeHelper,
-              .dependencies = helper.dependencies,
-          };
-
-          if (!setAllTypes(param.value, newHelper, NULL, NULL)) {
-            return false;
-          }
           goto END_OF_NAMED_FOR;
         }
       }
@@ -3491,18 +3482,9 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
     AstTreeFunctionCallParam param = metadata->parameters[i];
     if (param.nameBegin == param.nameEnd) {
       for (size_t j = 0; j < function->arguments_size; ++j) {
-        AstTreeTypeFunctionArgument arg = function->arguments[j];
+        // AstTreeTypeFunctionArgument arg = function->arguments[j];
         if (initedArguments[j].value == NULL) {
           initedArguments[j] = param;
-          AstTreeSetTypesHelper newHelper = {
-              .lookingType = arg.type,
-              .treeHelper = helper.treeHelper,
-              .dependencies = helper.dependencies,
-          };
-
-          if (!setAllTypes(param.value, newHelper, NULL, NULL)) {
-            return false;
-          }
           goto END_OF_UNNAMED_FOR;
         }
       }
@@ -3535,10 +3517,40 @@ bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper,
 
   AstTreeVariable *variable = NULL;
   size_t variable_index = -1ULL;
-  if (functionCall == NULL) {
+  if (helper.lookingType != NULL) {
     for (size_t i = 0; i < variables->size; ++i) {
       AstTreeVariable *var = variables->data[i].variable;
       size_t index = variables->data[i].index;
+
+      if (!setTypesAstVariable(var, helper)) {
+        goto RETURN_ERROR;
+      }
+
+      if (!typeIsEqual(var->type, helper.lookingType)) {
+        continue;
+      }
+
+      if (variable != NULL) {
+        if (variable_index > index) {
+          continue;
+        } else if (variable != NULL && variable_index == index) {
+          printError(tree->str_begin, tree->str_end,
+                     "Multiple candidate found");
+          goto RETURN_ERROR;
+        }
+      }
+
+      variable = var;
+      variable_index = index;
+    }
+  } else if (functionCall == NULL) {
+    for (size_t i = 0; i < variables->size; ++i) {
+      AstTreeVariable *var = variables->data[i].variable;
+      size_t index = variables->data[i].index;
+
+      if (!setTypesAstVariable(var, helper)) {
+        goto RETURN_ERROR;
+      }
 
       if (variable != NULL) {
         if (variable_index > index) {
