@@ -1,63 +1,22 @@
-byte :: i8;
-ubyte :: u8;
-
-short :: i16;
-ushort :: u16;
-
-int :: i32;
-uint :: u32;
-
-long :: i64;
-ulong :: u64;
-
-// short_float :: f16;
-float :: f32;
-double :: f64;
-long_double :: f128;
-
-usize :: u64;
-
 main :: () -> void {
-  a := 2;
-  println(@typeOf(a) == i64);
+  a : [10]u8 = undefined;
+  a[0] = 2;
+  print(123);
 };
 
-print_rev :: (value:u64) -> void {
-  putc 'a';
+print :: (value:i64)->void{
   value := value;
+  a : [20]u8 = undefined;
+  i := 0;
   while {
-    putc '0' + @cast(value % 10,u8);
+    a[i] = '0' + @cast(value % 10,u8);
+    i += 1;
     value /= 10;
     value != 0;
   } {}
-};
 
-print_rev :: (value:i64) -> void {
-  putc 'b';
-  value := value;
-  while {
-    putc '0' + @cast(value % 10,u8);
-    value /= 10;
-    value != 0;
-  } {}
-};
-
-print :: (value:bool) -> void {
-  if value {
-    putc 't';
-    putc 'r';
-    putc 'u';
-    putc 'e';
-  } else {
-    putc 'f';
-    putc 'a';
-    putc 'l';
-    putc 's';
-    putc 'e';
+  while i > 0 {
+    putc a[i-1];
+    i -= 1;
   }
-};
-
-println :: (value:bool) -> void {
-  print(value);
-  putc '\n';
 };

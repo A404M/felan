@@ -53,6 +53,8 @@ const char *PARSER_TOKEN_STRINGS[] = {
 
     "PARSER_TOKEN_SYMBOL_EOL",
     "PARSER_TOKEN_SYMBOL_CURLY_BRACKET",
+    "PARSER_TOKEN_SYMBOL_BRACKET_LEFT",
+    "PARSER_TOKEN_SYMBOL_BRACKET_RIGHT",
     "PARSER_TOKEN_SYMBOL_PARENTHESIS",
     "PARSER_TOKEN_SYMBOL_COMMA",
 
@@ -182,9 +184,33 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS: {
     const ParserNodeArray *metadata = node->metadata;
-    printf(",children=[\n");
+    printf(",\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("children=[\n");
     for (size_t i = 0; i < metadata->size; ++i) {
       parserNodePrint(metadata->data[i], indent + 1);
+      printf(",\n");
+    }
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("]");
+  }
+    goto RETURN_SUCCESS;
+  case PARSER_TOKEN_SYMBOL_BRACKET_LEFT:
+  case PARSER_TOKEN_SYMBOL_BRACKET_RIGHT: {
+    const ParserNodeBracketMetadata *metadata = node->metadata;
+    printf(",\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("operand=\n");
+    parserNodePrint(metadata->operand, indent + 1);
+    printf(",\n");
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("params=[\n");
+    for (size_t i = 0; i < metadata->params->size; ++i) {
+      parserNodePrint(metadata->params->data[i], indent + 1);
       printf(",\n");
     }
     for (int i = 0; i < indent; ++i)
@@ -453,6 +479,18 @@ void parserNodeDelete(ParserNode *node) {
       parserNodeDelete(metadata->data[i]);
     }
     free(metadata->data);
+    free(metadata);
+  }
+    goto RETURN_SUCCESS;
+  case PARSER_TOKEN_SYMBOL_BRACKET_RIGHT:
+  case PARSER_TOKEN_SYMBOL_BRACKET_LEFT: {
+    ParserNodeBracketMetadata *metadata = node->metadata;
+    parserNodeDelete(metadata->operand);
+    for (size_t i = 0; i < metadata->params->size; ++i) {
+      parserNodeDelete(metadata->params->data[i]);
+    }
+    free(metadata->params->data);
+    free(metadata->params);
     free(metadata);
   }
     goto RETURN_SUCCESS;
@@ -747,6 +785,10 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserParenthesis(node, begin, parent);
   case LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET:
     return parserCurlyBrackets(node, begin, parent);
+  case LEXER_TOKEN_SYMBOL_CLOSE_BRACKET:
+    return parserBracketsRight(node, begin, parent, conti);
+  case LEXER_TOKEN_SYMBOL_CLOSE_BRACKET_LEFT:
+    return parserBracketsLeft(node, begin, end, parent);
   case LEXER_TOKEN_SYMBOL_FUNCTION_ARROW:
     return parserFunction(node, begin, end, parent);
   case LEXER_TOKEN_SYMBOL_COLON:
@@ -865,6 +907,7 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
   case LEXER_TOKEN_SYMBOL:
   case LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS:
   case LEXER_TOKEN_SYMBOL_OPEN_CURLY_BRACKET:
+  case LEXER_TOKEN_SYMBOL_OPEN_BRACKET:
   case LEXER_TOKEN_NONE:
     break;
   }
@@ -1213,6 +1256,131 @@ ParserNode *parserParenthesis(LexerNode *closing, LexerNode *begin,
   }
 }
 
+ParserNode *parserBracketsRight(LexerNode *closing, LexerNode *begin,
+                                ParserNode *parent, bool *conti) {
+  LexerNode *opening = NULL;
+
+  for (LexerNode *iter = closing - 1; iter >= begin; --iter) {
+    if (iter->parserNode == NULL &&
+        iter->token == LEXER_TOKEN_SYMBOL_OPEN_BRACKET) {
+      opening = iter;
+      break;
+    }
+  }
+
+  if (opening == NULL) {
+    printError(closing->str_begin, closing->str_end, "No opening for bracket");
+    return NULL;
+  }
+
+  LexerNode *beforeNode = opening - 1;
+  ParserNode *before;
+  if (beforeNode < begin || beforeNode->parserNode == NULL ||
+      (before = getUntilCommonParent(beforeNode->parserNode, parent)) == NULL ||
+      !isExpression(before)) {
+    closing->token = LEXER_TOKEN_SYMBOL_CLOSE_BRACKET_LEFT;
+    *conti = true;
+    return NULL;
+  }
+
+  ParserNode *parserNode = a404m_malloc(sizeof(*parserNode));
+  parserNode->parent = parent;
+
+  before->parent = parserNode;
+
+  for (LexerNode *iter = closing - 1; iter >= begin; --iter) {
+    if (iter->parserNode != NULL) {
+      ParserNode *pNode =
+          getUntilCommonParents(iter->parserNode, parent, parserNode);
+      if (pNode == NULL) {
+        printLog(pNode->str_begin, pNode->str_end, "Bad node");
+        return NULL;
+      } else {
+        pNode->parent = parserNode;
+      }
+    } else if (iter == opening) {
+      break;
+    }
+  }
+
+  opening->parserNode = parserNode;
+  closing->parserNode = parserNode;
+
+  parserNode->token = PARSER_TOKEN_SYMBOL_BRACKET_RIGHT;
+  parserNode->str_begin = before->str_begin;
+  parserNode->str_end = closing->str_end;
+
+  if (parserNodeArray(opening + 1, closing, parserNode)) {
+    ParserNodeBracketMetadata *metadata = malloc(sizeof(*metadata));
+    metadata->operand = before;
+    metadata->params = parserNode->metadata;
+    parserNode->metadata = metadata;
+    return parserNode;
+  } else {
+    free(parserNode);
+    return NULL;
+  }
+}
+
+ParserNode *parserBracketsLeft(LexerNode *closing, LexerNode *begin,
+                               LexerNode *end, ParserNode *parent) {
+  LexerNode *afterNode = closing + 1;
+  ParserNode *after;
+  if (afterNode >= end || afterNode->parserNode == NULL ||
+      (after = getUntilCommonParent(afterNode->parserNode, parent)) == NULL ||
+      !isExpression(after)) {
+    printLog(closing->str_begin, closing->str_end,
+             "Bad bracket can't be parsed");
+    return NULL;
+  }
+
+  ParserNode *parserNode = a404m_malloc(sizeof(*parserNode));
+  parserNode->parent = parent;
+
+  after->parent = parserNode;
+
+  LexerNode *opening = NULL;
+
+  for (LexerNode *iter = closing - 1; iter >= begin; --iter) {
+
+    if (iter->parserNode != NULL) {
+      ParserNode *pNode =
+          getUntilCommonParents(iter->parserNode, parent, parserNode);
+      if (pNode == NULL) {
+        printLog(pNode->str_begin, pNode->str_end, "Bad node");
+        return NULL;
+      } else {
+        pNode->parent = parserNode;
+      }
+    } else if (iter->token == LEXER_TOKEN_SYMBOL_OPEN_BRACKET) {
+      opening = iter;
+      break;
+    }
+  }
+
+  if (opening == NULL) {
+    printError(closing->str_begin, closing->str_end, "No opening for bracket");
+    return NULL;
+  }
+  opening->parserNode = parserNode;
+  closing->parserNode = parserNode;
+
+  parserNode->token = PARSER_TOKEN_SYMBOL_BRACKET_LEFT;
+  parserNode->str_begin = opening->str_begin;
+  parserNode->str_end = after->str_end;
+
+  if (parserNodeArray(opening + 1, closing, parserNode)) {
+    ParserNodeBracketMetadata *metadata = malloc(sizeof(*metadata));
+    metadata->operand = after;
+    metadata->params = parserNode->metadata;
+    parserNode->metadata = metadata;
+    return parserNode;
+  } else {
+    free(parserNode);
+    return NULL;
+  }
+}
+
 ParserNode *parserCurlyBrackets(LexerNode *closing, LexerNode *begin,
                                 ParserNode *parent) {
   ParserNode *parserNode = a404m_malloc(sizeof(*parserNode));
@@ -1323,6 +1491,8 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_VARIABLE:
       case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
       case PARSER_TOKEN_SYMBOL_PARENTHESIS:
+      case PARSER_TOKEN_SYMBOL_BRACKET_LEFT:
+      case PARSER_TOKEN_SYMBOL_BRACKET_RIGHT:
       case PARSER_TOKEN_SYMBOL_COMMA:
       case PARSER_TOKEN_OPERATOR_ACCESS:
       case PARSER_TOKEN_OPERATOR_ASSIGN:
@@ -1752,6 +1922,8 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_VARIABLE:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
+  case PARSER_TOKEN_SYMBOL_BRACKET_LEFT:
+  case PARSER_TOKEN_SYMBOL_BRACKET_RIGHT:
   case PARSER_TOKEN_FUNCTION_DEFINITION:
   case PARSER_TOKEN_FUNCTION_CALL:
   case PARSER_TOKEN_KEYWORD_PUTC:
@@ -1844,6 +2016,8 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_BUILTIN:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
+  case PARSER_TOKEN_SYMBOL_BRACKET_LEFT:
+  case PARSER_TOKEN_SYMBOL_BRACKET_RIGHT:
   case PARSER_TOKEN_FUNCTION_CALL:
   case PARSER_TOKEN_KEYWORD_IF:
   case PARSER_TOKEN_KEYWORD_COMPTIME:
@@ -1956,6 +2130,8 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_KEYWORD_IF:
   case PARSER_TOKEN_KEYWORD_COMPTIME:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
+  case PARSER_TOKEN_SYMBOL_BRACKET_LEFT:
+  case PARSER_TOKEN_SYMBOL_BRACKET_RIGHT:
   case PARSER_TOKEN_KEYWORD_STRUCT:
     return true;
   case PARSER_TOKEN_CONSTANT:

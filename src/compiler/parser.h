@@ -49,6 +49,8 @@ typedef enum ParserToken {
 
   PARSER_TOKEN_SYMBOL_EOL,
   PARSER_TOKEN_SYMBOL_CURLY_BRACKET,
+  PARSER_TOKEN_SYMBOL_BRACKET_LEFT,
+  PARSER_TOKEN_SYMBOL_BRACKET_RIGHT,
   PARSER_TOKEN_SYMBOL_PARENTHESIS,
   PARSER_TOKEN_SYMBOL_COMMA,
 
@@ -159,6 +161,11 @@ typedef struct ParserNodeWhileMetadata {
   ParserNode *body;
 } ParserNodeWhileMetadata;
 
+typedef struct ParserNodeBracketMetadata {
+  ParserNode *operand;
+  ParserNodeArray *params;
+} ParserNodeBracketMetadata;
+
 void parserNodePrint(const ParserNode *node, int indent);
 void parserNodeDelete(ParserNode *node);
 
@@ -192,6 +199,10 @@ ParserNode *parserParenthesis(LexerNode *closing, LexerNode *begin,
                               ParserNode *parent);
 ParserNode *parserCurlyBrackets(LexerNode *closing, LexerNode *begin,
                                 ParserNode *parent);
+ParserNode *parserBracketsRight(LexerNode *closing, LexerNode *begin,
+                                ParserNode *parent, bool *conti);
+ParserNode *parserBracketsLeft(LexerNode *closing, LexerNode *begin,
+                               LexerNode *end, ParserNode *parent);
 ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
                            ParserNode *parent);
 ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,

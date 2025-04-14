@@ -17,6 +17,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_KEYWORD_STRUCT,
 
   AST_TREE_TOKEN_TYPE_FUNCTION,
+  AST_TREE_TOKEN_TYPE_ARRAY,
   AST_TREE_TOKEN_TYPE_TYPE,
   AST_TREE_TOKEN_STATIC_VARS_BEGIN = AST_TREE_TOKEN_TYPE_TYPE,
   AST_TREE_TOKEN_TYPE_VOID,
@@ -69,6 +70,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT,
   AST_TREE_TOKEN_OPERATOR_LOGICAL_AND,
   AST_TREE_TOKEN_OPERATOR_LOGICAL_OR,
+  AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS,
 
   AST_TREE_TOKEN_SCOPE,
 
@@ -235,6 +237,11 @@ typedef struct AstTreeAccess {
   } member;
 } AstTreeAccess;
 
+typedef struct AstTreeBracket {
+  AstTree *operand;
+  AstTrees parameters;
+} AstTreeBracket;
+
 typedef enum AstTreeBuiltinToken {
   AST_TREE_BUILTIN_TOKEN_CAST,
   AST_TREE_BUILTIN_TOKEN_TYPE_OF,
@@ -307,6 +314,8 @@ AstTree *astTreeParseStruct(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseAccessOperator(ParserNode *parserNode,
                                     AstTreeHelper *helper, AstTreeToken token);
 AstTree *astTreeParseBuiltin(ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseBracket(ParserNode *parserNode, AstTreeHelper *helper,
+                             AstTreeToken token);
 
 bool isFunction(AstTree *value);
 bool isConst(AstTree *tree);
@@ -315,6 +324,8 @@ AstTree *makeTypeOf(AstTree *value);
 bool typeIsEqual(AstTree *type0, AstTree *type1);
 bool typeIsEqualBack(const AstTree *type0, const AstTree *type1);
 AstTree *getValue(AstTree *tree);
+bool isIntType(AstTree *type);
+bool isEqual(AstTree *left, AstTree *right);
 
 bool setAllTypesRoot(AstTreeRoot *root);
 bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
@@ -359,6 +370,8 @@ bool setTypesStruct(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesBuiltin(AstTree *tree, AstTreeSetTypesHelper helper,
                      AstTreeFunctionCall *functionCall);
+bool setTypesTypeArray(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesArrayAccess(AstTree *tree, AstTreeSetTypesHelper helper);
 
 bool setTypesAstVariable(AstTreeVariable *variable,
                          AstTreeSetTypesHelper helper);

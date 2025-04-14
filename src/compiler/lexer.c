@@ -12,6 +12,7 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET",
 
     "LEXER_TOKEN_SYMBOL_CLOSE_PARENTHESIS",
+    "LEXER_TOKEN_SYMBOL_CLOSE_BRACKET",
     "LEXER_TOKEN_IDENTIFIER",
     "LEXER_TOKEN_BUILTIN",
     "LEXER_TOKEN_KEYWORD_TYPE",
@@ -41,6 +42,7 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_FUNCTION_ARROW",
     "LEXER_TOKEN_SYMBOL_POINTER",
     "LEXER_TOKEN_KEYWORD_STRUCT",
+    "LEXER_TOKEN_SYMBOL_CLOSE_BRACKET_LEFT",
 
     "LEXER_TOKEN_SYMBOL_DEREFERENCE",
     "LEXER_TOKEN_SYMBOL_ACCESS",
@@ -90,6 +92,7 @@ const char *LEXER_TOKEN_STRINGS[] = {
 
     "LEXER_TOKEN_SYMBOL",
     "LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS",
+    "LEXER_TOKEN_SYMBOL_OPEN_BRACKET",
     "LEXER_TOKEN_SYMBOL_OPEN_CURLY_BRACKET",
 
     "LEXER_TOKEN_NONE",
@@ -98,7 +101,7 @@ const char *LEXER_TOKEN_STRINGS[] = {
 const char *LEXER_SYMBOL_STRINGS[] = {
     ";",  "(",  ")",  "{", "}",  "->", ":", "=",  "+=", "-=", "*=",
     "/=", "%=", ",",  "+", "-",  "*",  "/", "%",  "==", "!=", ">",
-    ">=", "<",  "<=", "&", ".*", ".",  "!", "&&", "||",
+    ">=", "<",  "<=", "&", ".*", ".",  "!", "&&", "||", "[",  "]",
 };
 const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_EOL,
@@ -132,6 +135,8 @@ const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_LOGICAL_NOT,
     LEXER_TOKEN_SYMBOL_LOGICAL_AND,
     LEXER_TOKEN_SYMBOL_LOGICAL_OR,
+    LEXER_TOKEN_SYMBOL_OPEN_BRACKET,
+    LEXER_TOKEN_SYMBOL_CLOSE_BRACKET,
 };
 const size_t LEXER_SYMBOL_SIZE =
     sizeof(LEXER_SYMBOL_TOKENS) / sizeof(*LEXER_SYMBOL_TOKENS);
@@ -387,6 +392,8 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_SYMBOL_LOGICAL_AND:
   case LEXER_TOKEN_SYMBOL_LOGICAL_OR:
   case LEXER_TOKEN_BUILTIN:
+  case LEXER_TOKEN_SYMBOL_CLOSE_BRACKET:
+  case LEXER_TOKEN_SYMBOL_OPEN_BRACKET:
     if (*array_size == array->size) {
       *array_size += 1 + *array_size / 2;
       array->data =
@@ -401,6 +408,7 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
     array->size += 1;
 
     // goto RETURN_SUCCESS;
+  case LEXER_TOKEN_SYMBOL_CLOSE_BRACKET_LEFT:
   case LEXER_TOKEN_NONE:
     goto RETURN_SUCCESS;
   }
@@ -436,6 +444,8 @@ bool isSymbol(char c) {
   case ',':
   case '(':
   case ')':
+  case '[':
+  case ']':
   case '{':
   case '}':
     return true;
