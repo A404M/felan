@@ -326,6 +326,7 @@ bool typeIsEqualBack(const AstTree *type0, const AstTree *type1);
 AstTree *getValue(AstTree *tree);
 bool isIntType(AstTree *type);
 bool isEqual(AstTree *left, AstTree *right);
+bool isEqualVariable(AstTreeVariable *left, AstTreeVariable *right);
 
 bool setAllTypesRoot(AstTreeRoot *root);
 bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
