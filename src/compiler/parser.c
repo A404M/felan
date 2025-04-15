@@ -19,6 +19,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_VALUE_FLOAT",
     "PARSER_TOKEN_VALUE_BOOL",
     "PARSER_TOKEN_VALUE_CHAR",
+    "PARSER_TOKEN_VALUE_STRING",
 
     "PARSER_TOKEN_TYPE_TYPE",
     "PARSER_TOKEN_TYPE_FUNCTION",
@@ -258,6 +259,12 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_VALUE_CHAR: {
     ParserNodeCharMetadata *metadata = node->metadata;
     printf(",value=%c", (char)*metadata);
+  }
+    goto RETURN_SUCCESS;
+  case PARSER_TOKEN_VALUE_STRING: {
+    ParserNodeStringMetadata *metadata = node->metadata;
+    printf(",value=%.*s", (int)(metadata->end - metadata->begin),
+           metadata->begin);
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_CONSTANT:
@@ -536,6 +543,12 @@ void parserNodeDelete(ParserNode *node) {
     free(metadata);
   }
     goto RETURN_SUCCESS;
+  case PARSER_TOKEN_VALUE_STRING: {
+    ParserNodeStringMetadata *metadata = node->metadata;
+    free(metadata->begin);
+    free(metadata);
+  }
+    goto RETURN_SUCCESS;
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_VARIABLE: {
     ParserNodeVariableMetadata *metadata = node->metadata;
@@ -799,6 +812,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserNumber(node, parent);
   case LEXER_TOKEN_CHAR:
     return parserChar(node, parent);
+  case LEXER_TOKEN_STRING:
+    return parserString(node, parent);
   case LEXER_TOKEN_SYMBOL_ASSIGN:
     return parserBinaryOperator(node, begin, end, parent,
                                 PARSER_TOKEN_OPERATOR_ASSIGN);
@@ -1077,57 +1092,57 @@ ParserNode *parserChar(LexerNode *node, ParserNode *parent) {
   if (size == 0) {
     printError(node->str_begin, node->str_end,
                "Bad character: Character can't be empty");
-    return NULL;
+    goto RETURN_ERROR;
   } else if (size == 1) {
     // knowingly left empty
   } else if (size == 2 && c == '\\') {
-    c = node->str_begin[2];
-    switch (c) {
-    case 'a':
-      c = '\a';
-      break;
-    case 'b':
-      c = '\b';
-      break;
-    case 'e':
-      c = '\e';
-      break;
-    case 'f':
-      c = '\f';
-      break;
-    case 'n':
-      c = '\n';
-      break;
-    case 'r':
-      c = '\r';
-      break;
-    case 't':
-      c = '\t';
-      break;
-    case 'v':
-      c = '\v';
-      break;
-    case '\\':
-      c = '\\';
-      break;
-    case '\'':
-      c = '\'';
-      break;
-    case '"':
-      c = '\"';
-      break;
-    default:
+    bool success;
+    c = escapeChar(node->str_begin + 2, node->str_end, &success);
+    if (!success) {
       printError(node->str_begin, node->str_end, "Bad escape character");
-      return NULL;
+      goto RETURN_ERROR;
     }
   } else {
     printError(node->str_begin, node->str_end, "Bad character");
-    return NULL;
+    goto RETURN_ERROR;
   }
   *metadata = c;
   return node->parserNode =
              newParserNode(PARSER_TOKEN_VALUE_CHAR, node->str_begin,
                            node->str_end, metadata, parent);
+RETURN_ERROR:
+  free(metadata);
+  return NULL;
+}
+
+ParserNode *parserString(LexerNode *node, ParserNode *parent) {
+  ParserNodeStringMetadata *metadata = a404m_malloc(sizeof(*metadata));
+
+  metadata->begin = metadata->end = a404m_malloc(
+      sizeof(*metadata->begin) * (node->str_end - node->str_begin));
+
+  for (char *iter = node->str_begin + 1; iter < node->str_end - 2; ++iter) {
+    if (*iter == '\\') {
+      iter += 1;
+      bool success;
+      *metadata->end = escapeChar(iter, node->str_end, &success);
+      if (!success) {
+        printError(node->str_begin, node->str_end, "Bad escape character");
+        goto RETURN_ERROR;
+      }
+    } else {
+      *metadata->end = *iter;
+    }
+    metadata->end += 1;
+  }
+
+  return node->parserNode =
+             newParserNode(PARSER_TOKEN_VALUE_STRING, node->str_begin,
+                           node->str_end, metadata, parent);
+RETURN_ERROR:
+  free(metadata->begin);
+  free(metadata);
+  return NULL;
 }
 
 ParserNode *parserBoolValue(LexerNode *node, ParserNode *parent) {
@@ -1464,6 +1479,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_VALUE_FLOAT:
       case PARSER_TOKEN_VALUE_BOOL:
       case PARSER_TOKEN_VALUE_CHAR:
+      case PARSER_TOKEN_VALUE_STRING:
       case PARSER_TOKEN_TYPE_TYPE:
       case PARSER_TOKEN_TYPE_FUNCTION:
       case PARSER_TOKEN_TYPE_VOID:
@@ -1958,6 +1974,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_VALUE_FLOAT:
   case PARSER_TOKEN_VALUE_BOOL:
   case PARSER_TOKEN_VALUE_CHAR:
+  case PARSER_TOKEN_VALUE_STRING:
   case PARSER_TOKEN_KEYWORD_IF:
   case PARSER_TOKEN_KEYWORD_WHILE:
   case PARSER_TOKEN_KEYWORD_COMPTIME:
@@ -2039,6 +2056,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_VALUE_FLOAT:
   case PARSER_TOKEN_VALUE_BOOL:
   case PARSER_TOKEN_VALUE_CHAR:
+  case PARSER_TOKEN_VALUE_STRING:
   case PARSER_TOKEN_KEYWORD_PUTC:
   case PARSER_TOKEN_KEYWORD_RETURN:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
@@ -2079,6 +2097,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_VALUE_FLOAT:
   case PARSER_TOKEN_VALUE_BOOL:
   case PARSER_TOKEN_VALUE_CHAR:
+  case PARSER_TOKEN_VALUE_STRING:
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_BUILTIN:
   case PARSER_TOKEN_OPERATOR_ACCESS:
@@ -2147,4 +2166,46 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_NONE:
   }
   UNREACHABLE;
+}
+
+char escapeChar(char *begin, char *end, bool *success) {
+  (void)end;
+  switch (*begin) {
+  case 'a':
+    *success = true;
+    return '\a';
+  case 'b':
+    *success = true;
+    return '\b';
+  case 'e':
+    *success = true;
+    return '\e';
+  case 'f':
+    *success = true;
+    return '\f';
+  case 'n':
+    *success = true;
+    return '\n';
+  case 'r':
+    *success = true;
+    return '\r';
+  case 't':
+    *success = true;
+    return '\t';
+  case 'v':
+    *success = true;
+    return '\v';
+  case '\\':
+    *success = true;
+    return '\\';
+  case '\'':
+    *success = true;
+    return '\'';
+  case '"':
+    *success = true;
+    return '\"';
+  default:
+    *success = false;
+    return 0;
+  }
 }

@@ -6,7 +6,6 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET",
@@ -37,6 +36,7 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_KEYWORD_NULL",
     "LEXER_TOKEN_NUMBER",
     "LEXER_TOKEN_CHAR",
+    "LEXER_TOKEN_STRING",
     "LEXER_TOKEN_KEYWORD_UNDEFINED",
 
     "LEXER_TOKEN_SYMBOL_FUNCTION_ARROW",
@@ -244,6 +244,8 @@ LexerNodeArray lexer(char *str) {
       LexerToken token;
       if (opening == '\'') {
         token = LEXER_TOKEN_CHAR;
+      } else if (opening == '\"') {
+        token = LEXER_TOKEN_STRING;
       } else {
         UNREACHABLE;
       }
@@ -258,7 +260,7 @@ LexerNodeArray lexer(char *str) {
           goto RETURN_ERROR;
         } else if (*iter == '\\') {
           ++iter;
-        } else if (*iter == '\'') {
+        } else if (*iter == opening) {
           break;
         }
       }
@@ -357,6 +359,7 @@ void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_KEYWORD_UNDEFINED:
   case LEXER_TOKEN_NUMBER:
   case LEXER_TOKEN_CHAR:
+  case LEXER_TOKEN_STRING:
   case LEXER_TOKEN_SYMBOL_EOL:
   case LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS:
   case LEXER_TOKEN_SYMBOL_CLOSE_PARENTHESIS:

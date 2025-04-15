@@ -15,6 +15,7 @@ typedef enum ParserToken {
   PARSER_TOKEN_VALUE_FLOAT,
   PARSER_TOKEN_VALUE_BOOL,
   PARSER_TOKEN_VALUE_CHAR,
+  PARSER_TOKEN_VALUE_STRING,
 
   PARSER_TOKEN_TYPE_TYPE,
   PARSER_TOKEN_TYPE_FUNCTION,
@@ -139,6 +140,11 @@ typedef f128 ParserNodeFloatMetadata;
 
 typedef ParserNodeIntMetadata ParserNodeCharMetadata;
 
+typedef struct ParserNodeStringMetadata {
+  char *begin;
+  char *end;
+} ParserNodeStringMetadata;
+
 typedef struct ParserNodeInfixMetadata {
   ParserNode *left;
   ParserNode *right;
@@ -192,6 +198,7 @@ ParserNode *parserPutc(LexerNode *node, LexerNode *end, ParserNode *parent);
 ParserNode *parserReturn(LexerNode *node, LexerNode *end, ParserNode *parent);
 ParserNode *parserNumber(LexerNode *node, ParserNode *parent);
 ParserNode *parserChar(LexerNode *node, ParserNode *parent);
+ParserNode *parserString(LexerNode *node, ParserNode *parent);
 ParserNode *parserBoolValue(LexerNode *node, ParserNode *parent);
 ParserNode *parserEol(LexerNode *node, LexerNode *begin, ParserNode *parent);
 ParserNode *parserComma(LexerNode *node, LexerNode *begin, ParserNode *parent);
@@ -228,3 +235,5 @@ bool isAllArguments(const ParserNodeArray *nodes);
 bool isExpression(ParserNode *node);
 bool isType(ParserNode *node);
 bool isValue(ParserNode *node);
+
+char escapeChar(char *begin,char *end, bool *success);

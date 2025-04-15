@@ -7,7 +7,6 @@
 #include "utils/string.h"
 #include <stddef.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 AstTree AST_TREE_TYPE_TYPE = {
@@ -1321,6 +1320,7 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
       case PARSER_TOKEN_VALUE_INT:
       case PARSER_TOKEN_VALUE_FLOAT:
       case PARSER_TOKEN_VALUE_CHAR:
+      case PARSER_TOKEN_VALUE_STRING:
       case PARSER_TOKEN_FUNCTION_DEFINITION:
       case PARSER_TOKEN_FUNCTION_CALL:
       case PARSER_TOKEN_IDENTIFIER:
@@ -1552,6 +1552,8 @@ AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper) {
   case PARSER_TOKEN_VALUE_CHAR:
     return astTreeParseValue(parserNode, AST_TREE_TOKEN_VALUE_INT,
                              sizeof(AstTreeInt), &AST_TREE_U8_TYPE);
+  case PARSER_TOKEN_VALUE_STRING:
+    return astTreeParseString(parserNode, helper);
   case PARSER_TOKEN_KEYWORD_NULL:
     return astTreeParseKeyword(parserNode, AST_TREE_TOKEN_VALUE_NULL);
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
@@ -1753,6 +1755,7 @@ AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *p_helper) {
     case PARSER_TOKEN_VALUE_FLOAT:
     case PARSER_TOKEN_VALUE_BOOL:
     case PARSER_TOKEN_VALUE_CHAR:
+    case PARSER_TOKEN_VALUE_STRING:
     case PARSER_TOKEN_TYPE_TYPE:
     case PARSER_TOKEN_TYPE_FUNCTION:
     case PARSER_TOKEN_TYPE_VOID:
@@ -1997,6 +2000,44 @@ AstTree *astTreeParseValue(ParserNode *parserNode, AstTreeToken token,
 
   return newAstTree(token, metadata, type, parserNode->str_begin,
                     parserNode->str_end);
+}
+
+AstTree *astTreeParseString(ParserNode *parserNode, AstTreeHelper *helper) {
+  (void)helper;
+  ParserNodeStringMetadata *node_metadata = parserNode->metadata;
+
+  AstTreeObject *metadata = a404m_malloc(sizeof(*metadata));
+
+  metadata->variables.size = node_metadata->end - node_metadata->begin;
+  metadata->variables.data = a404m_malloc(metadata->variables.size *
+                                          sizeof(*metadata->variables.data));
+
+  for (size_t i = 0; i < metadata->variables.size; ++i) {
+    AstTreeInt *cellMetadata = a404m_malloc(sizeof(*cellMetadata));
+    *cellMetadata = node_metadata->begin[i];
+
+    metadata->variables.data[i] =
+        a404m_malloc(sizeof(*metadata->variables.data[i]));
+    metadata->variables.data[i]->isConst = false;
+    metadata->variables.data[i]->name_begin = NULL;
+    metadata->variables.data[i]->name_end = NULL;
+    metadata->variables.data[i]->type = copyAstTree(&AST_TREE_U8_TYPE);
+    metadata->variables.data[i]->value =
+        newAstTree(AST_TREE_TOKEN_VALUE_INT, cellMetadata,
+                   copyAstTree(&AST_TREE_U8_TYPE), NULL, NULL);
+  }
+
+  AstTreeBracket *type_metadata = a404m_malloc(sizeof(*type_metadata));
+  type_metadata->operand = &AST_TREE_U8_TYPE;
+  type_metadata->parameters.size = 1;
+  type_metadata->parameters.data = a404m_malloc(
+      type_metadata->parameters.size * sizeof(*type_metadata->parameters.data));
+  type_metadata->parameters.data[0] = &AST_TREE_U8_TYPE;
+
+  return newAstTree(AST_TREE_TOKEN_VALUE_OBJECT, metadata,
+                    newAstTree(AST_TREE_TOKEN_TYPE_ARRAY, type_metadata,
+                               &AST_TREE_TYPE_TYPE, NULL, NULL),
+                    parserNode->str_begin, parserNode->str_end);
 }
 
 AstTree *astTreeParseKeyword(ParserNode *parserNode, AstTreeToken token) {
@@ -2293,6 +2334,7 @@ AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
     case PARSER_TOKEN_VALUE_FLOAT:
     case PARSER_TOKEN_VALUE_BOOL:
     case PARSER_TOKEN_VALUE_CHAR:
+    case PARSER_TOKEN_VALUE_STRING:
     case PARSER_TOKEN_TYPE_TYPE:
     case PARSER_TOKEN_TYPE_FUNCTION:
     case PARSER_TOKEN_TYPE_VOID:

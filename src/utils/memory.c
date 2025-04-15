@@ -1,6 +1,5 @@
 #include "memory.h"
 
-#include <stdlib.h>
 #include <malloc.h>
 
 void *a404m_malloc(size_t size) {

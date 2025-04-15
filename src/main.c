@@ -2,7 +2,6 @@
 #include "utils/file.h"
 #include "utils/log.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <time.h>
 
 // #define PRINT_COMPILE_TREE

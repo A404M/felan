@@ -1,23 +1,10 @@
-ptr :: (t:type) -> type {
-  return struct {
-    address : u64;
-    t :: t;
-  };
-};
-
-array :: (t:type,length:u64)->type{
-  return struct {
-    ptr : *t;
-    length :: length;
-  };
-};
-
 main :: () -> void {
-  test : array(u64,@cast(8,u64)) = undefined;
-  test2 : array(u64,@cast(8,u64)) = undefined;
-  println(@typeOf(test) == @typeOf(test2));
-  test.ptr = null;
-  test.length;
+  a := "Hello world\n";
+  i := 0;
+  while i < 12 {
+    putc a[i];
+    i += 1;
+  }
 };
 
 print :: (value:[10]u8)->void{

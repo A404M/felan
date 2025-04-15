@@ -3,7 +3,6 @@
 #include "utils/log.h"
 #include "utils/memory.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #define doOperation(op0, op1, operator, originalType, type)                    \
@@ -28,7 +27,6 @@
 
 void runnerVariableSetValue(AstTreeVariable *variable, AstTree *value) {
   if (variable->isConst) {
-    *(u8 *)0 = 0;
     UNREACHABLE;
   }
   runnerVariableSetValueWihtoutConstCheck(variable, value);
@@ -1185,11 +1183,11 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
       for (size_t i = 0; i < newMetadata->variables.size; ++i) {
         AstTreeVariable *member = newMetadata->variables.data[i];
         if (!member->isConst) {
-          runnerVariableSetValue(
-              member,
-              newAstTree(AST_TREE_TOKEN_VALUE_UNDEFINED, NULL,
-                         copyAstTree(member->type), variable->value->str_begin,
-                         variable->value->str_end));
+          runnerVariableSetValue(member,
+                                 newAstTree(AST_TREE_TOKEN_VALUE_UNDEFINED,
+                                            NULL, copyAstTree(member->type),
+                                            variable->value->str_begin,
+                                            variable->value->str_end));
         }
       }
 
