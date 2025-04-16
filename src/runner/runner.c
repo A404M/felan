@@ -45,24 +45,34 @@ bool runAstTree(AstTreeRoot *root) {
   static const size_t MAIN_STR_SIZE =
       (sizeof(MAIN_STR) / sizeof(*MAIN_STR)) - sizeof(*MAIN_STR);
 
+  AstTreeVariable *mainVariable = NULL;
+
   for (size_t i = 0; i < root->variables.size; ++i) {
     AstTreeVariable *variable = root->variables.data[i];
-    AstTree *variable_value = variable->value;
     size_t name_size = variable->name_end - variable->name_begin;
     if (name_size == MAIN_STR_SIZE &&
         strncmp(variable->name_begin, MAIN_STR, MAIN_STR_SIZE) == 0 &&
-        variable_value->token == AST_TREE_TOKEN_FUNCTION) {
-
-      AstTree *main = copyAstTree(variable_value);
-
-      const bool ret =
-          runAstTreeFunction(main, NULL, 0) == &AST_TREE_VOID_VALUE;
-      astTreeDelete(main);
-      return ret;
+        variable->value->token == AST_TREE_TOKEN_FUNCTION) {
+      if (mainVariable != NULL) {
+        printLog("Too many main variables");
+        return false;
+      }
+      mainVariable = variable;
     }
   }
-  printLog("main function is not found");
-  return false;
+
+  if (mainVariable == NULL) {
+    printLog("main function is not found");
+    return false;
+  }
+
+  AstTree *main = copyAstTree(mainVariable->value);
+
+  AstTree *res = runAstTreeFunction(main, NULL, 0);
+  const bool ret = res == &AST_TREE_VOID_VALUE;
+  astTreeDelete(res);
+  astTreeDelete(main);
+  return ret;
 }
 
 AstTree *runAstTreeFunction(AstTree *tree, AstTreeFunctionCallParam *arguments,
