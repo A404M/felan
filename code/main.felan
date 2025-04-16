@@ -1,15 +1,12 @@
 main :: () -> void {
-  a := "Hello world\n";
-  i := 0;
-  while i < 12 {
-    putc a[i];
-    i += 1;
-  }
-  print(a);
+  print("Hello world!\n");
 };
 
 print :: (value:[]u8)->void{
-  i := 0;
-  putc 'h';
+  i :u64= 0;
+  while i < value.length {
+    putc value[i];
+    i += 1;
+  }
 };
 

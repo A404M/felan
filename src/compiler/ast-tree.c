@@ -3689,6 +3689,13 @@ bool setTypesValueUndefined(AstTree *tree, AstTreeSetTypesHelper helper) {
   if (helper.lookingType == NULL) {
     printError(tree->str_begin, tree->str_end, "Can't find type of undefined");
     return false;
+  } else if (helper.lookingType->token == AST_TREE_TOKEN_TYPE_ARRAY) {
+    AstTreeBracket *array_metadata = helper.lookingType->metadata;
+    if (array_metadata->parameters.size == 0) {
+      printError(tree->str_begin, tree->str_end,
+                 "Can't find size of array valued undefined");
+      return false;
+    }
   }
   tree->type = copyAstTree(helper.lookingType);
   return true;
@@ -3917,33 +3924,7 @@ bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper,
 
   AstTreeVariable *variable = NULL;
   size_t variable_index = -1ULL;
-  if (helper.lookingType != NULL) {
-    for (size_t i = 0; i < variables->size; ++i) {
-      AstTreeVariable *var = variables->data[i].variable;
-      size_t index = variables->data[i].index;
-
-      if (!setTypesAstVariable(var, helper)) {
-        goto RETURN_ERROR;
-      }
-
-      if (!typeIsEqual(var->type, helper.lookingType)) {
-        continue;
-      }
-
-      if (variable != NULL) {
-        if (variable_index > index) {
-          continue;
-        } else if (variable != NULL && variable_index == index) {
-          printError(tree->str_begin, tree->str_end,
-                     "Multiple candidates found");
-          goto RETURN_ERROR;
-        }
-      }
-
-      variable = var;
-      variable_index = index;
-    }
-  } else if (functionCall == NULL) {
+  if (functionCall == NULL) {
     for (size_t i = 0; i < variables->size; ++i) {
       AstTreeVariable *var = variables->data[i].variable;
       size_t index = variables->data[i].index;
@@ -4384,29 +4365,44 @@ bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper) {
   AstTreeAccess *metadata = tree->metadata;
   if (!setAllTypes(metadata->object, helper, NULL, NULL)) {
     return false;
-  } else if (metadata->object->type->token != AST_TREE_TOKEN_KEYWORD_STRUCT) {
+  } else if (metadata->object->type->token == AST_TREE_TOKEN_TYPE_ARRAY) {
+    const size_t size = metadata->member.name.end - metadata->member.name.begin;
+    const char *str = metadata->member.name.begin;
+
+    const char LENGTH_STR[] = "length";
+    const size_t LENGTH_STR_SIZE = strlen(LENGTH_STR);
+    if (LENGTH_STR_SIZE == size && strncmp(LENGTH_STR, str, size) == 0) {
+      metadata->member.index = 0;
+      tree->type = copyAstTree(&AST_TREE_U64_TYPE);
+      return true;
+    }
+
+    printError(metadata->member.name.begin, metadata->member.name.end,
+               "Member not found");
+    return false;
+  } else if (metadata->object->type->token == AST_TREE_TOKEN_KEYWORD_STRUCT) {
+    AstTreeStruct *struc = metadata->object->type->metadata;
+    const size_t size = metadata->member.name.end - metadata->member.name.begin;
+    const char *str = metadata->member.name.begin;
+
+    for (size_t i = 0; i < struc->variables.size; ++i) {
+      AstTreeVariable *member = struc->variables.data[i];
+      const size_t member_size = member->name_end - member->name_begin;
+      if (member_size == size && strncmp(member->name_begin, str, size) == 0) {
+        metadata->member.index = i;
+        tree->type = copyAstTree(member->type);
+        return true;
+      }
+    }
+
+    printError(metadata->member.name.begin, metadata->member.name.end,
+               "Member not found");
+    return false;
+  } else {
     printError(metadata->object->str_begin, metadata->object->str_end,
                "The object is not a struct");
     return false;
   }
-
-  AstTreeStruct *struc = metadata->object->type->metadata;
-  const size_t size = metadata->member.name.end - metadata->member.name.begin;
-  const char *str = metadata->member.name.begin;
-
-  for (size_t i = 0; i < struc->variables.size; ++i) {
-    AstTreeVariable *member = struc->variables.data[i];
-    const size_t member_size = member->name_end - member->name_begin;
-    if (member_size == size && strncmp(member->name_begin, str, size) == 0) {
-      metadata->member.index = i;
-      tree->type = copyAstTree(member->type);
-      return true;
-    }
-  }
-
-  printError(metadata->member.name.begin, metadata->member.name.end,
-             "Member not found");
-  return false;
 }
 
 bool setTypesBuiltin(AstTree *tree, AstTreeSetTypesHelper helper,

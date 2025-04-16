@@ -1167,44 +1167,69 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
   case AST_TREE_TOKEN_OPERATOR_ACCESS: {
     AstTreeAccess *metadata = expr->metadata;
     AstTree *tree = runExpression(metadata->object, scope, shouldRet, true);
-    if (tree->type->token != AST_TREE_TOKEN_KEYWORD_STRUCT &&
-        tree->token != AST_TREE_TOKEN_VARIABLE) {
+    if (tree->token != AST_TREE_TOKEN_VARIABLE) {
       UNREACHABLE;
     }
     AstTreeVariable *variable = tree->metadata;
     astTreeDelete(tree);
-    if (variable->value->token == AST_TREE_TOKEN_VALUE_UNDEFINED) {
-      AstTreeStruct *struc = variable->type->metadata;
-      AstTreeObject *newMetadata = a404m_malloc(sizeof(*newMetadata));
-
-      newMetadata->variables =
-          copyAstTreeVariables(struc->variables, NULL, NULL, 0);
-
-      for (size_t i = 0; i < newMetadata->variables.size; ++i) {
-        AstTreeVariable *member = newMetadata->variables.data[i];
-        if (!member->isConst) {
-          runnerVariableSetValue(member,
-                                 newAstTree(AST_TREE_TOKEN_VALUE_UNDEFINED,
-                                            NULL, copyAstTree(member->type),
-                                            variable->value->str_begin,
-                                            variable->value->str_end));
+    if (variable->type->token == AST_TREE_TOKEN_TYPE_ARRAY) {
+      AstTreeBracket *array_metadata = variable->type->metadata;
+      if (metadata->member.index != 0) {
+        UNREACHABLE;
+      } else if (variable->value->token == AST_TREE_TOKEN_VALUE_UNDEFINED) {
+        if (array_metadata->parameters.size == 0) {
+          UNREACHABLE;
+        } else {
+          AstTree *sizeTree = runExpression(array_metadata->parameters.data[0],
+                                            scope, shouldRet, false);
+          if (sizeTree->token != AST_TREE_TOKEN_VALUE_INT) {
+            UNREACHABLE;
+          } else {
+            return sizeTree;
+          }
         }
+      } else if (variable->value->token == AST_TREE_TOKEN_VALUE_OBJECT) {
+        AstTreeObject *object = variable->value->metadata;
+        AstTreeInt *res_metadata = a404m_malloc(sizeof(*res_metadata));
+        *res_metadata = object->variables.size;
+        return newAstTree(AST_TREE_TOKEN_VALUE_INT, res_metadata,
+                          &AST_TREE_U64_TYPE, NULL, NULL);
       }
+    } else if (variable->type->token == AST_TREE_TOKEN_KEYWORD_STRUCT) {
+      if (variable->value->token == AST_TREE_TOKEN_VALUE_UNDEFINED) {
+        AstTreeStruct *struc = variable->type->metadata;
+        AstTreeObject *newMetadata = a404m_malloc(sizeof(*newMetadata));
 
-      runnerVariableSetValue(variable, newAstTree(AST_TREE_TOKEN_VALUE_OBJECT,
-                                                  newMetadata,
-                                                  copyAstTree(variable->type),
-                                                  variable->value->str_begin,
-                                                  variable->value->str_end));
+        newMetadata->variables =
+            copyAstTreeVariables(struc->variables, NULL, NULL, 0);
+
+        for (size_t i = 0; i < newMetadata->variables.size; ++i) {
+          AstTreeVariable *member = newMetadata->variables.data[i];
+          if (!member->isConst) {
+            runnerVariableSetValue(member,
+                                   newAstTree(AST_TREE_TOKEN_VALUE_UNDEFINED,
+                                              NULL, copyAstTree(member->type),
+                                              variable->value->str_begin,
+                                              variable->value->str_end));
+          }
+        }
+
+        runnerVariableSetValue(variable, newAstTree(AST_TREE_TOKEN_VALUE_OBJECT,
+                                                    newMetadata,
+                                                    copyAstTree(variable->type),
+                                                    variable->value->str_begin,
+                                                    variable->value->str_end));
+      }
+      AstTreeObject *object = variable->value->metadata;
+      AstTreeVariable *var = object->variables.data[metadata->member.index];
+      if (isLeft) {
+        return newAstTree(AST_TREE_TOKEN_VARIABLE, var, copyAstTree(var->type),
+                          var->name_begin, var->name_end);
+      } else {
+        return copyAstTree(var->value);
+      }
     }
-    AstTreeObject *object = variable->value->metadata;
-    AstTreeVariable *var = object->variables.data[metadata->member.index];
-    if (isLeft) {
-      return newAstTree(AST_TREE_TOKEN_VARIABLE, var, copyAstTree(var->type),
-                        var->name_begin, var->name_end);
-    } else {
-      return copyAstTree(var->value);
-    }
+    UNREACHABLE;
   }
   case AST_TREE_TOKEN_KEYWORD_STRUCT: {
     expr = copyAstTree(expr);
