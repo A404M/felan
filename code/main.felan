@@ -5,76 +5,11 @@ main :: () -> void {
     putc a[i];
     i += 1;
   }
+  print(a);
 };
 
-print :: (value:[10]u8)->void{
-  println(23);
-};
-
-println :: ()->void{
-  putc '\n';
-};
-
-println :: (value:i64)->void{
-  print(value);
-  putc '\n';
-};
-
-println :: (value:u64)->void{
-  print(value);
-  putc '\n';
-};
-
-println :: (value:bool)->void{
-  print(value);
-  putc '\n';
-};
-
-print :: (value:i64)->void{
-  value := value;
-  a : [20]u8 = undefined;
+print :: (value:[]u8)->void{
   i := 0;
-  while {
-    a[i] = '0' + @cast(value % 10,u8);
-    i += 1;
-    value /= 10;
-    value != 0;
-  } {}
-
-  while i > 0 {
-    putc a[i-1];
-    i -= 1;
-  }
+  putc 'h';
 };
 
-print :: (value:u64)->void{
-  value := value;
-  a : [20]u8 = undefined;
-  i := 0;
-  while {
-    a[i] = '0' + @cast(value % 10,u8);
-    i += 1;
-    value /= 10;
-    value != 0;
-  } {}
-
-  while i > 0 {
-    putc a[i-1];
-    i -= 1;
-  }
-};
-
-print :: (value:bool)->void{
-  if value {
-    putc 't';
-    putc 'r';
-    putc 'u';
-    putc 'e';
-  }else{
-    putc 'f';
-    putc 'a';
-    putc 'l';
-    putc 's';
-    putc 'e';
-  }
-};

@@ -2029,10 +2029,16 @@ AstTree *astTreeParseString(ParserNode *parserNode, AstTreeHelper *helper) {
 
   AstTreeBracket *type_metadata = a404m_malloc(sizeof(*type_metadata));
   type_metadata->operand = &AST_TREE_U8_TYPE;
+
+  AstTreeInt *parameter_metadata = a404m_malloc(sizeof(*parameter_metadata));
+  *parameter_metadata = metadata->variables.size;
+  AstTree *parameter = newAstTree(AST_TREE_TOKEN_VALUE_INT, parameter_metadata,
+                                  &AST_TREE_I64_TYPE, NULL, NULL);
+
   type_metadata->parameters.size = 1;
   type_metadata->parameters.data = a404m_malloc(
       type_metadata->parameters.size * sizeof(*type_metadata->parameters.data));
-  type_metadata->parameters.data[0] = &AST_TREE_U8_TYPE;
+  type_metadata->parameters.data[0] = parameter;
 
   return newAstTree(AST_TREE_TOKEN_VALUE_OBJECT, metadata,
                     newAstTree(AST_TREE_TOKEN_TYPE_ARRAY, type_metadata,
@@ -3045,14 +3051,20 @@ bool typeIsEqualBack(const AstTree *type0, const AstTree *type1) {
     return typeIsEqual(type0_metadata, type1_metadata);
   }
   case AST_TREE_TOKEN_TYPE_ARRAY: {
-    if (type1->token != type0->token)
+    if (type1->token != type0->token) {
       return false;
+    }
 
     AstTreeBracket *type0_metadata = type0->metadata;
     AstTreeBracket *type1_metadata = type1->metadata;
 
-    if (!typeIsEqual(type0_metadata->operand, type1_metadata->operand) ||
-        type0_metadata->parameters.size != type1_metadata->parameters.size) {
+    if (!typeIsEqual(type0_metadata->operand, type1_metadata->operand)) {
+      return false;
+    } else if (type0_metadata->parameters.size == 0 ||
+               type1_metadata->parameters.size == 0) {
+      return true;
+    } else if (type0_metadata->parameters.size !=
+               type1_metadata->parameters.size) {
       return false;
     }
 
@@ -4558,26 +4570,28 @@ bool setTypesTypeArray(AstTree *tree, AstTreeSetTypesHelper helper) {
     return false;
   }
 
-  if (metadata->parameters.size != 1) {
+  if (metadata->parameters.size == 0) {
+    // left empty
+  } else if (metadata->parameters.size == 1) {
+    AstTreeSetTypesHelper newHelper = {
+        .lookingType = &AST_TREE_U64_TYPE,
+        .dependencies = helper.dependencies,
+    };
+
+    for (size_t i = 0; i < metadata->parameters.size; ++i) {
+      AstTree *param = metadata->parameters.data[i];
+      if (!setAllTypes(param, newHelper, NULL, NULL)) {
+        return false;
+      } else if (!isIntType(param->type)) {
+        printError(param->str_begin, param->str_end,
+                   "Should only be int (for now)");
+        return false;
+      }
+    }
+  } else {
     printError(tree->str_begin, tree->str_end,
                "Multiple param in array is not yet supported");
     return false;
-  }
-
-  AstTreeSetTypesHelper newHelper = {
-      .lookingType = &AST_TREE_U64_TYPE,
-      .dependencies = helper.dependencies,
-  };
-
-  for (size_t i = 0; i < metadata->parameters.size; ++i) {
-    AstTree *param = metadata->parameters.data[i];
-    if (!setAllTypes(param, newHelper, NULL, NULL)) {
-      return false;
-    } else if (!isIntType(param->type)) {
-      printError(param->str_begin, param->str_end,
-                 "Should only be int (for now)");
-      return false;
-    }
   }
 
   tree->type = copyAstTree(&AST_TREE_TYPE_TYPE);
