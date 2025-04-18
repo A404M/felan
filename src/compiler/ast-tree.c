@@ -551,9 +551,23 @@ void astTreeVariablePrint(const AstTreeVariable *variable, int indent) {
   if (variable->value == NULL) {
     for (int i = 0; i < indent; ++i)
       printf(" ");
-    printf("null\n");
+    printf("null,\n");
   } else {
     astTreePrint(variable->value, indent);
+    printf(",\n");
+  }
+
+  for (int i = 0; i < indent; ++i)
+    printf(" ");
+
+  printf("initValue=\n");
+
+  if (variable->initValue == NULL) {
+    for (int i = 0; i < indent; ++i)
+      printf(" ");
+    printf("null\n");
+  } else {
+    astTreePrint(variable->initValue, indent);
     printf("\n");
   }
 
@@ -775,6 +789,9 @@ void astTreeDestroy(AstTree tree) {
 void astTreeVariableDestroy(AstTreeVariable variable) {
   if (variable.value != NULL) {
     astTreeDelete(variable.value);
+  }
+  if (variable.initValue != NULL) {
+    astTreeDelete(variable.initValue);
   }
   if (variable.type != NULL) {
     astTreeDelete(variable.type);
@@ -1214,6 +1231,13 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
     } else {
       result.data[i]->value = NULL;
     }
+    if (variables.data[i]->initValue != NULL) {
+      result.data[i]->initValue =
+          copyAstTreeBack(variables.data[i]->initValue, new_oldVariables,
+                          new_newVariables, new_variables_size);
+    } else {
+      result.data[i]->initValue = NULL;
+    }
   }
 
   return result;
@@ -1412,7 +1436,13 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot) {
       }
 
       root->variables.data[i]->type = type;
-      root->variables.data[i]->value = value;
+      if (root->variables.data[i]->isConst) {
+        root->variables.data[i]->value = value;
+        root->variables.data[i]->initValue = NULL;
+      } else {
+        root->variables.data[i]->value = NULL;
+        root->variables.data[i]->initValue = value;
+      }
     } else {
       printError(node->str_begin, node->str_end,
                  "Only variables are allowed here");
@@ -1724,6 +1754,7 @@ AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *p_helper) {
 
     AstTreeVariable *argument = a404m_malloc(sizeof(*argument));
     argument->value = NULL;
+    argument->initValue = NULL;
     argument->type = type;
     argument->name_begin = arg_metadata->name->str_begin;
     argument->name_end = arg_metadata->name->str_end;
@@ -2018,13 +2049,14 @@ AstTree *astTreeParseString(ParserNode *parserNode, AstTreeHelper *helper) {
 
     metadata->variables.data[i] =
         a404m_malloc(sizeof(*metadata->variables.data[i]));
-    metadata->variables.data[i]->isConst = false;
+    metadata->variables.data[i]->isConst = true;
     metadata->variables.data[i]->name_begin = NULL;
     metadata->variables.data[i]->name_end = NULL;
     metadata->variables.data[i]->type = copyAstTree(&AST_TREE_U8_TYPE);
     metadata->variables.data[i]->value =
         newAstTree(AST_TREE_TOKEN_VALUE_INT, cellMetadata,
                    copyAstTree(&AST_TREE_U8_TYPE), NULL, NULL);
+    metadata->variables.data[i]->initValue = NULL;
   }
 
   AstTreeBracket *type_metadata = a404m_malloc(sizeof(*type_metadata));
@@ -2177,6 +2209,7 @@ bool astTreeParseConstant(ParserNode *parserNode, AstTreeHelper *helper) {
   AstTreeVariable *variable = a404m_malloc(sizeof(*variable));
   variable->type = type;
   variable->value = value;
+  variable->initValue = NULL;
   variable->name_begin = node_metadata->name->str_begin;
   variable->name_end = node_metadata->name->str_end;
   variable->isConst = true;
@@ -2221,7 +2254,8 @@ AstTree *astTreeParseVariable(ParserNode *parserNode, AstTreeHelper *helper) {
 
   AstTreeVariable *variable = a404m_malloc(sizeof(*variable));
   variable->type = type;
-  variable->value = value;
+  variable->value = NULL;
+  variable->initValue = value;
   variable->name_begin = node_metadata->name->str_begin;
   variable->name_end = node_metadata->name->str_end;
   variable->isConst = false;
@@ -2498,6 +2532,7 @@ AstTree *astTreeParseStruct(ParserNode *parserNode, AstTreeHelper *helper) {
         NOT_IMPLEMENTED;
       }
       variable->value = astTreeParse(node_variable->value, helper);
+      variable->initValue = NULL;
       variable->isConst = true;
     } else {
       if (node_variable->value != NULL) {
@@ -2505,6 +2540,7 @@ AstTree *astTreeParseStruct(ParserNode *parserNode, AstTreeHelper *helper) {
         NOT_IMPLEMENTED;
       }
       variable->value = NULL;
+      variable->initValue = NULL;
       variable->isConst = false;
     }
 
@@ -3374,6 +3410,12 @@ bool isEqualVariable(AstTreeVariable *left, AstTreeVariable *right) {
     return false;
   } else if (left->value != NULL && !isEqual(left->value, right->value)) {
     return false;
+  } else if ((left->initValue == NULL && right->initValue != NULL) ||
+             (left->initValue != NULL && right->initValue == NULL)) {
+    return false;
+  } else if (left->initValue != NULL &&
+             !isEqual(left->initValue, right->initValue)) {
+    return false;
   } else {
     return true;
   }
@@ -3727,7 +3769,7 @@ bool setTypesFunction(AstTree *tree, AstTreeSetTypesHelper helper) {
   size_t deps_size = 0;
   for (size_t i = 0; i < helper.dependencies.size; ++i) {
     AstTreeVariable *var = helper.dependencies.data[i];
-    if (var->value == tree) {
+    if (var->value == tree || var->initValue == tree) {
       continue;
     }
     deps[deps_size] = helper.dependencies.data[i];
@@ -4228,24 +4270,34 @@ bool setTypesAstVariable(AstTreeVariable *variable,
       !setAllTypes(variable->value, helper, NULL, NULL)) {
     return false;
   }
+  if (variable->initValue != NULL &&
+      !setAllTypes(variable->initValue, helper, NULL, NULL)) {
+    return false;
+  }
+
+  AstTree *value;
+  if (variable->value == NULL) {
+    value = variable->initValue;
+  } else {
+    value = variable->value;
+  }
 
   if (variable->type == NULL) {
-    variable->type = copyAstTree(variable->value->type);
+    variable->type = copyAstTree(value->type);
   }
 
   if (variable->type == NULL) {
     return false;
-  } else if (variable->value != NULL) {
-    if (variable->value != NULL &&
-        !typeIsEqual(variable->value->type, variable->type)) {
+  } else if (value != NULL) {
+    if (value != NULL && !typeIsEqual(value->type, variable->type)) {
       printError(variable->name_begin, variable->name_end,
                  "Type mismatch value = %s but type = %s",
-                 AST_TREE_TOKEN_STRINGS[variable->value->type->token],
+                 AST_TREE_TOKEN_STRINGS[value->type->token],
                  AST_TREE_TOKEN_STRINGS[variable->type->token]);
       return false;
     } else if (variable->isConst) {
-      if (!isConst(variable->value)) {
-        printError(variable->value->str_begin, variable->value->str_end,
+      if (!isConst(value)) {
+        printError(value->str_begin, value->str_end,
                    "Can't initialize constant with non constant value");
         return false;
       }

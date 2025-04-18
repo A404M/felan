@@ -52,12 +52,15 @@ bool runAstTree(AstTreeRoot *root) {
     size_t name_size = variable->name_end - variable->name_begin;
     if (name_size == MAIN_STR_SIZE &&
         strncmp(variable->name_begin, MAIN_STR, MAIN_STR_SIZE) == 0 &&
-        variable->value->token == AST_TREE_TOKEN_FUNCTION) {
+        variable->type->token == AST_TREE_TOKEN_TYPE_FUNCTION) {
       if (mainVariable != NULL) {
         printLog("Too many main variables");
         return false;
       }
       mainVariable = variable;
+    }
+    if (!variable->isConst) {
+      runnerVariableSetValueWihtoutConstCheck(variable, variable->initValue);
     }
   }
 
@@ -66,7 +69,13 @@ bool runAstTree(AstTreeRoot *root) {
     return false;
   }
 
-  AstTree *main = copyAstTree(mainVariable->value);
+  AstTree *main;
+  if (mainVariable->value != NULL) {
+    main = copyAstTree(mainVariable->value);
+  } else {
+    printLog("main has no value");
+    return false;
+  }
 
   AstTree *res = runAstTreeFunction(main, NULL, 0);
   const bool ret = res == &AST_TREE_VOID_VALUE;
@@ -424,7 +433,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
   case AST_TREE_TOKEN_VARIABLE_DEFINE: {
     AstTreeVariable *variable = expr->metadata;
     runnerVariableSetValue(
-        variable, runExpression(variable->value, scope, shouldRet, false));
+        variable, runExpression(variable->initValue, scope, shouldRet, false));
     return &AST_TREE_VOID_VALUE;
   }
   case AST_TREE_TOKEN_KEYWORD_IF: {
@@ -1313,6 +1322,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
         member->value = newAstTree(
             AST_TREE_TOKEN_VALUE_UNDEFINED, NULL, copyAstTree(member->type),
             variable->value->str_begin, variable->value->str_end);
+        member->initValue = NULL;
         newMetadata->variables.data[i] = member;
       }
 

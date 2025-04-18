@@ -37,9 +37,8 @@ to_u64 :: (value:string) -> u64 {
   i :u64= 0;
   result :u64= 0;
 
-  c :u8= undefined;
   while i < value.length {
-    c = value[value.length-i-1];
+    c := value[value.length-i-1];
     result *= 10;
     result += @cast(c - '0',u64);
     i += 1;

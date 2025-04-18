@@ -111,6 +111,7 @@ typedef struct AstTreeVariable {
   char *name_end;
   AstTree *type;
   AstTree *value;
+  AstTree *initValue;
   bool isConst;
 } AstTreeVariable;
 
