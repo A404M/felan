@@ -1121,7 +1121,7 @@ ParserNode *parserString(LexerNode *node, ParserNode *parent) {
   metadata->begin = metadata->end = a404m_malloc(
       sizeof(*metadata->begin) * (node->str_end - node->str_begin));
 
-  for (char *iter = node->str_begin + 1; iter < node->str_end - 2; ++iter) {
+  for (char *iter = node->str_begin + 1; iter < node->str_end - 1; ++iter) {
     if (*iter == '\\') {
       iter += 1;
       bool success;
@@ -1135,6 +1135,10 @@ ParserNode *parserString(LexerNode *node, ParserNode *parent) {
     }
     metadata->end += 1;
   }
+
+  size_t size = metadata->end - metadata->begin;
+  metadata->begin = a404m_realloc(metadata->begin, size * (*metadata->begin));
+  metadata->end = metadata->begin + size;
 
   return node->parserNode =
              newParserNode(PARSER_TOKEN_VALUE_STRING, node->str_begin,

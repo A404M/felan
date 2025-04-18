@@ -1,5 +1,10 @@
+string :: []u8;
+
 main :: () -> void {
-  print("Hello world!\n");
+  str := "123";
+  print(str);
+  v := to_u64(str);
+  print(v);
 };
 
 print :: (value:[]u8)->void{
@@ -8,5 +13,37 @@ print :: (value:[]u8)->void{
     putc value[i];
     i += 1;
   }
+};
+
+print :: (value:u64)->void{
+  value := value;
+  result :[20]u8 = undefined;
+  i := 0;
+  while {
+    result[i] = '0' + @cast(value % 10,u8);
+    i += 1;
+    value /= 10;
+    value != 0;
+  } {}
+
+  j := 0;
+  while j < i {
+    putc result[j];
+    j += 1;
+  }
+};
+
+to_u64 :: (value:string) -> u64 {
+  i :u64= 0;
+  result :u64= 0;
+
+  c :u8= undefined;
+  while i < value.length {
+    c = value[value.length-i-1];
+    result *= 10;
+    result += @cast(c - '0',u64);
+    i += 1;
+  }
+  return result;
 };
 
