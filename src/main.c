@@ -29,8 +29,8 @@ static struct timespec add(struct timespec left, struct timespec right) {
 }
 
 static void printTime(struct timespec time) {
-  printf("%02ld:%02ld.%09ldns", time.tv_sec / 60, time.tv_sec % 60,
-         time.tv_nsec);
+  printf("%02ld:%02ld.%06ldus", time.tv_sec / 60, time.tv_sec % 60,
+         time.tv_nsec / 1000);
 }
 #endif
 
