@@ -281,8 +281,7 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
                                       size_t variables_size);
 
 AstTreeRoots makeAstTree(const char *filePath);
-AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots,
-                            char ***filePathes);
+AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots);
 AstTreeRoot *makeAstRoot(ParserNode *parsedRoot, char *filePath);
 
 bool pushVariable(AstTreeHelper *helper, AstTreeVariables *variables,

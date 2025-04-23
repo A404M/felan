@@ -1266,15 +1266,12 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
 }
 
 AstTreeRoots makeAstTree(const char *filePath) {
-  char **filePathes = a404m_malloc(0 * sizeof(*filePathes));
-
-  size_t roots_size = 0;
   AstTreeRoots roots = {
-      .data = a404m_malloc(roots_size * sizeof(*roots.data)),
+      .data = a404m_malloc(0 * sizeof(*roots.data)),
       .size = 0,
   };
 
-  if (getAstTreeRoot(strClone(filePath), &roots, &filePathes) == NULL) {
+  if (getAstTreeRoot(strClone(filePath), &roots) == NULL) {
     goto RETURN_ERROR;
   }
 
@@ -1285,31 +1282,19 @@ AstTreeRoots makeAstTree(const char *filePath) {
     }
   }
 
-  free(filePathes);
-
   return roots;
 
 RETURN_ERROR:
   return AST_TREE_ROOTS_ERROR;
 }
 
-AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots,
-                            char ***filePathes) {
+AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots) {
   for (size_t i = 0; i < roots->size; ++i) {
-    if (strcmp(*filePathes[i], filePath) == 0) {
+    if (strcmp(roots->data[i]->filePath, filePath) == 0) {
       free(filePath);
       return roots->data[i];
     }
   }
-
-  const size_t filePathes_size =
-      a404m_malloc_usable_size(*filePathes) / sizeof(**filePathes);
-  if (filePathes_size == roots->size) {
-    *filePathes =
-        a404m_realloc(*filePathes, (filePathes_size + filePathes_size / 2 + 1) *
-                                       sizeof(**filePathes));
-  }
-  *filePathes[roots->size] = filePath;
 
   ParserNode *parserNode = parserFromPath(filePath);
   if (parserNode == NULL) {
@@ -1320,6 +1305,14 @@ AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots,
   if (root == NULL) {
     goto RETURN_ERROR;
   }
+
+  const size_t roots_size =
+      a404m_malloc_usable_size(roots->data) / sizeof(*roots->data);
+  if (roots_size == roots->size) {
+    roots->data = a404m_realloc(roots->data, (roots_size + roots_size / 2 + 1) *
+                                                 sizeof(*roots->data));
+  }
+  roots->data[roots->size++] = root;
 
   for (size_t i = 0; i < root->trees.size; ++i) {
     AstTree *tree = root->trees.data[i];
@@ -1377,7 +1370,7 @@ AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots,
           }
 
           AstTreeRoot *import =
-              getAstTreeRoot(joinToPathOf(filePath, str), roots, filePathes);
+              getAstTreeRoot(joinToPathOf(filePath, str), roots);
           free(str);
 
           if (import == NULL) {
@@ -1391,14 +1384,6 @@ AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots,
       }
     }
   }
-
-  const size_t roots_size =
-      a404m_malloc_usable_size(roots->data) / sizeof(*roots->data);
-  if (roots_size == roots->size) {
-    roots->data = a404m_realloc(roots->data, (roots_size + roots_size / 2 + 1) *
-                                                 sizeof(*roots->data));
-  }
-  roots->data[roots->size++] = root;
 
   return root;
 
