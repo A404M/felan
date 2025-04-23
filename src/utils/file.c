@@ -80,3 +80,46 @@ size_t getFileIndex(const char *filePath) {
 
   return fileCodes_length;
 }
+
+char *joinToPathOf(const char *original, const char *file) {
+  size_t result_size = 0;
+  for (size_t i = 0; original[i] != '\0'; ++i) {
+    if (original[i] == '/') {
+      result_size = i;
+    }
+  }
+  char *result =
+      a404m_malloc((result_size + 1 + strlen(file) + 1) * sizeof(*result));
+
+  strncpy(result, original, result_size);
+  result[result_size++] = '/';
+
+  bool startOfDirName = true;
+  for (size_t i = 0; file[i] != '\0'; ++i) {
+    if (startOfDirName && file[i + 1] == '.') {
+      if (file[i + 2] == '/') {
+        i += 2;
+        continue;
+      } else if (file[i + 2] == '.' && file[i + 3] == '/') {
+        bool found = false;
+        for (size_t j = i - 2; j != -1ULL; --j) {
+          if (result[j] == '/') {
+            result_size = j;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          result_size = 0;
+        }
+        continue;
+      }
+    }
+    result[result_size++] = file[i];
+  }
+
+  result[result_size++] = '\0';
+  result = a404m_realloc(result, result_size);
+
+  return result;
+}

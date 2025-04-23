@@ -126,10 +126,11 @@ typedef struct AstTrees {
 } AstTrees;
 
 typedef struct AstTreeRoot {
+  char *filePath;
   AstTreeVariables variables;
   AstTrees trees;
-  char **imported;
-  size_t imported_size;
+  struct AstTreeRoot **imports;
+  size_t imports_size;
 } AstTreeRoot;
 
 typedef struct AstTreeRoots {
@@ -280,7 +281,9 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
                                       size_t variables_size);
 
 AstTreeRoots makeAstTree(const char *filePath);
-AstTreeRoot *makeAstRoot(ParserNode *parsedRoot);
+AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots,
+                            char ***filePathes);
+AstTreeRoot *makeAstRoot(ParserNode *parsedRoot, char *filePath);
 
 bool pushVariable(AstTreeHelper *helper, AstTreeVariables *variables,
                   AstTreeVariable *variable);
@@ -331,6 +334,8 @@ bool isIntType(AstTree *type);
 bool isEqual(AstTree *left, AstTree *right);
 bool isEqualVariable(AstTreeVariable *left, AstTreeVariable *right);
 
+void allOfVariablesWithImport(AstTreeVariables *variables, AstTreeRoot *root,
+                              AstTreeRoots *checkedRoots);
 bool setAllTypesRoot(AstTreeRoot *root);
 bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
                  AstTreeFunction *function, AstTreeFunctionCall *functionCall);
@@ -382,3 +387,5 @@ bool setTypesAstVariable(AstTreeVariable *variable,
 bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper helper);
 
 char *u8ArrayToCString(AstTree *tree);
+
+AstTree *makeStringType();

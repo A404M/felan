@@ -2,6 +2,7 @@
 
 #include "compiler/parser.h"
 #include "runner/runner.h"
+#include "utils/file.h"
 #include "utils/log.h"
 #include "utils/memory.h"
 #include "utils/string.h"
@@ -824,10 +825,16 @@ bool astTreeShouldDelete(AstTree *tree) {
 }
 
 void astTreeRootDelete(AstTreeRoot *root) {
+  for (size_t i = 0; i < root->trees.size; ++i) {
+    astTreeDelete(root->trees.data[i]);
+  }
   for (size_t i = 0; i < root->variables.size; ++i) {
     astTreeVariableDelete(root->variables.data[i]);
   }
   free(root->variables.data);
+  free(root->trees.data);
+  free(root->filePath);
+  free(root->imports);
   free(root);
 }
 
@@ -1259,12 +1266,7 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
 }
 
 AstTreeRoots makeAstTree(const char *filePath) {
-  size_t parserNodes_capacity = 1;
-  ParserNode **parserNodes =
-      a404m_malloc(parserNodes_capacity * sizeof(*parserNodes));
-  size_t parserNodes_size = 1;
-
-  parserNodes[0] = parserFromPath(filePath);
+  char **filePathes = a404m_malloc(0 * sizeof(*filePathes));
 
   size_t roots_size = 0;
   AstTreeRoots roots = {
@@ -1272,85 +1274,8 @@ AstTreeRoots makeAstTree(const char *filePath) {
       .size = 0,
   };
 
-  for (size_t i = 0; i < parserNodes_size; ++i) {
-    ParserNode *parserNode = parserNodes[i];
-    AstTreeRoot *root = makeAstRoot(parserNode);
-    if (root == NULL) {
-      goto RETURN_ERROR;
-    }
-    for (size_t i = 0; i < root->trees.size; ++i) {
-      AstTree *tree = root->trees.data[i];
-      if (tree->token == AST_TREE_TOKEN_FUNCTION_CALL) {
-        AstTreeFunctionCall *tree_metadata = tree->metadata;
-        AstTree *operand = tree_metadata->function;
-        if (operand->token == AST_TREE_TOKEN_BUILTIN) {
-          AstTreeBuiltin *operand_metadata = operand->metadata;
-          if (operand_metadata->token == AST_TREE_BUILTIN_TOKEN_IMPORT) {
-            if (tree_metadata->parameters_size != 1) {
-              printError(tree->str_begin, tree->str_end,
-                         "Too many or too few arguments");
-              goto RETURN_ERROR;
-            }
-            AstTreeSetTypesHelper helper = {
-                .lookingType = NULL,
-                .dependencies.data = NULL,
-                .dependencies.size = 0,
-                .variables = root->variables,
-            };
-            if (!setAllTypes(tree, helper, NULL, NULL)) {
-              goto RETURN_ERROR;
-            }
-            AstTree *parameter = tree_metadata->parameters[0].value;
-            if (!isConstByValue(parameter)) {
-              printError(parameter->str_begin, parameter->str_end,
-                         "Is not constant");
-              goto RETURN_ERROR;
-            }
-            parameter = getValue(parameter);
-            if (parameter == NULL) {
-              goto RETURN_ERROR;
-            }
-
-            AstTreeBracket *type_metadata =
-                a404m_malloc(sizeof(*type_metadata));
-            type_metadata->operand = &AST_TREE_U8_TYPE;
-
-            type_metadata->parameters.size = 0;
-            type_metadata->parameters.data =
-                a404m_malloc(0 * sizeof(*type_metadata->parameters.data));
-
-            AstTree *type = newAstTree(AST_TREE_TOKEN_TYPE_ARRAY, type_metadata,
-                                       &AST_TREE_TYPE_TYPE, NULL, NULL);
-
-            if (!typeIsEqual(type, parameter->type)) {
-              printError(parameter->str_begin, parameter->str_end,
-                         "Type mismatch (must be a []u8 aka string)");
-              goto RETURN_ERROR;
-            }
-
-            char *str = u8ArrayToCString(parameter);
-
-            const size_t imported_size =
-                a404m_malloc_usable_size(root->imported) /
-                sizeof(*root->imported);
-            if (imported_size == root->imported_size) {
-              root->imported = a404m_realloc(
-                  root->imported, (imported_size + imported_size / 2 + 1) *
-                                      sizeof(*root->imported));
-            }
-            root->imported[root->imported_size++] = str;
-
-            astTreeDelete(type);
-          }
-        }
-      }
-    }
-
-    if (roots_size == roots.size) {
-      roots_size += roots_size / 2 + 13;
-      roots.data = a404m_realloc(roots.data, roots_size);
-    }
-    roots.data[roots.size++] = root;
+  if (getAstTreeRoot(strClone(filePath), &roots, &filePathes) == NULL) {
+    goto RETURN_ERROR;
   }
 
   for (size_t i = 0; i < roots.size; ++i) {
@@ -1360,10 +1285,7 @@ AstTreeRoots makeAstTree(const char *filePath) {
     }
   }
 
-  for (size_t i = 0; i < parserNodes_size; ++i) {
-    parserNodeDelete(parserNodes[i]);
-  }
-  free(parserNodes);
+  free(filePathes);
 
   return roots;
 
@@ -1371,7 +1293,120 @@ RETURN_ERROR:
   return AST_TREE_ROOTS_ERROR;
 }
 
-AstTreeRoot *makeAstRoot(ParserNode *parsedRoot) {
+AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots,
+                            char ***filePathes) {
+  for (size_t i = 0; i < roots->size; ++i) {
+    if (strcmp(*filePathes[i], filePath) == 0) {
+      free(filePath);
+      return roots->data[i];
+    }
+  }
+
+  const size_t filePathes_size =
+      a404m_malloc_usable_size(*filePathes) / sizeof(**filePathes);
+  if (filePathes_size == roots->size) {
+    *filePathes =
+        a404m_realloc(*filePathes, (filePathes_size + filePathes_size / 2 + 1) *
+                                       sizeof(**filePathes));
+  }
+  *filePathes[roots->size] = filePath;
+
+  ParserNode *parserNode = parserFromPath(filePath);
+  if (parserNode == NULL) {
+    goto RETURN_ERROR;
+  }
+  AstTreeRoot *root = makeAstRoot(parserNode, filePath);
+  parserNodeDelete(parserNode);
+  if (root == NULL) {
+    goto RETURN_ERROR;
+  }
+
+  for (size_t i = 0; i < root->trees.size; ++i) {
+    AstTree *tree = root->trees.data[i];
+    if (tree->token == AST_TREE_TOKEN_FUNCTION_CALL) {
+      AstTreeFunctionCall *tree_metadata = tree->metadata;
+      AstTree *operand = tree_metadata->function;
+      if (operand->token == AST_TREE_TOKEN_BUILTIN) {
+        AstTreeBuiltin *operand_metadata = operand->metadata;
+        if (operand_metadata->token == AST_TREE_BUILTIN_TOKEN_IMPORT) {
+          AstTreeSetTypesHelper helper = {
+              .lookingType = NULL,
+              .dependencies.data = NULL,
+              .dependencies.size = 0,
+              .variables = root->variables,
+          };
+          if (!setAllTypes(tree, helper, NULL, NULL)) {
+            goto RETURN_ERROR;
+          }
+          AstTree *parameter = tree_metadata->parameters[0].value;
+          if (!isConstByValue(parameter)) {
+            printError(parameter->str_begin, parameter->str_end,
+                       "Is not constant");
+            goto RETURN_ERROR;
+          }
+          parameter = getValue(parameter);
+          if (parameter == NULL) {
+            goto RETURN_ERROR;
+          }
+
+          AstTreeBracket *type_metadata = a404m_malloc(sizeof(*type_metadata));
+          type_metadata->operand = &AST_TREE_U8_TYPE;
+
+          type_metadata->parameters.size = 0;
+          type_metadata->parameters.data =
+              a404m_malloc(0 * sizeof(*type_metadata->parameters.data));
+
+          AstTree *type = newAstTree(AST_TREE_TOKEN_TYPE_ARRAY, type_metadata,
+                                     &AST_TREE_TYPE_TYPE, NULL, NULL);
+
+          if (!typeIsEqual(type, parameter->type)) {
+            printError(parameter->str_begin, parameter->str_end,
+                       "Type mismatch (must be a []u8 aka string)");
+            goto RETURN_ERROR;
+          }
+
+          char *str = u8ArrayToCString(parameter);
+          astTreeDelete(parameter);
+
+          const size_t imports_size =
+              a404m_malloc_usable_size(root->imports) / sizeof(*root->imports);
+          if (imports_size == root->imports_size) {
+            root->imports = a404m_realloc(
+                root->imports,
+                (imports_size + imports_size / 2 + 1) * sizeof(*root->imports));
+          }
+
+          AstTreeRoot *import =
+              getAstTreeRoot(joinToPathOf(filePath, str), roots, filePathes);
+          free(str);
+
+          if (import == NULL) {
+            goto RETURN_ERROR;
+          }
+
+          root->imports[root->imports_size++] = import;
+
+          astTreeDelete(type);
+        }
+      }
+    }
+  }
+
+  const size_t roots_size =
+      a404m_malloc_usable_size(roots->data) / sizeof(*roots->data);
+  if (roots_size == roots->size) {
+    roots->data = a404m_realloc(roots->data, (roots_size + roots_size / 2 + 1) *
+                                                 sizeof(*roots->data));
+  }
+  roots->data[roots->size++] = root;
+
+  return root;
+
+RETURN_ERROR:
+  return NULL;
+}
+
+AstTreeRoot *makeAstRoot(ParserNode *parsedRoot, char *filePath) {
   if (parsedRoot->token != PARSER_TOKEN_ROOT) {
     return NULL;
   }
@@ -1383,8 +1418,9 @@ AstTreeRoot *makeAstRoot(ParserNode *parsedRoot) {
   root->variables.data =
       a404m_malloc(nodes->size * sizeof(*root->variables.data));
   root->variables.size = 0;
-  root->imported = a404m_malloc(0 * sizeof(*root->imported));
-  root->imported_size = 0;
+  root->imports = a404m_malloc(0 * sizeof(*root->imports));
+  root->imports_size = 0;
+  root->filePath = filePath;
 
   AstTreeVariables *variables = &root->variables;
   static const size_t variables_size = 1;
@@ -1402,7 +1438,8 @@ AstTreeRoot *makeAstRoot(ParserNode *parsedRoot) {
       goto RETURN_ERROR;
     }
     ParserNode *node = (ParserNodeSingleChildMetadata *)eol->metadata;
-    if (node->token == PARSER_TOKEN_KEYWORD_COMPTIME) {
+    if (node->token == PARSER_TOKEN_KEYWORD_COMPTIME ||
+        node->token == PARSER_TOKEN_FUNCTION_CALL) {
       continue;
     } else if (node->token == PARSER_TOKEN_CONSTANT ||
                node->token == PARSER_TOKEN_VARIABLE) {
@@ -1429,7 +1466,7 @@ AstTreeRoot *makeAstRoot(ParserNode *parsedRoot) {
                     root->variables.size * sizeof(*root->variables.data));
 
   root->trees.data = a404m_malloc((nodes->size - root->variables.size) *
-                                  sizeof(*root->variables.data));
+                                  sizeof(*root->trees.data));
   root->trees.size = 0;
 
   for (size_t i = 0; i < nodes->size; ++i) {
@@ -1440,24 +1477,44 @@ AstTreeRoot *makeAstRoot(ParserNode *parsedRoot) {
       goto RETURN_ERROR;
     }
     ParserNode *node = (ParserNodeSingleChildMetadata *)eol->metadata;
+    AstTree *tree;
     if (node->token == PARSER_TOKEN_KEYWORD_COMPTIME) {
-      AstTree *tree = astTreeParse(node, &helper);
+      tree = astTreeParse(node, &helper);
       if (tree == NULL) {
         goto RETURN_ERROR;
       }
-      root->trees.data[root->trees.size] = tree;
-      root->trees.size += 1;
+    } else if (node->token == PARSER_TOKEN_FUNCTION_CALL) {
+      tree = astTreeParse(node, &helper);
+      if (tree == NULL) {
+        goto RETURN_ERROR;
+      }
+
+      AstTreeFunctionCall *tree_metadata = tree->metadata;
+      AstTree *operand = tree_metadata->function;
+      if (operand->token == AST_TREE_TOKEN_BUILTIN) {
+        AstTreeBuiltin *operand_metadata = operand->metadata;
+        if (operand_metadata->token == AST_TREE_BUILTIN_TOKEN_IMPORT) {
+          if (tree_metadata->parameters_size == 1) {
+            goto PUSH;
+          }
+        }
+      }
+      printError(tree->str_begin, tree->str_end, "Bad node");
+      goto RETURN_ERROR;
     } else {
       continue;
     }
+  PUSH:
+    root->trees.data[root->trees.size++] = tree;
   }
 
-  for (size_t i = 0; i < nodes->size; ++i) {
+  for (size_t j = 0, i = 0; j < nodes->size; ++j) {
     ParserNode *node =
-        (ParserNodeSingleChildMetadata *)nodes->data[i]->metadata;
+        (ParserNodeSingleChildMetadata *)nodes->data[j]->metadata;
     ParserNodeVariableMetadata *node_metadata = node->metadata;
 
-    if (node->token == PARSER_TOKEN_KEYWORD_COMPTIME) {
+    if (node->token == PARSER_TOKEN_KEYWORD_COMPTIME ||
+        node->token == PARSER_TOKEN_FUNCTION_CALL) {
       continue;
     } else if (node->token == PARSER_TOKEN_CONSTANT ||
                node->token == PARSER_TOKEN_VARIABLE) {
@@ -1573,6 +1630,7 @@ AstTreeRoot *makeAstRoot(ParserNode *parsedRoot) {
         root->variables.data[i]->value = NULL;
         root->variables.data[i]->initValue = value;
       }
+      ++i;
     } else {
       printError(node->str_begin, node->str_end,
                  "Only variables are allowed here");
@@ -3509,32 +3567,77 @@ bool isEqualVariable(AstTreeVariable *left, AstTreeVariable *right) {
   }
 }
 
+void allOfVariablesWithImport(AstTreeVariables *variables, AstTreeRoot *root,
+                              AstTreeRoots *checkedRoots) {
+  for (size_t i = 0; i < checkedRoots->size; ++i) {
+    if (checkedRoots->data[i] == root) {
+      return;
+    }
+  }
+
+  size_t checkedRoots_size = a404m_malloc_usable_size(checkedRoots->data) /
+                             sizeof(*checkedRoots->data);
+  if (checkedRoots_size == checkedRoots->size) {
+    checkedRoots->data = a404m_realloc(
+        checkedRoots->data, (checkedRoots_size + checkedRoots_size / 2 + 1) *
+                                sizeof(*checkedRoots->data));
+  }
+  checkedRoots->data[checkedRoots->size++] = root;
+
+  variables->data =
+      a404m_realloc(variables->data, (variables->size + root->variables.size) *
+                                         sizeof(*variables->data));
+  for (size_t i = 0; i < root->variables.size; ++i) {
+    variables->data[variables->size++] = root->variables.data[i];
+  }
+
+  for (size_t i = 0; i < root->imports_size; ++i) {
+    allOfVariablesWithImport(variables, root->imports[i], checkedRoots);
+  }
+}
+
 bool setAllTypesRoot(AstTreeRoot *root) {
-  AstTreeSetTypesHelper setTypesHelper = {
+  AstTreeRoots checkedRoots = {
+      .data = a404m_malloc(0),
+      .size = 0,
+  };
+  AstTreeVariables variables = (AstTreeVariables){
+      .data = a404m_malloc(0),
+      .size = 0,
+  };
+  allOfVariablesWithImport(&variables, root, &checkedRoots);
+  AstTreeSetTypesHelper helper = {
       .lookingType = NULL,
       .dependencies =
           {
               .data = NULL,
               .size = 0,
           },
-      .variables = root->variables,
+      .variables = variables,
   };
 
   for (size_t i = 0; i < root->variables.size; ++i) {
     AstTreeVariable *variable = root->variables.data[i];
-    if (!setTypesAstVariable(variable, setTypesHelper)) {
-      return false;
+    if (!setTypesAstVariable(variable, helper)) {
+      goto RETURN_ERROR;
     }
   }
 
   for (size_t i = 0; i < root->trees.size; ++i) {
     AstTree *tree = root->trees.data[i];
-    if (!setAllTypes(tree, setTypesHelper, NULL, NULL)) {
-      return false;
+    if (!setAllTypes(tree, helper, NULL, NULL)) {
+      goto RETURN_ERROR;
     }
   }
 
+  free(checkedRoots.data);
+  free(variables.data);
   return true;
+
+RETURN_ERROR:
+  free(checkedRoots.data);
+  free(variables.data);
+  return false;
 }
 
 bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
@@ -4738,6 +4841,68 @@ bool setTypesBuiltin(AstTree *tree, AstTreeSetTypesHelper helper,
     }
     return false;
   }
+  case AST_TREE_BUILTIN_TOKEN_IMPORT: {
+    if (functionCall->parameters_size == 1) {
+      AstTree *file = NULL;
+
+      static char VARIABLE_STR[] = "variable";
+      static const size_t VARIABLE_STR_SIZE =
+          sizeof(VARIABLE_STR) / sizeof(*VARIABLE_STR) - sizeof(*VARIABLE_STR);
+
+      for (size_t i = 0; i < functionCall->parameters_size; ++i) {
+        AstTreeFunctionCallParam param = functionCall->parameters[i];
+        const size_t param_name_size = param.nameEnd - param.nameBegin;
+
+        if (param_name_size == 0) {
+          if (file == NULL) {
+            file = param.value;
+          } else {
+            printError(param.value->str_begin, param.value->str_end,
+                       "Bad paramter");
+            return false;
+          }
+        } else if (param_name_size == VARIABLE_STR_SIZE &&
+                   strncmp(param.nameBegin, VARIABLE_STR, VARIABLE_STR_SIZE) ==
+                       0 &&
+                   file == NULL) {
+          file = param.value;
+        } else {
+          printError(param.value->str_begin, param.value->str_end,
+                     "Bad paramter");
+          return false;
+        }
+      }
+
+      if (file == NULL) {
+        return false;
+      }
+
+      AstTreeTypeFunction *type_metadata = a404m_malloc(sizeof(*type_metadata));
+      type_metadata->arguments_size = 1;
+      type_metadata->arguments = a404m_malloc(
+          type_metadata->arguments_size * sizeof(*type_metadata->arguments));
+
+      // TODO: change
+      type_metadata->returnType = copyAstTree(&AST_TREE_TYPE_TYPE);
+
+      type_metadata->arguments[0] = (AstTreeTypeFunctionArgument){
+          .type = copyAstTree(file->type),
+          .name_begin = VARIABLE_STR,
+          .name_end = VARIABLE_STR + VARIABLE_STR_SIZE,
+          .str_begin = NULL,
+          .str_end = NULL,
+      };
+
+      tree->type = newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, type_metadata,
+                              &AST_TREE_TYPE_TYPE, NULL, NULL);
+      return true;
+    } else {
+      printError(tree->str_begin, tree->str_end,
+                 "Too many or too few arguments");
+      return false;
+    }
+    return false;
+  }
   case AST_TREE_BUILTIN_TOKEN__SIZE__:
   }
   UNREACHABLE;
@@ -4845,5 +5010,18 @@ char *u8ArrayToCString(AstTree *tree) {
   for (size_t i = 0; i < object->variables.size; ++i) {
     str[i] = *(AstTreeInt *)object->variables.data[i]->value->metadata;
   }
+  str[object->variables.size] = '\0';
   return str;
+}
+
+AstTree *makeStringType() {
+  AstTreeBracket *type_metadata = a404m_malloc(sizeof(*type_metadata));
+  type_metadata->operand = &AST_TREE_U8_TYPE;
+
+  type_metadata->parameters.size = 0;
+  type_metadata->parameters.data =
+      a404m_malloc(0 * sizeof(*type_metadata->parameters.data));
+
+  return newAstTree(AST_TREE_TOKEN_TYPE_ARRAY, type_metadata,
+                    &AST_TREE_TYPE_TYPE, NULL, NULL);
 }

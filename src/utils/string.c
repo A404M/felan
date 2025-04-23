@@ -85,3 +85,10 @@ char *u64ToString(u64 value) {
 
   return a404m_realloc(str, (i + 1) * sizeof(*str));
 }
+
+char *strClone(const char *str) {
+  const size_t str_length = strlen(str) + 1;
+  char *result = a404m_malloc(str_length * sizeof(*result));
+  strncpy(result, str, str_length);
+  return result;
+}
