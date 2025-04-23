@@ -120,16 +120,6 @@ typedef struct AstTreeVariables {
   size_t size;
 } AstTreeVariables;
 
-typedef struct AstTreeVariableCandidate {
-  AstTreeVariable *variable;
-  size_t index;
-} AstTreeVariableCandidate;
-
-typedef struct AstTreeVariableCandidates {
-  AstTreeVariableCandidate *data;
-  size_t size;
-} AstTreeVariableCandidates;
-
 typedef struct AstTrees {
   AstTree **data;
   size_t size;
@@ -218,6 +208,7 @@ typedef struct AstTreeHelper {
 typedef struct AstTreeSetTypesHelper {
   AstTree *lookingType;
   AstTreeVariables dependencies;
+  AstTreeVariables variables;
 } AstTreeSetTypesHelper;
 
 typedef struct AstTreeStruct {
@@ -281,8 +272,6 @@ AstTreeRoot *makeAstTree(ParserNode *parsedRoot);
 
 bool pushVariable(AstTreeHelper *helper, AstTreeVariables *variables,
                   AstTreeVariable *variable);
-AstTreeVariableCandidates *getAllVariables(AstTreeHelper *helper,
-                                           char *name_begin, char *name_end);
 
 AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *helper);
