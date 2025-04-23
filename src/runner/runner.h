@@ -7,7 +7,7 @@ void runnerVariableSetValue(AstTreeVariable *variable, AstTree *value);
 void runnerVariableSetValueWihtoutConstCheck(AstTreeVariable *variable,
                                              AstTree *value);
 
-bool runAstTree(AstTreeRoot *root);
+bool runAstTree(AstTreeRoots roots);
 
 AstTree *runAstTreeFunction(AstTree *tree, AstTreeFunctionCallParam *arguments,
                             size_t arguments_size);

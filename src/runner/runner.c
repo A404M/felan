@@ -40,27 +40,30 @@ void runnerVariableSetValueWihtoutConstCheck(AstTreeVariable *variable,
   variable->value = value;
 }
 
-bool runAstTree(AstTreeRoot *root) {
+bool runAstTree(AstTreeRoots roots) {
   static const char MAIN_STR[] = "main";
   static const size_t MAIN_STR_SIZE =
       (sizeof(MAIN_STR) / sizeof(*MAIN_STR)) - sizeof(*MAIN_STR);
 
   AstTreeVariable *mainVariable = NULL;
 
-  for (size_t i = 0; i < root->variables.size; ++i) {
-    AstTreeVariable *variable = root->variables.data[i];
-    size_t name_size = variable->name_end - variable->name_begin;
-    if (name_size == MAIN_STR_SIZE &&
-        strncmp(variable->name_begin, MAIN_STR, MAIN_STR_SIZE) == 0 &&
-        variable->type->token == AST_TREE_TOKEN_TYPE_FUNCTION) {
-      if (mainVariable != NULL) {
-        printLog("Too many main variables");
-        return false;
+  for (size_t i = 0; i < roots.size; ++i) {
+    AstTreeRoot *root = roots.data[i];
+    for (size_t i = 0; i < root->variables.size; ++i) {
+      AstTreeVariable *variable = root->variables.data[i];
+      size_t name_size = variable->name_end - variable->name_begin;
+      if (name_size == MAIN_STR_SIZE &&
+          strncmp(variable->name_begin, MAIN_STR, MAIN_STR_SIZE) == 0 &&
+          variable->type->token == AST_TREE_TOKEN_TYPE_FUNCTION) {
+        if (mainVariable != NULL) {
+          printLog("Too many main variables");
+          return false;
+        }
+        mainVariable = variable;
       }
-      mainVariable = variable;
-    }
-    if (!variable->isConst) {
-      runnerVariableSetValueWihtoutConstCheck(variable, variable->initValue);
+      if (!variable->isConst) {
+        runnerVariableSetValueWihtoutConstCheck(variable, variable->initValue);
+      }
     }
   }
 

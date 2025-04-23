@@ -1,3 +1,4 @@
+#include "compiler/ast-tree.h"
 #include "runner/runner.h"
 #include "utils/file.h"
 #include "utils/log.h"
@@ -34,52 +35,16 @@ static void printTime(struct timespec time) {
 }
 #endif
 
-static int runWithoutRead(char *code) {
+static int run(const char *filePath) {
 #ifdef PRINT_STATISTICS
   struct timespec start, end;
-  struct timespec lexTime;
-  struct timespec parseTime;
   struct timespec astTime;
   struct timespec runTime;
   struct timespec totalTime = {0};
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 #endif
-  LexerNodeArray lexed = lexer(code);
-  if (lexerNodeArrayIsError(lexed)) {
-    return 1;
-  }
-#ifdef PRINT_STATISTICS
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
-  lexTime = diff(end, start);
-  totalTime = add(totalTime, lexTime);
-#endif
-#ifdef PRINT_COMPILE_TREE
-  lexerNodeArrayPrint(lexed);
-#endif
-#ifdef PRINT_STATISTICS
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
-#endif
-
-  ParserNode *parsedRoot = parser(lexed);
-  lexerNodeArrayDestroy(lexed);
-  if (parsedRoot == NULL) {
-    return 1;
-  }
-#ifdef PRINT_STATISTICS
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
-  parseTime = diff(end, start);
-  totalTime = add(totalTime, parseTime);
-#endif
-#ifdef PRINT_COMPILE_TREE
-  parserNodePrint(parsedRoot, 0);
-#endif
-#ifdef PRINT_STATISTICS
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
-#endif
-
-  AstTreeRoot *astTree = makeAstTree(parsedRoot);
-  parserNodeDelete(parsedRoot);
-  if (astTree == NULL) {
+  AstTreeRoots astTrees = makeAstTree(filePath);
+  if (astTrees.size == AST_TREE_ROOTS_ERROR.size) {
     return 1;
   }
 #ifdef PRINT_STATISTICS
@@ -95,12 +60,12 @@ static int runWithoutRead(char *code) {
 #endif
 
   int ret;
-  if (runAstTree(astTree)) {
+  if (runAstTree(astTrees)) {
     ret = 0;
   } else {
     ret = 1;
   }
-  astTreeRootDelete(astTree);
+  astTreeRootsDestroy(astTrees);
 #ifdef PRINT_STATISTICS
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
   runTime = diff(end, start);
@@ -108,10 +73,6 @@ static int runWithoutRead(char *code) {
 #endif
 
 #ifdef PRINT_STATISTICS
-  printf("----\nlexTime:   ");
-  printTime(lexTime);
-  printf("\nparseTime: ");
-  printTime(parseTime);
   printf("\nastTime:   ");
   printTime(astTime);
   printf("\nrunTime:   ");
@@ -122,16 +83,6 @@ static int runWithoutRead(char *code) {
 #endif
 
   return ret;
-}
-
-static int run(const char *filePath) {
-  char *code = readWholeFile(filePath);
-
-  if (code == NULL) {
-    return 1;
-  }
-
-  return runWithoutRead(code);
 }
 
 int main(int argc, char *argv[]) {

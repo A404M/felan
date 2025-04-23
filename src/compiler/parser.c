@@ -1,6 +1,7 @@
 #include "parser.h"
 
 #include "compiler/lexer.h"
+#include "utils/file.h"
 #include "utils/log.h"
 #include "utils/memory.h"
 #include "utils/string.h"
@@ -665,6 +666,23 @@ ParserNode *newParserNode(ParserToken token, char *str_begin, char *str_end,
   parserNode->metadata = metadata;
   parserNode->parent = parent;
   return parserNode;
+}
+
+ParserNode *parserFromPath(const char *filePath) {
+  char *code = readWholeFile(filePath);
+  if (code == NULL) {
+    return NULL;
+  }
+
+  LexerNodeArray lexed = lexer(code);
+  if (lexerNodeArrayIsError(lexed)) {
+    return NULL;
+  }
+
+  ParserNode *root = parser(lexed);
+  lexerNodeArrayDestroy(lexed);
+
+  return root;
 }
 
 ParserNode *parser(LexerNodeArray lexed) {

@@ -128,7 +128,16 @@ typedef struct AstTrees {
 typedef struct AstTreeRoot {
   AstTreeVariables variables;
   AstTrees trees;
+  char **imported;
+  size_t imported_size;
 } AstTreeRoot;
+
+typedef struct AstTreeRoots {
+  AstTreeRoot **data;
+  size_t size;
+} AstTreeRoots;
+
+extern AstTreeRoots AST_TREE_ROOTS_ERROR;
 
 typedef struct AstTreeScope {
   AstTreeVariables variables;
@@ -237,6 +246,7 @@ typedef struct AstTreeBracket {
 typedef enum AstTreeBuiltinToken {
   AST_TREE_BUILTIN_TOKEN_CAST,
   AST_TREE_BUILTIN_TOKEN_TYPE_OF,
+  AST_TREE_BUILTIN_TOKEN_IMPORT,
   AST_TREE_BUILTIN_TOKEN__SIZE__,
 } AstTreeBuiltinToken;
 
@@ -256,6 +266,7 @@ void astTreeVariableDelete(AstTreeVariable *variable);
 void astTreeDelete(AstTree *tree);
 bool astTreeShouldDelete(AstTree *tree);
 void astTreeRootDelete(AstTreeRoot *root);
+void astTreeRootsDestroy(AstTreeRoots roots);
 
 AstTree *newAstTree(AstTreeToken token, void *metadata, AstTree *type,
                     char *str_begin, char *str_end);
@@ -268,7 +279,8 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
                                       AstTreeVariables newVariables[],
                                       size_t variables_size);
 
-AstTreeRoot *makeAstTree(ParserNode *parsedRoot);
+AstTreeRoots makeAstTree(const char *filePath);
+AstTreeRoot *makeAstRoot(ParserNode *parsedRoot);
 
 bool pushVariable(AstTreeHelper *helper, AstTreeVariables *variables,
                   AstTreeVariable *variable);
@@ -368,3 +380,5 @@ bool setTypesArrayAccess(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesAstVariable(AstTreeVariable *variable,
                          AstTreeSetTypesHelper helper);
 bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper helper);
+
+char *u8ArrayToCString(AstTree *tree);

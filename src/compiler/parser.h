@@ -175,6 +175,7 @@ typedef struct ParserNodeBracketMetadata {
 void parserNodePrint(const ParserNode *node, int indent);
 void parserNodeDelete(ParserNode *node);
 
+ParserNode *parserFromPath(const char *filePath);
 ParserNode *parser(LexerNodeArray lexed);
 bool parserNodeArray(LexerNode *begin, LexerNode *end, ParserNode *parent);
 
