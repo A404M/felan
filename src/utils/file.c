@@ -44,6 +44,10 @@ void filePush(const char *filePath, char *code) {
 }
 
 char *readWholeFile(const char *filePath) {
+  const size_t index = getFileIndex(filePath);
+  if (index != fileCodes_length) {
+    return fileCodes[index];
+  }
   FILE *file = fopen(filePath, "r");
 
   if (!file) {
@@ -64,4 +68,15 @@ char *readWholeFile(const char *filePath) {
   filePush(filePath, str);
 
   return str;
+}
+
+size_t getFileIndex(const char *filePath) {
+  for (size_t i = 0; i < fileCodes_length; ++i) {
+    const char *str = fileCodes_names[i];
+    if (strcmp(filePath, str) == 0) {
+      return i;
+    }
+  }
+
+  return fileCodes_length;
 }

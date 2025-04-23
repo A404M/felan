@@ -13,3 +13,4 @@ void fileDelete();
 void filePush(const char *filePath,char *code);
 
 char *readWholeFile(const char *filePath);
+size_t getFileIndex(const char *filePath);
