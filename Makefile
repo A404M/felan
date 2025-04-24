@@ -70,7 +70,7 @@ test-all: $(EXEC_FILE) test/big.felan
 test/big.felan: Makefile
 	mkdir -p test
 	echo "main :: () -> void {" > $@
-	for((n = 0;n < 100000;n++)); do echo "  print('1');" >> $@; done
+	for((n = 0;n < 1000000;n++)); do echo "  print('1');" >> $@; done
 	echo "};" >> $@
 	echo "print :: (value:u8) -> void {" >> $@
 	echo "  putc value;" >> $@

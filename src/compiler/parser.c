@@ -701,12 +701,11 @@ ParserNode *parser(LexerNodeArray lexed) {
 }
 
 bool parserNodeArray(LexerNode *begin, LexerNode *end, ParserNode *parent) {
-  size_t parsedNodes_size = 0;
+  size_t parsedNodes_capacity = 0;
 
-  ParserNodeArray *parsedNodes = a404m_malloc(sizeof(*parsedNodes));
-  parsedNodes->data =
-      a404m_malloc(parsedNodes_size * sizeof(*parsedNodes->data));
-  parsedNodes->size = 0;
+  ParserNode **parsedNodes_data =
+      a404m_malloc(parsedNodes_capacity * sizeof(*parsedNodes_data));
+  size_t parsedNodes_size = 0;
 
   for (size_t orders_index = 0; orders_index < PARSER_ORDER_SIZE;
        ++orders_index) {
@@ -734,34 +733,40 @@ bool parserNodeArray(LexerNode *begin, LexerNode *end, ParserNode *parent) {
       continue;
     }
 
-    for (size_t i = 0; i < parsedNodes->size; ++i) {
-      if (parsedNodes->data[i] == pNode) {
+    /*
+    for (size_t i = 0; i < parsedNodes_size; ++i) {
+      if (parsedNodes_data[i] == pNode) {
         goto CONTINUE;
       }
     }
-    if (parsedNodes->size == parsedNodes_size) {
-      parsedNodes_size += parsedNodes_size / 2 + 1;
-      parsedNodes->data = a404m_realloc(
-          parsedNodes->data, sizeof(*parsedNodes->data) * parsedNodes_size);
+    */
+    if(parsedNodes_size != 0 && parsedNodes_data[parsedNodes_size-1] == pNode){
+      continue;
     }
-    parsedNodes->data[parsedNodes->size] = pNode;
-    parsedNodes->size += 1;
-  CONTINUE:
+
+    if (parsedNodes_size == parsedNodes_capacity) {
+      parsedNodes_capacity += parsedNodes_capacity / 2 + 1;
+      parsedNodes_data = a404m_realloc(
+          parsedNodes_data, sizeof(*parsedNodes_data) * parsedNodes_capacity);
+    }
+    parsedNodes_data[parsedNodes_size] = pNode;
+    parsedNodes_size += 1;
   }
 
+  ParserNodeArray *parsedNodes = a404m_malloc(sizeof(*parsedNodes));
   parsedNodes->data = a404m_realloc(
-      parsedNodes->data, parsedNodes->size * sizeof(*parsedNodes->data));
+      parsedNodes_data, parsedNodes_size * sizeof(*parsedNodes_data));
+  parsedNodes->size = parsedNodes_size;
 
   parent->metadata = parsedNodes;
 
   return true;
 
 RETURN_ERROR:
-  for (size_t i = 0; i < parsedNodes->size; ++i) {
-    free(parsedNodes->data[i]);
+  for (size_t i = 0; i < parsedNodes_size; ++i) {
+    free(parsedNodes_data[i]);
   }
-  free(parsedNodes->data);
-  free(parsedNodes);
+  free(parsedNodes_data);
   return false;
 }
 
