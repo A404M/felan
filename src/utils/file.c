@@ -94,9 +94,8 @@ char *joinToPathOf(const char *original, const char *file) {
   strncpy(result, original, result_size);
   result[result_size++] = '/';
 
-  bool startOfDirName = true;
   for (size_t i = 0; file[i] != '\0'; ++i) {
-    if (startOfDirName && file[i + 1] == '.') {
+    if (result_size != 0 && result[result_size-1] == '/' && file[i + 1] == '.') {
       if (file[i + 2] == '/') {
         i += 2;
         continue;
@@ -111,6 +110,9 @@ char *joinToPathOf(const char *original, const char *file) {
         }
         if (!found) {
           result_size = 0;
+          result[result_size++] = '.';
+          result[result_size++] = '.';
+          result[result_size++] = '/';
         }
         continue;
       }

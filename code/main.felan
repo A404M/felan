@@ -1,7 +1,8 @@
 @import("basic.felan");
 
 main :: () -> void {
-  str := "123";
+  str := "123\n";
   print(str);
 };
 
+putchar :: (c:i32)->i32;
