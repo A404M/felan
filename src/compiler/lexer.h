@@ -3,7 +3,7 @@
 #include "utils/type.h"
 #include <stddef.h>
 
-typedef enum LexerToken {
+typedef enum LexerToken : u8 {
   LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET,
 
   LEXER_TOKEN_ORDER0 = LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET,
