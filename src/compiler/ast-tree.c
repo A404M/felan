@@ -104,6 +104,12 @@ AstTree AST_TREE_F128_TYPE = {
     .type = &AST_TREE_TYPE_TYPE,
 };
 
+AstTree AST_TREE_CODE_TYPE = {
+    .token = AST_TREE_TOKEN_TYPE_CODE,
+    .metadata = NULL,
+    .type = &AST_TREE_TYPE_TYPE,
+};
+
 AstTree AST_TREE_VOID_VALUE = {
     .token = AST_TREE_TOKEN_VALUE_VOID,
     .metadata = NULL,
@@ -139,6 +145,7 @@ const char *AST_TREE_TOKEN_STRINGS[] = {
     "AST_TREE_TOKEN_TYPE_F32",
     "AST_TREE_TOKEN_TYPE_F64",
     "AST_TREE_TOKEN_TYPE_F128",
+    "AST_TREE_TOKEN_TYPE_CODE",
     "AST_TREE_TOKEN_TYPE_BOOL",
     "AST_TREE_TOKEN_VALUE_VOID",
 
@@ -251,6 +258,7 @@ void astTreePrint(const AstTree *tree, int indent) {
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
+  case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_NULL:
@@ -637,6 +645,7 @@ void astTreeDestroy(AstTree tree) {
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
+  case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_UNDEFINED:
@@ -881,6 +890,7 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
+  case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_VALUE_VOID:
     return tree;
   case AST_TREE_TOKEN_VALUE_NULL:
@@ -1564,6 +1574,7 @@ AstTreeRoot *makeAstRoot(ParserNode *parsedRoot, char *filePath) {
       case PARSER_TOKEN_TYPE_F32:
       case PARSER_TOKEN_TYPE_F64:
       case PARSER_TOKEN_TYPE_F128:
+      case PARSER_TOKEN_TYPE_CODE:
       case PARSER_TOKEN_TYPE_BOOL:
       case PARSER_TOKEN_OPERATOR_POINTER:
       case PARSER_TOKEN_OPERATOR_ADDRESS:
@@ -1701,6 +1712,8 @@ AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper) {
     return &AST_TREE_F64_TYPE;
   case PARSER_TOKEN_TYPE_F128:
     return &AST_TREE_F128_TYPE;
+  case PARSER_TOKEN_TYPE_CODE:
+    return &AST_TREE_CODE_TYPE;
   case PARSER_TOKEN_TYPE_BOOL:
     return &AST_TREE_BOOL_TYPE;
   case PARSER_TOKEN_FUNCTION_CALL:
@@ -1941,6 +1954,7 @@ AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *p_helper) {
     case PARSER_TOKEN_TYPE_F32:
     case PARSER_TOKEN_TYPE_F64:
     case PARSER_TOKEN_TYPE_F128:
+    case PARSER_TOKEN_TYPE_CODE:
     case PARSER_TOKEN_TYPE_BOOL:
     case PARSER_TOKEN_KEYWORD_PUTC:
     case PARSER_TOKEN_KEYWORD_RETURN:
@@ -2523,6 +2537,7 @@ AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
     case PARSER_TOKEN_TYPE_F32:
     case PARSER_TOKEN_TYPE_F64:
     case PARSER_TOKEN_TYPE_F128:
+    case PARSER_TOKEN_TYPE_CODE:
     case PARSER_TOKEN_TYPE_BOOL:
     case PARSER_TOKEN_KEYWORD_PUTC:
     case PARSER_TOKEN_KEYWORD_RETURN:
@@ -2786,6 +2801,7 @@ bool isConst(AstTree *tree) {
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
+  case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_UNDEFINED:
@@ -2900,6 +2916,7 @@ bool isConstByValue(AstTree *tree) {
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
+  case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_UNDEFINED:
@@ -3010,6 +3027,7 @@ AstTree *makeTypeOf(AstTree *value) {
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
+  case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_OPERATOR_POINTER:
   case AST_TREE_TOKEN_KEYWORD_STRUCT:
@@ -3208,6 +3226,7 @@ bool typeIsEqualBack(const AstTree *type0, const AstTree *type1) {
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
+  case AST_TREE_TOKEN_TYPE_CODE:
     return type1->token == type0->token;
   case AST_TREE_TOKEN_OPERATOR_POINTER: {
     if (type1->token != type0->token) {
@@ -3312,6 +3331,7 @@ AstTree *getValue(AstTree *tree) {
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
+  case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_UNDEFINED:
@@ -3412,6 +3432,7 @@ bool isIntType(AstTree *type) {
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
+  case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_FUNCTION_CALL:
@@ -3471,6 +3492,7 @@ bool isEqual(AstTree *left, AstTree *right) {
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
+  case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_NULL:
@@ -3648,6 +3670,7 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
+  case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_VALUE_VOID:
     return true;
   case AST_TREE_TOKEN_VALUE_BOOL:
@@ -4867,8 +4890,7 @@ bool setTypesBuiltin(AstTree *tree, AstTreeSetTypesHelper helper,
       type_metadata->arguments = a404m_malloc(
           type_metadata->arguments_size * sizeof(*type_metadata->arguments));
 
-      // TODO: change
-      type_metadata->returnType = copyAstTree(&AST_TREE_TYPE_TYPE);
+      type_metadata->returnType = copyAstTree(&AST_TREE_CODE_TYPE);
 
       type_metadata->arguments[0] = (AstTreeTypeFunctionArgument){
           .type = copyAstTree(file->type),

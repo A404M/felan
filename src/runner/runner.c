@@ -372,6 +372,7 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     ret = copyAstTree(variable->type);
   }
     goto RETURN;
+  case AST_TREE_BUILTIN_TOKEN_IMPORT:
   case AST_TREE_BUILTIN_TOKEN__SIZE__:
   }
   UNREACHABLE;
@@ -1140,6 +1141,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
+  case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_UNDEFINED:
   case AST_TREE_TOKEN_VALUE_VOID:
