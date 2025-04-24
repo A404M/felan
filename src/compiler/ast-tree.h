@@ -259,9 +259,11 @@ typedef struct AstTreeBuiltin {
   AstTreeBuiltinToken token;
 } AstTreeBuiltin;
 
+#ifdef PRINT_COMPILE_TREE
 void astTreePrint(const AstTree *tree, int indent);
 void astTreeVariablePrint(const AstTreeVariable *variable, int indent);
 void astTreeRootPrint(const AstTreeRoot *root);
+#endif
 
 void astTreeDestroy(AstTree tree);
 void astTreeVariableDestroy(AstTreeVariable variable);

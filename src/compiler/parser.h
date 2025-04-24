@@ -173,7 +173,9 @@ typedef struct ParserNodeBracketMetadata {
   ParserNodeArray *params;
 } ParserNodeBracketMetadata;
 
+#ifdef PRINT_COMPILE_TREE
 void parserNodePrint(const ParserNode *node, int indent);
+#endif
 void parserNodeDelete(ParserNode *node);
 
 ParserNode *parserFromPath(const char *filePath);

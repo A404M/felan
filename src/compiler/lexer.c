@@ -180,6 +180,7 @@ bool lexerNodeArrayIsError(LexerNodeArray array) {
   return LEXER_NODE_ARRAY_ERROR.size == array.size;
 }
 
+#ifdef PRINT_COMPILE_TREE
 void lexerNodeArrayPrint(LexerNodeArray array) {
   for (size_t i = 0; i < array.size; ++i) {
     LexerNode node = array.data[i];
@@ -187,6 +188,7 @@ void lexerNodeArrayPrint(LexerNodeArray array) {
            node.str_begin, LEXER_TOKEN_STRINGS[node.token]);
   }
 }
+#endif
 
 void lexerNodeArrayDestroy(LexerNodeArray array) { free(array.data); }
 

@@ -138,7 +138,9 @@ typedef struct LexerNodeArray {
 extern const LexerNodeArray LEXER_NODE_ARRAY_ERROR;
 
 extern bool lexerNodeArrayIsError(LexerNodeArray array);
+#ifdef PRINT_COMPILE_TREE
 extern void lexerNodeArrayPrint(LexerNodeArray array);
+#endif
 extern void lexerNodeArrayDestroy(LexerNodeArray array);
 
 extern LexerNodeArray lexer(char *str);

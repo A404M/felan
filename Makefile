@@ -19,9 +19,13 @@ NC := \033[0m
 INC_DIRS := $(SRC_DIR)
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
-# CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -O3
-# CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -Oz
-CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -g
+OP_FLAG := -O3
+# OP_FLAG := -Oz
+# OP_FLAG := -g
+
+# CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -DPRINT_STATISTICS -DPRINT_COMPILE_TREE $(OP_FLAG)
+CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -DPRINT_STATISTICS $(OP_FLAG)
+# CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 $(OP_FLAG)
 
 EXEC_FILE := $(BUILD_DIR)/$(PROJECT_NAME)
 

@@ -195,6 +195,7 @@ AstTreeRoots AST_TREE_ROOTS_ERROR = {
     .size = -1ULL,
 };
 
+#ifdef PRINT_COMPILE_TREE
 void astTreePrint(const AstTree *tree, int indent) {
   for (int i = 0; i < indent; ++i)
     printf(" ");
@@ -600,6 +601,7 @@ void astTreeRootPrint(const AstTreeRoot *root) {
     printf("\n");
   }
 }
+#endif
 
 void astTreeDestroy(AstTree tree) {
   if (tree.type != NULL) {

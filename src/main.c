@@ -6,7 +6,7 @@
 #include <time.h>
 
 // #define PRINT_COMPILE_TREE
-#define PRINT_STATISTICS
+// #define PRINT_STATISTICS
 
 #ifdef PRINT_STATISTICS
 static struct timespec diff(struct timespec end, struct timespec start) {
@@ -53,7 +53,9 @@ static int run(const char *filePath) {
   totalTime = add(totalTime, astTime);
 #endif
 #ifdef PRINT_COMPILE_TREE
-  astTreeRootPrint(astTree);
+  for (size_t i = 0; i < astTrees.size; ++i) {
+    astTreeRootPrint(astTrees.data[i]);
+  }
 #endif
 #ifdef PRINT_STATISTICS
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);

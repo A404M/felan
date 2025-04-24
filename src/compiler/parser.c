@@ -171,6 +171,7 @@ static const ParserOrder PARSER_ORDER[] = {
 static const size_t PARSER_ORDER_SIZE =
     sizeof(PARSER_ORDER) / sizeof(*PARSER_ORDER);
 
+#ifdef PRINT_COMPILE_TREE
 void parserNodePrint(const ParserNode *node, int indent) {
   for (int i = 0; i < indent; ++i)
     printf(" ");
@@ -475,6 +476,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
 RETURN_SUCCESS:
   printf("}");
 }
+#endif
 
 void parserNodeDelete(ParserNode *node) {
   if (node == NULL) {
