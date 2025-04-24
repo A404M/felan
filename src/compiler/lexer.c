@@ -467,9 +467,11 @@ bool isCompleteSymbol(char *str, size_t str_size) {
 bool isSpace(char c) {
   switch (c) {
   case ' ':
-  case '\n':
   case '\t':
+  case '\n':
   case '\v':
+  case '\f':
+  case '\r':
     return true;
   default:
     return false;

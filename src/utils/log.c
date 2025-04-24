@@ -33,13 +33,13 @@ void _printErrorWarningBack(const char *file, int line, char *begin, char *end,
     }
   }
 
-  const char firstColor[] = "\e[0;36m";
+  static const char FIRST_COLOR[] = "\e[0;36m";
   const char *secondColor = isError ? "\e[0;31m" : "\e[0;33m";
   if (isError) {
-    fprintf(stderr, "%sError: %s at compiler %s:%d\e[0m\n", firstColor,
+    fprintf(stderr, "%sError: %s at compiler %s:%d\e[0m\n", FIRST_COLOR,
             errorStr, file, line);
   } else {
-    fprintf(stderr, "%sWarning: %s at compiler %s:%d\e[0m\n", firstColor,
+    fprintf(stderr, "%sWarning: %s at compiler %s:%d\e[0m\n", FIRST_COLOR,
             errorStr, file, line);
   }
   free(errorStr);
@@ -65,14 +65,14 @@ void _printErrorWarningBack(const char *file, int line, char *begin, char *end,
     }
   }
 
-  fprintf(stderr, "\e%sAt %s:%ld\n", firstColor, fileCodes_names[file_index],
+  fprintf(stderr, "\e%sAt %s:%ld\n", FIRST_COLOR, fileCodes_names[file_index],
           file_line);
 
   for (char *iter = file_line_begin; iter < file_line_end; ++iter) {
     if (iter == begin) {
       fprintf(stderr, "%s", secondColor);
     } else if (iter == end) {
-      fprintf(stderr, "%s", firstColor);
+      fprintf(stderr, "%s", FIRST_COLOR);
     }
     fprintf(stderr, "%c", *iter);
   }
