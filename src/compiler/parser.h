@@ -4,6 +4,7 @@
 #include "utils/type.h"
 #include <stddef.h>
 #include <stdint.h>
+#include <time.h>
 
 typedef enum ParserToken {
   PARSER_TOKEN_ROOT,
@@ -178,7 +179,12 @@ void parserNodePrint(const ParserNode *node, int indent);
 #endif
 void parserNodeDelete(ParserNode *node);
 
-ParserNode *parserFromPath(const char *filePath);
+ParserNode *parserFromPath(const char *filePath
+#ifdef PRINT_STATISTICS
+                           ,
+                           struct timespec *lexingTime
+#endif
+);
 ParserNode *parser(LexerNodeArray lexed);
 bool parserNodeArray(LexerNode *begin, LexerNode *end, ParserNode *parent);
 
@@ -240,4 +246,4 @@ bool isExpression(ParserNode *node);
 bool isType(ParserNode *node);
 bool isValue(ParserNode *node);
 
-char escapeChar(char *begin,char *end, bool *success);
+char escapeChar(char *begin, char *end, bool *success);

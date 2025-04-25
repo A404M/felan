@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <time.h>
 
 typedef enum AstTreeToken {
   AST_TREE_TOKEN_FUNCTION,
@@ -284,8 +285,18 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
                                       AstTreeVariables newVariables[],
                                       size_t variables_size);
 
-AstTreeRoots makeAstTree(const char *filePath);
-AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots);
+AstTreeRoots makeAstTree(const char *filePath
+#ifdef PRINT_STATISTICS
+                         ,
+                         struct timespec *lexingTime, struct timespec* parsingTime
+#endif
+);
+AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
+#ifdef PRINT_STATISTICS
+                         ,
+                         struct timespec *lexingTime, struct timespec *parsingTime
+#endif
+                            );
 AstTreeRoot *makeAstRoot(ParserNode *parsedRoot, char *filePath);
 
 bool pushVariable(AstTreeHelper *helper, AstTreeVariables *variables,

@@ -5,10 +5,12 @@
 #include "utils/log.h"
 #include "utils/memory.h"
 #include "utils/string.h"
+#include "utils/time.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_ROOT",
@@ -665,15 +667,24 @@ RETURN_SUCCESS:
 ParserNode *newParserNode(ParserToken token, char *str_begin, char *str_end,
                           void *metadata, ParserNode *parent) {
   ParserNode *parserNode = a404m_malloc(sizeof(*parserNode));
-  parserNode->token = token;
-  parserNode->str_begin = str_begin;
-  parserNode->str_end = str_end;
-  parserNode->metadata = metadata;
-  parserNode->parent = parent;
+  *parserNode = (ParserNode){
+      .token = token,
+      .str_begin = str_begin,
+      .str_end = str_end,
+      .metadata = metadata,
+      .parent = parent,
+  };
   return parserNode;
 }
 
-ParserNode *parserFromPath(const char *filePath) {
+ParserNode *parserFromPath(const char *filePath
+#ifdef PRINT_STATISTICS
+                           ,
+                           struct timespec *lexingTime
+#endif
+) {
+  struct timespec start, end;
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
   char *code = readWholeFile(filePath);
   if (code == NULL) {
     return NULL;
@@ -683,6 +694,8 @@ ParserNode *parserFromPath(const char *filePath) {
   if (lexerNodeArrayIsError(lexed)) {
     return NULL;
   }
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+  *lexingTime = time_add(*lexingTime, time_diff(end, start));
 
   ParserNode *root = parser(lexed);
   lexerNodeArrayDestroy(lexed);
@@ -740,7 +753,8 @@ bool parserNodeArray(LexerNode *begin, LexerNode *end, ParserNode *parent) {
       }
     }
     */
-    if(parsedNodes_size != 0 && parsedNodes_data[parsedNodes_size-1] == pNode){
+    if (parsedNodes_size != 0 &&
+        parsedNodes_data[parsedNodes_size - 1] == pNode) {
       continue;
     }
 
@@ -1293,7 +1307,7 @@ ParserNode *parserParenthesis(LexerNode *closing, LexerNode *begin,
     parserNode->str_end = closing->str_end;
 
     if (parserNodeArray(opening + 1, closing, parserNode)) {
-      ParserNodeFunctionCall *metadata = malloc(sizeof(*metadata));
+      ParserNodeFunctionCall *metadata = a404m_malloc(sizeof(*metadata));
       metadata->function = before;
       metadata->params = parserNode->metadata;
       parserNode->metadata = metadata;
@@ -1360,7 +1374,7 @@ ParserNode *parserBracketsRight(LexerNode *closing, LexerNode *begin,
   parserNode->str_end = closing->str_end;
 
   if (parserNodeArray(opening + 1, closing, parserNode)) {
-    ParserNodeBracketMetadata *metadata = malloc(sizeof(*metadata));
+    ParserNodeBracketMetadata *metadata = a404m_malloc(sizeof(*metadata));
     metadata->operand = before;
     metadata->params = parserNode->metadata;
     parserNode->metadata = metadata;
@@ -1419,7 +1433,7 @@ ParserNode *parserBracketsLeft(LexerNode *closing, LexerNode *begin,
   parserNode->str_end = after->str_end;
 
   if (parserNodeArray(opening + 1, closing, parserNode)) {
-    ParserNodeBracketMetadata *metadata = malloc(sizeof(*metadata));
+    ParserNodeBracketMetadata *metadata = a404m_malloc(sizeof(*metadata));
     metadata->operand = after;
     metadata->params = parserNode->metadata;
     parserNode->metadata = metadata;

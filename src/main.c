@@ -11,12 +11,14 @@
 static int run(const char *filePath) {
 #ifdef PRINT_STATISTICS
   struct timespec start, end;
+  struct timespec lexTime = {0};
+  struct timespec parseTime = {0};
   struct timespec astTime;
   struct timespec runTime;
   struct timespec totalTime = {0};
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 #endif
-  AstTreeRoots astTrees = makeAstTree(filePath);
+  AstTreeRoots astTrees = makeAstTree(filePath, &lexTime, &parseTime);
   if (astTrees.size == AST_TREE_ROOTS_ERROR.size) {
     return 1;
   }
@@ -48,6 +50,12 @@ static int run(const char *filePath) {
 #endif
 
 #ifdef PRINT_STATISTICS
+  astTime = time_diff(astTime, parseTime);
+  parseTime = time_diff(parseTime, lexTime);
+  printf("\nlexTime:   ");
+  time_print(lexTime);
+  printf("\nparseTime: ");
+  time_print(parseTime);
   printf("\nastTime:   ");
   time_print(astTime);
   printf("\nrunTime:   ");

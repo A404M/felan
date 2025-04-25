@@ -58,7 +58,7 @@ char *readWholeFile(const char *filePath) {
   const size_t file_size = ftell(file);
   fseek(file, 0, SEEK_SET);
 
-  char *str = a404m_malloc((file_size + 1) * sizeof(char));
+  char *str = a404m_malloc((file_size + 1) * sizeof(*str));
 
   fread(str, file_size, 1, file);
   str[file_size] = '\0';
@@ -95,7 +95,8 @@ char *joinToPathOf(const char *original, const char *file) {
   result[result_size++] = '/';
 
   for (size_t i = 0; file[i] != '\0'; ++i) {
-    if (result_size != 0 && result[result_size-1] == '/' && file[i + 1] == '.') {
+    if (result_size != 0 && result[result_size - 1] == '/' &&
+        file[i + 1] == '.') {
       if (file[i + 2] == '/') {
         i += 2;
         continue;

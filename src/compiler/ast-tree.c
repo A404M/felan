@@ -6,11 +6,13 @@
 #include "utils/log.h"
 #include "utils/memory.h"
 #include "utils/string.h"
+#include "utils/time.h"
 #include "utils/type.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 AstTree AST_TREE_TYPE_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_TYPE,
@@ -859,11 +861,13 @@ void astTreeRootsDestroy(AstTreeRoots roots) {
 AstTree *newAstTree(AstTreeToken token, void *metadata, AstTree *type,
                     char *str_begin, char *str_end) {
   AstTree *result = a404m_malloc(sizeof(*result));
-  result->token = token;
-  result->metadata = metadata;
-  result->type = type;
-  result->str_begin = str_begin;
-  result->str_end = str_end;
+  *result = (AstTree){
+      .token = token,
+      .metadata = metadata,
+      .type = type,
+      .str_begin = str_begin,
+      .str_end = str_end,
+  };
   return result;
 }
 
@@ -1277,13 +1281,20 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
   return result;
 }
 
-AstTreeRoots makeAstTree(const char *filePath) {
+AstTreeRoots makeAstTree(const char *filePath
+#ifdef PRINT_STATISTICS
+                         ,
+                         struct timespec *lexingTime,
+                         struct timespec *parsingTime
+#endif
+) {
   AstTreeRoots roots = {
       .data = a404m_malloc(0 * sizeof(*roots.data)),
       .size = 0,
   };
 
-  if (getAstTreeRoot(strClone(filePath), &roots) == NULL) {
+  if (getAstTreeRoot(strClone(filePath), &roots, lexingTime, parsingTime) ==
+      NULL) {
     goto RETURN_ERROR;
   }
 
@@ -1300,7 +1311,13 @@ RETURN_ERROR:
   return AST_TREE_ROOTS_ERROR;
 }
 
-AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots) {
+AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
+#ifdef PRINT_STATISTICS
+                            ,
+                            struct timespec *lexingTime,
+                            struct timespec *parsingTime
+#endif
+) {
   for (size_t i = 0; i < roots->size; ++i) {
     if (strcmp(roots->data[i]->filePath, filePath) == 0) {
       free(filePath);
@@ -1308,10 +1325,16 @@ AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots) {
     }
   }
 
-  ParserNode *parserNode = parserFromPath(filePath);
+  struct timespec start, end;
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+
+  ParserNode *parserNode = parserFromPath(filePath, lexingTime);
   if (parserNode == NULL) {
     goto RETURN_ERROR;
   }
+
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+  *parsingTime = time_add(*parsingTime, time_diff(end, start));
   AstTreeRoot *root = makeAstRoot(parserNode, filePath);
   parserNodeDelete(parserNode);
   if (root == NULL) {
@@ -1381,8 +1404,8 @@ AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots) {
                 (imports_size + imports_size / 2 + 1) * sizeof(*root->imports));
           }
 
-          AstTreeRoot *import =
-              getAstTreeRoot(joinToPathOf(filePath, str), roots);
+          AstTreeRoot *import = getAstTreeRoot(joinToPathOf(filePath, str),
+                                               roots, lexingTime, parsingTime);
           free(str);
 
           if (import == NULL) {

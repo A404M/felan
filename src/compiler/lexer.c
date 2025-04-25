@@ -308,7 +308,7 @@ RETURN_SUCCESS:
   return result;
 }
 
-void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
+inline __attribute__((always_inline)) void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
                     char **node_str_begin, LexerToken *node_token,
                     LexerToken token) {
   switch (*node_token) {
@@ -480,7 +480,7 @@ bool isSpace(char c) {
   }
 }
 
-extern bool isString(char c) {
+bool isString(char c) {
   switch (c) {
   case '\'':
   case '\"':
