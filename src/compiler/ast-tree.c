@@ -4494,6 +4494,13 @@ bool setTypesAstVariable(AstTreeVariable *variable,
       .variables = _helper.variables,
   };
 
+  // previously done
+  if ((variable->type != NULL && variable->type->type != NULL) &&
+      ((variable->value != NULL && variable->value->type != NULL) ||
+       (variable->initValue != NULL && variable->initValue->type != NULL))) {
+    return true;
+  }
+
   if (variable->type != NULL) {
     if (!setAllTypes(variable->type, helper, NULL, NULL)) {
       return false;
