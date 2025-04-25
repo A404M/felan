@@ -2,8 +2,8 @@
 
 #include "utils/log.h"
 #include "utils/memory.h"
+#include "utils/string.h"
 #include <stdio.h>
-#include <string.h>
 
 size_t fileCodes_capacity = 0;
 char **fileCodes = NULL;
@@ -36,10 +36,13 @@ void filePush(const char *filePath, char *code) {
     fileCodes_names = a404m_realloc(
         fileCodes_names, fileCodes_capacity * sizeof(*fileCodes_names));
   }
+  size_t filePath_length = strLength(filePath);
   fileCodes[fileCodes_length] = code;
   fileCodes_names[fileCodes_length] =
-      a404m_malloc((strlen(filePath) + 1) * sizeof(**fileCodes_names));
-  strcpy(fileCodes_names[fileCodes_length], filePath);
+      a404m_malloc((filePath_length + 1) * sizeof(**fileCodes_names));
+  for (size_t i = 0; i < filePath_length; ++i) {
+    fileCodes_names[fileCodes_length][i] = filePath[i];
+  }
   fileCodes_length += 1;
 }
 
@@ -73,7 +76,7 @@ char *readWholeFile(const char *filePath) {
 size_t getFileIndex(const char *filePath) {
   for (size_t i = 0; i < fileCodes_length; ++i) {
     const char *str = fileCodes_names[i];
-    if (strcmp(filePath, str) == 0) {
+    if (strEquals(filePath, str)) {
       return i;
     }
   }
@@ -89,9 +92,11 @@ char *joinToPathOf(const char *original, const char *file) {
     }
   }
   char *result =
-      a404m_malloc((result_size + 1 + strlen(file) + 1) * sizeof(*result));
+      a404m_malloc((result_size + 1 + strLength(file) + 1) * sizeof(*result));
 
-  strncpy(result, original, result_size);
+  for (size_t i = 0; i < result_size; ++i) {
+    result[i] = original[i];
+  }
   result[result_size++] = '/';
 
   for (size_t i = 0; file[i] != '\0'; ++i) {

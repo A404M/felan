@@ -8,11 +8,6 @@
 #include "utils/string.h"
 #include "utils/time.h"
 #include "utils/type.h"
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 AstTree AST_TREE_TYPE_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_TYPE,
@@ -1319,7 +1314,7 @@ AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
 #endif
 ) {
   for (size_t i = 0; i < roots->size; ++i) {
-    if (strcmp(roots->data[i]->filePath, filePath) == 0) {
+    if (strEquals(roots->data[i]->filePath, filePath)) {
       free(filePath);
       return roots->data[i];
     }
@@ -1679,8 +1674,8 @@ bool pushVariable(AstTreeHelper *helper, AstTreeVariables *variables,
       char *var_end = variables->data[j]->name_end;
 
       if (variable->name_end - variable->name_begin == var_end - var_begin &&
-          strncmp(var_begin, variable->name_begin,
-                  variable->name_end - variable->name_begin) == 0) {
+          strnEquals(var_begin, variable->name_begin,
+                     variable->name_end - variable->name_begin)) {
         printError(variable->name_begin, variable->name_end, "Variable exists");
         return false;
       }
@@ -2196,8 +2191,10 @@ AstTree *astTreeParseIdentifier(ParserNode *parserNode, AstTreeHelper *helper) {
 
 AstTree *astTreeParseValue(ParserNode *parserNode, AstTreeToken token,
                            size_t metadata_size, AstTree *type) {
-  void *metadata = a404m_malloc(metadata_size);
-  memcpy(metadata, parserNode->metadata, metadata_size);
+  u8 *metadata = a404m_malloc(metadata_size);
+  for (size_t i = 0; i < metadata_size; ++i) {
+    metadata[i] = ((u8 *)parserNode->metadata)[i];
+  }
 
   return newAstTree(token, metadata, type, parserNode->str_begin,
                     parserNode->str_end);
@@ -3146,7 +3143,7 @@ AstTree *makeTypeOf(AstTree *value) {
     for (size_t i = 0; i < struc->variables.size; ++i) {
       AstTreeVariable *member = struc->variables.data[i];
       const size_t member_size = member->name_end - member->name_begin;
-      if (member_size == size && strncmp(member->name_begin, str, size)) {
+      if (member_size == size && strnEquals(member->name_begin, str, size)) {
         return copyAstTree(member->type);
       }
     }
@@ -4167,7 +4164,7 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
       for (size_t j = 0; j < function->arguments_size; ++j) {
         AstTreeTypeFunctionArgument arg = function->arguments[j];
         if ((size_t)(arg.name_end - arg.name_begin) == param_name_size &&
-            strncmp(arg.name_begin, param.nameBegin, param_name_size) == 0) {
+            strnEquals(arg.name_begin, param.nameBegin, param_name_size)) {
           initedArguments[j] = param;
           goto END_OF_NAMED_FOR;
         }
@@ -4226,7 +4223,7 @@ bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper,
       const char *var_str = var->name_begin;
       const size_t var_str_size = var->name_end - var->name_begin;
 
-      if (var_str_size != str_size || strncmp(var_str, str, str_size) != 0) {
+      if (var_str_size != str_size || !strnEquals(var_str, str, str_size)) {
         continue;
       }
 
@@ -4244,7 +4241,7 @@ bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper,
       const char *var_str = var->name_begin;
       const size_t var_str_size = var->name_end - var->name_begin;
 
-      if (var_str_size != str_size || strncmp(var_str, str, str_size) != 0) {
+      if (var_str_size != str_size || !strnEquals(var_str, str, str_size)) {
         continue;
       }
 
@@ -4272,8 +4269,7 @@ bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper,
           for (size_t j = 0; j < function->arguments_size; ++j) {
             AstTreeTypeFunctionArgument arg = function->arguments[j];
             if ((size_t)(arg.name_end - arg.name_begin) == param_name_size &&
-                strncmp(arg.name_begin, param.nameBegin, param_name_size) ==
-                    0) {
+                strnEquals(arg.name_begin, param.nameBegin, param_name_size)) {
               if (!typeIsEqual(arg.type, param.value->type)) {
                 goto CONTINUE_OUTER;
               }
@@ -4701,8 +4697,8 @@ bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper) {
     const char *str = metadata->member.name.begin;
 
     const char LENGTH_STR[] = "length";
-    const size_t LENGTH_STR_SIZE = strlen(LENGTH_STR);
-    if (LENGTH_STR_SIZE == size && strncmp(LENGTH_STR, str, size) == 0) {
+    const size_t LENGTH_STR_SIZE = strLength(LENGTH_STR);
+    if (LENGTH_STR_SIZE == size && strnEquals(LENGTH_STR, str, size)) {
       metadata->member.index = 0;
       tree->type = copyAstTree(&AST_TREE_U64_TYPE);
       return true;
@@ -4719,7 +4715,7 @@ bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper) {
     for (size_t i = 0; i < struc->variables.size; ++i) {
       AstTreeVariable *member = struc->variables.data[i];
       const size_t member_size = member->name_end - member->name_begin;
-      if (member_size == size && strncmp(member->name_begin, str, size) == 0) {
+      if (member_size == size && strnEquals(member->name_begin, str, size)) {
         metadata->member.index = i;
         tree->type = copyAstTree(member->type);
         return true;
@@ -4769,11 +4765,11 @@ bool setTypesBuiltin(AstTree *tree, AstTreeSetTypesHelper helper,
             return false;
           }
         } else if (param_name_size == FROM_STR_SIZE &&
-                   strncmp(param.nameBegin, FROM_STR, FROM_STR_SIZE) == 0 &&
+                   strnEquals(param.nameBegin, FROM_STR, FROM_STR_SIZE) &&
                    from == NULL) {
           from = param.value;
         } else if (param_name_size == TO_STR_SIZE &&
-                   strncmp(param.nameBegin, TO_STR, TO_STR_SIZE) == 0 &&
+                   strnEquals(param.nameBegin, TO_STR, TO_STR_SIZE) &&
                    to == NULL) {
           to = param.value;
         } else {
@@ -4841,8 +4837,8 @@ bool setTypesBuiltin(AstTree *tree, AstTreeSetTypesHelper helper,
             return false;
           }
         } else if (param_name_size == VARIABLE_STR_SIZE &&
-                   strncmp(param.nameBegin, VARIABLE_STR, VARIABLE_STR_SIZE) ==
-                       0 &&
+                   strnEquals(param.nameBegin, VARIABLE_STR,
+                              VARIABLE_STR_SIZE) &&
                    variable == NULL) {
           variable = param.value;
         } else {
@@ -4902,8 +4898,8 @@ bool setTypesBuiltin(AstTree *tree, AstTreeSetTypesHelper helper,
             return false;
           }
         } else if (param_name_size == VARIABLE_STR_SIZE &&
-                   strncmp(param.nameBegin, VARIABLE_STR, VARIABLE_STR_SIZE) ==
-                       0 &&
+                   strnEquals(param.nameBegin, VARIABLE_STR,
+                              VARIABLE_STR_SIZE) &&
                    file == NULL) {
           file = param.value;
         } else {

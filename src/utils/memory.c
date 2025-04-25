@@ -10,7 +10,7 @@ void *a404m_malloc(size_t size) {
   }
 }
 
-void *a404m_realloc(void *restrict pointer, size_t size) {
+void *a404m_realloc(void *pointer, size_t size) {
   if (size == 0) {
     free(pointer);
     return NULL;

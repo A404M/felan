@@ -1,6 +1,5 @@
 #pragma once
 
-#include "utils/type.h"
 #include <stdlib.h>
 
 #ifndef __FILE_NAME__

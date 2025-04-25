@@ -6,11 +6,6 @@
 #include "utils/memory.h"
 #include "utils/string.h"
 #include "utils/time.h"
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
 
 const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_ROOT",
@@ -763,8 +758,7 @@ bool parserNodeArray(LexerNode *begin, LexerNode *end, ParserNode *parent) {
       parsedNodes_data = a404m_realloc(
           parsedNodes_data, sizeof(*parsedNodes_data) * parsedNodes_capacity);
     }
-    parsedNodes_data[parsedNodes_size] = pNode;
-    parsedNodes_size += 1;
+    parsedNodes_data[parsedNodes_size++] = pNode;
   }
 
   ParserNodeArray *parsedNodes = a404m_malloc(sizeof(*parsedNodes));

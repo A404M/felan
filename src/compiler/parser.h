@@ -2,8 +2,6 @@
 
 #include "compiler/lexer.h"
 #include "utils/type.h"
-#include <stddef.h>
-#include <stdint.h>
 #include <time.h>
 
 typedef enum ParserToken {

@@ -2,8 +2,8 @@
 #include "compiler/ast-tree.h"
 #include "utils/log.h"
 #include "utils/memory.h"
+#include "utils/string.h"
 #include <stdio.h>
-#include <string.h>
 
 #define doOperation(op0, op1, operator, originalType, type)                    \
   *((originalType *)(op0)->metadata) =                                         \
@@ -53,7 +53,7 @@ bool runAstTree(AstTreeRoots roots) {
       AstTreeVariable *variable = root->variables.data[i];
       size_t name_size = variable->name_end - variable->name_begin;
       if (name_size == MAIN_STR_SIZE &&
-          strncmp(variable->name_begin, MAIN_STR, MAIN_STR_SIZE) == 0 &&
+          strnEquals(variable->name_begin, MAIN_STR, MAIN_STR_SIZE) &&
           variable->type->token == AST_TREE_TOKEN_TYPE_FUNCTION) {
         if (mainVariable != NULL) {
           printLog("Too many main variables");

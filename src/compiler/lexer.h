@@ -113,21 +113,11 @@ typedef enum LexerToken : u8 {
 
 extern const char *LEXER_TOKEN_STRINGS[];
 
-extern const char *LEXER_SYMBOL_STRINGS[];
-extern const LexerToken LEXER_SYMBOL_TOKENS[];
-extern const size_t LEXER_SYMBOL_SIZE;
-
-extern const char *LEXER_KEYWORD_STRINGS[];
-extern const LexerToken LEXER_KEYWORD_TOKENS[];
-extern const size_t LEXER_KEYWORD_SIZE;
-
-struct ParserNode;
-
 typedef struct LexerNode {
   char *str_begin;
   char *str_end;
-  LexerToken token;
   struct ParserNode *parserNode;
+  LexerToken token;
 } LexerNode;
 
 typedef struct LexerNodeArray {

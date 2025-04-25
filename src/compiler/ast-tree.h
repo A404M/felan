@@ -1,9 +1,6 @@
 #pragma once
 
 #include "compiler/parser.h"
-#include <stddef.h>
-#include <stdint.h>
-#include <sys/types.h>
 #include <time.h>
 
 typedef enum AstTreeToken {

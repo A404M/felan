@@ -1,7 +1,6 @@
 #pragma once
 
 #include "compiler/ast-tree.h"
-#include <stdint.h>
 
 void runnerVariableSetValue(AstTreeVariable *variable, AstTree *value);
 void runnerVariableSetValueWihtoutConstCheck(AstTreeVariable *variable,

@@ -4,9 +4,6 @@
 #include "utils/memory.h"
 #include "utils/string.h"
 
-#include <stdint.h>
-#include <stdio.h>
-
 const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET",
 
@@ -99,12 +96,12 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_NONE",
 };
 
-const char *LEXER_SYMBOL_STRINGS[] = {
+static const char *LEXER_SYMBOL_STRINGS[] = {
     ";",  "(",  ")",  "{", "}",  "->", ":", "=",  "+=", "-=", "*=",
     "/=", "%=", ",",  "+", "-",  "*",  "/", "%",  "==", "!=", ">",
     ">=", "<",  "<=", "&", ".*", ".",  "!", "&&", "||", "[",  "]",
 };
-const LexerToken LEXER_SYMBOL_TOKENS[] = {
+static const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_EOL,
     LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS,
     LEXER_TOKEN_SYMBOL_CLOSE_PARENTHESIS,
@@ -139,10 +136,10 @@ const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_OPEN_BRACKET,
     LEXER_TOKEN_SYMBOL_CLOSE_BRACKET,
 };
-const size_t LEXER_SYMBOL_SIZE =
+static const size_t LEXER_SYMBOL_SIZE =
     sizeof(LEXER_SYMBOL_TOKENS) / sizeof(*LEXER_SYMBOL_TOKENS);
 
-const char *LEXER_KEYWORD_STRINGS[] = {
+static const char *LEXER_KEYWORD_STRINGS[] = {
     "type", "void", "i8",    "u8",       "i16",  "u16",    "i32",       "u32",
     "i64",  "u64",
 #ifdef FLOAT_16_SUPPORT
@@ -151,7 +148,7 @@ const char *LEXER_KEYWORD_STRINGS[] = {
     "f32",  "f64",  "f128",  "bool",     "putc", "return", "true",      "false",
     "if",   "else", "while", "comptime", "null", "struct", "undefined", "code",
 };
-const LexerToken LEXER_KEYWORD_TOKENS[] = {
+static const LexerToken LEXER_KEYWORD_TOKENS[] = {
     LEXER_TOKEN_KEYWORD_TYPE,      LEXER_TOKEN_KEYWORD_VOID,
     LEXER_TOKEN_KEYWORD_I8,        LEXER_TOKEN_KEYWORD_U8,
     LEXER_TOKEN_KEYWORD_I16,       LEXER_TOKEN_KEYWORD_U16,
@@ -169,7 +166,7 @@ const LexerToken LEXER_KEYWORD_TOKENS[] = {
     LEXER_TOKEN_KEYWORD_NULL,      LEXER_TOKEN_KEYWORD_STRUCT,
     LEXER_TOKEN_KEYWORD_UNDEFINED, LEXER_TOKEN_KEYWORD_CODE,
 };
-const size_t LEXER_KEYWORD_SIZE =
+static const size_t LEXER_KEYWORD_SIZE =
     sizeof(LEXER_KEYWORD_TOKENS) / sizeof(*LEXER_KEYWORD_TOKENS);
 
 const LexerNodeArray LEXER_NODE_ARRAY_ERROR = {
@@ -481,11 +478,5 @@ bool isSpace(char c) {
 }
 
 bool isString(char c) {
-  switch (c) {
-  case '\'':
-  case '\"':
-    return true;
-  default:
-    return false;
-  }
+  return c == '\'' || c == '\"';
 }

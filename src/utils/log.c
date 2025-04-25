@@ -1,10 +1,9 @@
 #include "log.h"
 
 #include "utils/file.h"
+#include "utils/string.h"
 #include <stdarg.h>
-#include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 
 void _printLogBack(const char *format, const char *file, int line, ...) {
   va_list args;
@@ -26,7 +25,7 @@ void _printErrorWarningBack(const char *file, int line, char *begin, char *end,
   size_t file_index = SIZE_MAX;
   for (size_t i = 0; i < fileCodes_length; ++i) {
     char *fileCode_begin = fileCodes[i];
-    char *fileCode_end = fileCodes[i] + strlen(fileCodes[i]);
+    char *fileCode_end = fileCodes[i] + strLength(fileCodes[i]);
     if (begin >= fileCode_begin && end <= fileCode_end) {
       file_index = i;
       break;
@@ -70,11 +69,11 @@ void _printErrorWarningBack(const char *file, int line, char *begin, char *end,
 
   for (char *iter = file_line_begin; iter < file_line_end; ++iter) {
     if (iter == begin) {
-      fprintf(stderr, "%s", secondColor);
+      fputs(secondColor, stderr);
     } else if (iter == end) {
-      fprintf(stderr, "%s", FIRST_COLOR);
+      fputs(FIRST_COLOR, stderr);
     }
-    fprintf(stderr, "%c", *iter);
+    fputc(*iter, stderr);
   }
-  fprintf(stderr, "\e[0m\n");
+  fputs("\e[0m\n", stderr);
 }

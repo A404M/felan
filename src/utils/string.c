@@ -2,15 +2,37 @@
 #include "memory.h"
 #include "utils/type.h"
 
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
+size_t strLength(const char *str) {
+  size_t i = 0;
+  for (; str[i] != '\0'; ++i)
+    ;
+  return i;
+}
+
+bool strEquals(const char *left, const char *right) {
+  size_t i = 0;
+  for (; left[i] != '\0' && right[i] != '\0'; ++i) {
+    if (left[i] != right[i]) {
+      return false;
+    }
+  }
+  return left[i] == right[i];
+}
+
+bool strnEquals(const char *left, const char *right, size_t len) {
+  for (size_t i = 0; i < len; ++i) {
+    if (left[i] != right[i]) {
+      return false;
+    }
+  }
+  return true;
+}
 
 size_t searchInStringArray(const char *array[], size_t array_size,
                            const char *str, size_t str_size) {
   for (size_t i = 0; i < array_size; ++i) {
-    const size_t el_size = strlen(array[i]);
-    if (el_size == str_size && strncmp(array[i], str, str_size) == 0) {
+    const size_t el_size = strLength(array[i]);
+    if (el_size == str_size && strnEquals(array[i], str, str_size)) {
       return i;
     }
   }
@@ -87,8 +109,10 @@ char *u64ToString(u64 value) {
 }
 
 char *strClone(const char *str) {
-  const size_t str_length = strlen(str) + 1;
+  const size_t str_length = strLength(str) + 1;
   char *result = a404m_malloc(str_length * sizeof(*result));
-  strncpy(result, str, str_length);
+  for (size_t i = 0; i < str_length; ++i) {
+    result[i] = str[i];
+  }
   return result;
 }
