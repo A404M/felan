@@ -1,0 +1,167 @@
+print :: (value:u8)->void{
+  putc value;
+};
+
+print :: (value:[]u8)->void{
+  i :u64= 0;
+  while i < value.length {
+    putc value[i];
+    i += 1;
+  }
+};
+
+print_reverse :: (value:[]u8, size:u8)->void{
+  size := size;
+  while size != 0 {
+    size -= 1;
+    putc value[size];
+  }
+};
+
+print :: (value:i8)->void {
+  value := value;
+  if (value < 0) {
+    putc '-';
+    if (value == -128) {
+      print("128");
+      return;
+    }
+    value = -value;
+  }
+  
+  output :[3]u8= undefined;
+  i :u8= 0;
+  while {
+    output[i] = '0' + @cast(value % 10, u8);
+    i += 1;
+    value /= 10;
+    value != 0;
+  } {}
+
+  print_reverse(output, i - 1);
+};
+
+print :: (value:i16)->void {
+  value := value;
+  if (value < 0) {
+    putc '-';
+    if (value == -32768) {
+      print("32768");
+      return;
+    }
+    value = -value;
+  }
+  
+  output :[5]u8= undefined;
+  i :u8= 0;
+  while {
+    output[i] = '0' + @cast(value % 10, u8);
+    i += 1;
+    value /= 10;
+    value != 0;
+  } {}
+
+  print_reverse(output, i);
+};
+
+print :: (value:i32)->void {
+  value := value;
+  if (value < 0) {
+    putc '-';
+    if (value == -2147483648) {
+      print("2147483648");
+      return;
+    }
+    value = -value;
+  }
+  
+  output :[10]u8= undefined;
+  i :u8= 0;
+  while {
+    output[i] = '0' + @cast(value % 10, u8);
+    i += 1;
+    value /= 10;
+    value != 0;
+  } {}
+
+  print_reverse(output, i - 1);
+};
+
+print :: (value:i64)->void {
+  value := value;
+  if (value < 0) {
+    putc '-';
+    if (value == -9223372036854775808) {
+      print("9223372036854775808");
+      return;
+    }
+    value = -value;
+  }
+  
+  output :[19]u8= undefined;
+  i :u8= 0;
+  while {
+    output[i] = '0' + @cast(value % 10, u8);
+    i += 1;
+    value /= 10;
+    value != 0;
+  } {}
+
+  print_reverse(output, i - 1);
+};
+
+print :: (value:u8)->void{
+  value := value;
+  result :[3]u8 = undefined;
+  i :u8= 0;
+  while {
+    result[i] = '0' + @cast(value % 10,u8);
+    i += 1;
+    value /= 10;
+    value != 0;
+  } {}
+
+  print_reverse(result, i - 1);
+};
+
+print :: (value:u16)->void{
+  value := value;
+  result :[5]u8 = undefined;
+  i :u8= 0;
+  while {
+    result[i] = '0' + @cast(value % 10,u8);
+    i += 1;
+    value /= 10;
+    value != 0;
+  } {}
+
+  print_reverse(result, i - 1);
+};
+
+print :: (value:u32)->void{
+  value := value;
+  result :[10]u8 = undefined;
+  i :u8= 0;
+  while {
+    result[i] = '0' + @cast(value % 10,u8);
+    i += 1;
+    value /= 10;
+    value != 0;
+  } {}
+
+  print_reverse(result, i - 1);
+};
+
+print :: (value:u64)->void{
+  value := value;
+  result :[20]u8 = undefined;
+  i :u8= 0;
+  while {
+    result[i] = '0' + @cast(value % 10,u8);
+    i += 1;
+    value /= 10;
+    value != 0;
+  } {}
+
+  print_reverse(result, i - 1);
+};
