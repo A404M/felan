@@ -294,44 +294,44 @@ AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
                          struct timespec *lexingTime, struct timespec *parsingTime
 #endif
                             );
-AstTreeRoot *makeAstRoot(ParserNode *parsedRoot, char *filePath);
+AstTreeRoot *makeAstRoot(const ParserNode *parsedRoot, char *filePath);
 
 bool pushVariable(AstTreeHelper *helper, AstTreeVariables *variables,
                   AstTreeVariable *variable);
 
-AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseTypeFunction(ParserNode *parserNode,
+AstTree *astTreeParse(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseFunction(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseTypeFunction(const ParserNode *parserNode,
                                   AstTreeHelper *helper);
-AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
+AstTree *astTreeParseFunctionCall(const ParserNode *parserNode,
                                   AstTreeHelper *helper);
-AstTree *astTreeParseIdentifier(ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseValue(ParserNode *parserNode, AstTreeToken token,
+AstTree *astTreeParseIdentifier(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseValue(const ParserNode *parserNode, AstTreeToken token,
                            size_t metadata_size, AstTree *type);
-AstTree *astTreeParseString(ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseKeyword(ParserNode *parserNode, AstTreeToken token);
-AstTree *astTreeParsePrintU64(ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseReturn(ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseBinaryOperator(ParserNode *parserNode,
+AstTree *astTreeParseString(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseKeyword(const ParserNode *parserNode, AstTreeToken token);
+AstTree *astTreeParsePrintU64(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseReturn(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseBinaryOperator(const ParserNode *parserNode,
                                     AstTreeHelper *helper, AstTreeToken token);
-AstTree *astTreeParseUnaryOperator(ParserNode *parserNode,
+AstTree *astTreeParseUnaryOperator(const ParserNode *parserNode,
                                    AstTreeHelper *helper, AstTreeToken token);
-AstTree *astTreeParseOperateAssignOperator(ParserNode *parserNode,
+AstTree *astTreeParseOperateAssignOperator(const ParserNode *parserNode,
                                            AstTreeHelper *helper,
                                            AstTreeToken token);
-bool astTreeParseConstant(ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseVariable(ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseIf(ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseWhile(ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseComptime(ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
+bool astTreeParseConstant(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseVariable(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseIf(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseWhile(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseComptime(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseCurlyBracket(const ParserNode *parserNode,
                                   AstTreeHelper *helper);
-AstTree *astTreeParseParenthesis(ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseStruct(ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseAccessOperator(ParserNode *parserNode,
+AstTree *astTreeParseParenthesis(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseStruct(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseAccessOperator(const ParserNode *parserNode,
                                     AstTreeHelper *helper, AstTreeToken token);
-AstTree *astTreeParseBuiltin(ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseBracket(ParserNode *parserNode, AstTreeHelper *helper,
+AstTree *astTreeParseBuiltin(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseBracket(const ParserNode *parserNode, AstTreeHelper *helper,
                              AstTreeToken token);
 
 bool isFunction(AstTree *value);

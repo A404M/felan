@@ -186,11 +186,13 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
         *newValue = (i64)value;
         ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I64_TYPE,
                          NULL, NULL);
+       #ifdef FLOAT_16_SUPPORT
       } else if (typeIsEqual(to, &AST_TREE_F16_TYPE)) {
         AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
         *newValue = (f16)value;
         ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
                          &AST_TREE_F16_TYPE, NULL, NULL);
+          #endif
       } else if (typeIsEqual(to, &AST_TREE_F32_TYPE)) {
         AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
         *newValue = (f32)value;
@@ -258,11 +260,13 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
         *newValue = (i64)value;
         ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I64_TYPE,
                          NULL, NULL);
+       #ifdef FLOAT_16_SUPPORT
       } else if (typeIsEqual(to, &AST_TREE_F16_TYPE)) {
         AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
         *newValue = (f16)value;
         ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
                          &AST_TREE_F16_TYPE, NULL, NULL);
+          #endif
       } else if (typeIsEqual(to, &AST_TREE_F32_TYPE)) {
         AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
         *newValue = (f32)value;
@@ -330,11 +334,13 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
         *newValue = (i64)value;
         ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I64_TYPE,
                          NULL, NULL);
+       #ifdef FLOAT_16_SUPPORT
       } else if (typeIsEqual(to, &AST_TREE_F16_TYPE)) {
         AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
         *newValue = (f16)value;
         ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
                          &AST_TREE_F16_TYPE, NULL, NULL);
+          #endif
       } else if (typeIsEqual(to, &AST_TREE_F32_TYPE)) {
         AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
         *newValue = (f32)value;

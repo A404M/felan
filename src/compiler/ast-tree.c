@@ -1421,12 +1421,12 @@ RETURN_ERROR:
   return NULL;
 }
 
-AstTreeRoot *makeAstRoot(ParserNode *parsedRoot, char *filePath) {
+AstTreeRoot *makeAstRoot(const ParserNode *parsedRoot, char *filePath) {
   if (parsedRoot->token != PARSER_TOKEN_ROOT) {
     return NULL;
   }
 
-  ParserNodeArray *nodes = parsedRoot->metadata;
+  const ParserNodeArray *nodes = parsedRoot->metadata;
 
   AstTreeRoot *root = a404m_malloc(sizeof(*root));
 
@@ -1446,13 +1446,13 @@ AstTreeRoot *makeAstRoot(ParserNode *parsedRoot, char *filePath) {
   };
 
   for (size_t i = 0; i < nodes->size; ++i) {
-    ParserNode *eol = nodes->data[i];
+    const ParserNode *eol = nodes->data[i];
     if (eol->token != PARSER_TOKEN_SYMBOL_EOL) {
       printError(eol->str_begin, eol->str_end, "Did you forgot semicolon?",
                  PARSER_TOKEN_STRINGS[eol->token]);
       goto RETURN_ERROR;
     }
-    ParserNode *node = (ParserNodeSingleChildMetadata *)eol->metadata;
+    const ParserNode *node = (ParserNodeSingleChildMetadata *)eol->metadata;
     if (node->token == PARSER_TOKEN_KEYWORD_COMPTIME ||
         node->token == PARSER_TOKEN_FUNCTION_CALL) {
       continue;
@@ -1485,13 +1485,13 @@ AstTreeRoot *makeAstRoot(ParserNode *parsedRoot, char *filePath) {
   root->trees.size = 0;
 
   for (size_t i = 0; i < nodes->size; ++i) {
-    ParserNode *eol = nodes->data[i];
+    const ParserNode *eol = nodes->data[i];
     if (eol->token != PARSER_TOKEN_SYMBOL_EOL) {
       printError(eol->str_begin, eol->str_end, "Did you forgot semicolon?",
                  PARSER_TOKEN_STRINGS[eol->token]);
       goto RETURN_ERROR;
     }
-    ParserNode *node = (ParserNodeSingleChildMetadata *)eol->metadata;
+    const ParserNode *node = (ParserNodeSingleChildMetadata *)eol->metadata;
     AstTree *tree;
     if (node->token == PARSER_TOKEN_KEYWORD_COMPTIME) {
       tree = astTreeParse(node, &helper);
@@ -1524,7 +1524,7 @@ AstTreeRoot *makeAstRoot(ParserNode *parsedRoot, char *filePath) {
   }
 
   for (size_t j = 0, i = 0; j < nodes->size; ++j) {
-    ParserNode *node =
+    const ParserNode *node =
         (ParserNodeSingleChildMetadata *)nodes->data[j]->metadata;
     ParserNodeVariableMetadata *node_metadata = node->metadata;
 
@@ -1694,7 +1694,7 @@ bool pushVariable(AstTreeHelper *helper, AstTreeVariables *variables,
   return true;
 }
 
-AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper) {
+AstTree *astTreeParse(const ParserNode *parserNode, AstTreeHelper *helper) {
   switch (parserNode->token) {
   case PARSER_TOKEN_FUNCTION_DEFINITION:
     return astTreeParseFunction(parserNode, helper);
@@ -1872,10 +1872,11 @@ AstTree *astTreeParse(ParserNode *parserNode, AstTreeHelper *helper) {
   return NULL;
 }
 
-AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *p_helper) {
+AstTree *astTreeParseFunction(const ParserNode *parserNode,
+                              AstTreeHelper *p_helper) {
   ParserNodeFunctionDefnitionMetadata *node_metadata = parserNode->metadata;
-  ParserNodeArray *node_arguments = node_metadata->arguments->metadata;
-  ParserNodeArray *body = node_metadata->body->metadata;
+  const ParserNodeArray *node_arguments = node_metadata->arguments->metadata;
+  const ParserNodeArray *body = node_metadata->body->metadata;
 
   size_t expressions_size = 0;
   AstTreeScope scope = {
@@ -1905,7 +1906,7 @@ AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *p_helper) {
   };
 
   for (size_t i = 0; i < node_arguments->size; ++i) {
-    ParserNode *arg = node_arguments->data[i];
+    const ParserNode *arg = node_arguments->data[i];
     if (arg->token == PARSER_TOKEN_SYMBOL_COMMA) {
       arg = (ParserNodeSingleChildMetadata *)arg->metadata;
     }
@@ -1942,7 +1943,7 @@ AstTree *astTreeParseFunction(ParserNode *parserNode, AstTreeHelper *p_helper) {
   }
 
   for (size_t i = 0; i < body->size; ++i) {
-    ParserNode *node = body->data[i];
+    const ParserNode *node = body->data[i];
     switch (node->token) {
     case PARSER_TOKEN_SYMBOL_EOL:
       node = (ParserNodeSingleChildMetadata *)node->metadata;
@@ -2063,10 +2064,10 @@ RETURN_ERROR:
   return NULL;
 }
 
-AstTree *astTreeParseTypeFunction(ParserNode *parserNode,
+AstTree *astTreeParseTypeFunction(const ParserNode *parserNode,
                                   AstTreeHelper *helper) {
   ParserNodeTypeFunctionMetadata *metadata = parserNode->metadata;
-  ParserNodeArray *node_arguments = metadata->arguments->metadata;
+  const ParserNodeArray *node_arguments = metadata->arguments->metadata;
 
   AstTreeTypeFunction *typeFunction = a404m_malloc(sizeof(*typeFunction));
 
@@ -2076,7 +2077,7 @@ AstTree *astTreeParseTypeFunction(ParserNode *parserNode,
   typeFunction->arguments_size = 0;
 
   for (size_t i = 0; i < node_arguments->size; ++i) {
-    ParserNode *node_argument = node_arguments->data[i];
+    const ParserNode *node_argument = node_arguments->data[i];
 
     if (node_argument->token == PARSER_TOKEN_SYMBOL_COMMA) {
       node_argument = (ParserNodeSingleChildMetadata *)node_argument->metadata;
@@ -2143,7 +2144,7 @@ RETURN_ERROR:
   return NULL;
 }
 
-AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
+AstTree *astTreeParseFunctionCall(const ParserNode *parserNode,
                                   AstTreeHelper *helper) {
   ParserNodeFunctionCall *node_metadata = parserNode->metadata;
   AstTree *function = astTreeParse(node_metadata->function, helper);
@@ -2159,7 +2160,7 @@ AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
   metadata->parameters_size = node_metadata->params->size;
 
   for (size_t i = 0; i < metadata->parameters_size; ++i) {
-    ParserNode *node_param = node_metadata->params->data[i];
+    const ParserNode *node_param = node_metadata->params->data[i];
     if (node_param->token == PARSER_TOKEN_SYMBOL_COMMA) {
       node_param = (ParserNodeSingleChildMetadata *)node_param->metadata;
     }
@@ -2183,13 +2184,14 @@ AstTree *astTreeParseFunctionCall(ParserNode *parserNode,
                     parserNode->str_begin, parserNode->str_end);
 }
 
-AstTree *astTreeParseIdentifier(ParserNode *parserNode, AstTreeHelper *helper) {
+AstTree *astTreeParseIdentifier(const ParserNode *parserNode,
+                                AstTreeHelper *helper) {
   (void)helper;
   return newAstTree(AST_TREE_TOKEN_VARIABLE, NULL, NULL, parserNode->str_begin,
                     parserNode->str_end);
 }
 
-AstTree *astTreeParseValue(ParserNode *parserNode, AstTreeToken token,
+AstTree *astTreeParseValue(const ParserNode *parserNode, AstTreeToken token,
                            size_t metadata_size, AstTree *type) {
   u8 *metadata = a404m_malloc(metadata_size);
   for (size_t i = 0; i < metadata_size; ++i) {
@@ -2200,7 +2202,8 @@ AstTree *astTreeParseValue(ParserNode *parserNode, AstTreeToken token,
                     parserNode->str_end);
 }
 
-AstTree *astTreeParseString(ParserNode *parserNode, AstTreeHelper *helper) {
+AstTree *astTreeParseString(const ParserNode *parserNode,
+                            AstTreeHelper *helper) {
   (void)helper;
   ParserNodeStringMetadata *node_metadata = parserNode->metadata;
 
@@ -2245,12 +2248,13 @@ AstTree *astTreeParseString(ParserNode *parserNode, AstTreeHelper *helper) {
                     parserNode->str_begin, parserNode->str_end);
 }
 
-AstTree *astTreeParseKeyword(ParserNode *parserNode, AstTreeToken token) {
+AstTree *astTreeParseKeyword(const ParserNode *parserNode, AstTreeToken token) {
   return newAstTree(token, NULL, NULL, parserNode->str_begin,
                     parserNode->str_end);
 }
 
-AstTree *astTreeParsePrintU64(ParserNode *parserNode, AstTreeHelper *helper) {
+AstTree *astTreeParsePrintU64(const ParserNode *parserNode,
+                              AstTreeHelper *helper) {
   ParserNodeSingleChildMetadata *node_metadata = parserNode->metadata;
 
   AstTree *operand = astTreeParse(node_metadata, helper);
@@ -2262,7 +2266,8 @@ AstTree *astTreeParsePrintU64(ParserNode *parserNode, AstTreeHelper *helper) {
                     NULL, parserNode->str_begin, parserNode->str_end);
 }
 
-AstTree *astTreeParseReturn(ParserNode *parserNode, AstTreeHelper *helper) {
+AstTree *astTreeParseReturn(const ParserNode *parserNode,
+                            AstTreeHelper *helper) {
   ParserNodeReturnMetadata *node_metadata = parserNode->metadata;
 
   AstTree *value;
@@ -2282,7 +2287,7 @@ AstTree *astTreeParseReturn(ParserNode *parserNode, AstTreeHelper *helper) {
                     parserNode->str_begin, parserNode->str_end);
 }
 
-AstTree *astTreeParseBinaryOperator(ParserNode *parserNode,
+AstTree *astTreeParseBinaryOperator(const ParserNode *parserNode,
                                     AstTreeHelper *helper, AstTreeToken token) {
   ParserNodeInfixMetadata *node_metadata = parserNode->metadata;
 
@@ -2304,7 +2309,7 @@ AstTree *astTreeParseBinaryOperator(ParserNode *parserNode,
                     parserNode->str_end);
 }
 
-AstTree *astTreeParseUnaryOperator(ParserNode *parserNode,
+AstTree *astTreeParseUnaryOperator(const ParserNode *parserNode,
                                    AstTreeHelper *helper, AstTreeToken token) {
   ParserNodeSingleChildMetadata *node_metadata = parserNode->metadata;
 
@@ -2317,7 +2322,7 @@ AstTree *astTreeParseUnaryOperator(ParserNode *parserNode,
                     parserNode->str_end);
 }
 
-AstTree *astTreeParseOperateAssignOperator(ParserNode *parserNode,
+AstTree *astTreeParseOperateAssignOperator(const ParserNode *parserNode,
                                            AstTreeHelper *helper,
                                            AstTreeToken token) {
   ParserNodeInfixMetadata *node_metadata = parserNode->metadata;
@@ -2349,7 +2354,7 @@ AstTree *astTreeParseOperateAssignOperator(ParserNode *parserNode,
                     parserNode->str_begin, parserNode->str_end);
 }
 
-bool astTreeParseConstant(ParserNode *parserNode, AstTreeHelper *helper) {
+bool astTreeParseConstant(const ParserNode *parserNode, AstTreeHelper *helper) {
   ParserNodeVariableMetadata *node_metadata = parserNode->metadata;
 
   if (node_metadata->value == NULL ||
@@ -2392,7 +2397,8 @@ RETURN_ERROR:
   return false;
 }
 
-AstTree *astTreeParseVariable(ParserNode *parserNode, AstTreeHelper *helper) {
+AstTree *astTreeParseVariable(const ParserNode *parserNode,
+                              AstTreeHelper *helper) {
   ParserNodeVariableMetadata *node_metadata = parserNode->metadata;
 
   if (node_metadata->value == NULL) {
@@ -2439,7 +2445,7 @@ RETURN_ERROR:
   return NULL;
 }
 
-AstTree *astTreeParseIf(ParserNode *parserNode, AstTreeHelper *helper) {
+AstTree *astTreeParseIf(const ParserNode *parserNode, AstTreeHelper *helper) {
   ParserNodeIfMetadata *node_metadata = parserNode->metadata;
 
   AstTree *condition = astTreeParse(node_metadata->condition, helper);
@@ -2471,7 +2477,8 @@ AstTree *astTreeParseIf(ParserNode *parserNode, AstTreeHelper *helper) {
                     parserNode->str_begin, parserNode->str_end);
 }
 
-AstTree *astTreeParseWhile(ParserNode *parserNode, AstTreeHelper *helper) {
+AstTree *astTreeParseWhile(const ParserNode *parserNode,
+                           AstTreeHelper *helper) {
   ParserNodeWhileMetadata *node_metadata = parserNode->metadata;
 
   AstTree *condition = astTreeParse(node_metadata->condition, helper);
@@ -2492,19 +2499,20 @@ AstTree *astTreeParseWhile(ParserNode *parserNode, AstTreeHelper *helper) {
                     parserNode->str_begin, parserNode->str_end);
 }
 
-AstTree *astTreeParseComptime(ParserNode *parserNode, AstTreeHelper *helper) {
+AstTree *astTreeParseComptime(const ParserNode *parserNode,
+                              AstTreeHelper *helper) {
   ParserNodeSingleChildMetadata *node_metadata = parserNode->metadata;
 
-  AstTreeSingleChild *metadata =
-      (AstTreeSingleChild *)astTreeParse((ParserNode *)node_metadata, helper);
+  AstTreeSingleChild *metadata = (AstTreeSingleChild *)astTreeParse(
+      (const ParserNode *)node_metadata, helper);
 
   return newAstTree(AST_TREE_TOKEN_KEYWORD_COMPTIME, metadata, NULL,
                     parserNode->str_begin, parserNode->str_end);
 }
 
-AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
+AstTree *astTreeParseCurlyBracket(const ParserNode *parserNode,
                                   AstTreeHelper *p_helper) {
-  ParserNodeArray *body = parserNode->metadata;
+  const ParserNodeArray *body = parserNode->metadata;
 
   size_t expressions_size = 0;
 
@@ -2527,7 +2535,7 @@ AstTree *astTreeParseCurlyBracket(ParserNode *parserNode,
   };
 
   for (size_t i = 0; i < body->size; ++i) {
-    ParserNode *node = body->data[i];
+    const ParserNode *node = body->data[i];
     switch (node->token) {
     case PARSER_TOKEN_SYMBOL_EOL:
       node = (ParserNodeSingleChildMetadata *)node->metadata;
@@ -2648,9 +2656,9 @@ RETURN_ERROR:
   return NULL;
 }
 
-AstTree *astTreeParseParenthesis(ParserNode *parserNode,
+AstTree *astTreeParseParenthesis(const ParserNode *parserNode,
                                  AstTreeHelper *helper) {
-  ParserNodeArray *metadata = parserNode->metadata;
+  const ParserNodeArray *metadata = parserNode->metadata;
 
   if (metadata->size != 1) {
     printError(parserNode->str_begin, parserNode->str_end, "Bad parenthesis");
@@ -2660,16 +2668,17 @@ AstTree *astTreeParseParenthesis(ParserNode *parserNode,
   }
 }
 
-AstTree *astTreeParseStruct(ParserNode *parserNode, AstTreeHelper *helper) {
-  ParserNode *body = parserNode->metadata;
-  ParserNodeArray *body_metadata = body->metadata;
+AstTree *astTreeParseStruct(const ParserNode *parserNode,
+                            AstTreeHelper *helper) {
+  const ParserNode *body = parserNode->metadata;
+  const ParserNodeArray *body_metadata = body->metadata;
   AstTreeVariables variables = {
       .data = a404m_malloc(sizeof(*variables.data) * body_metadata->size),
       .size = body_metadata->size,
   };
 
   for (size_t i = 0; i < body_metadata->size; ++i) {
-    ParserNode *node = body_metadata->data[i];
+    const ParserNode *node = body_metadata->data[i];
     if (node->token != PARSER_TOKEN_SYMBOL_EOL) {
       printError(node->str_begin, node->str_end,
                  "Semicolon is required, maybe forget a semicolon?");
@@ -2723,7 +2732,7 @@ AstTree *astTreeParseStruct(ParserNode *parserNode, AstTreeHelper *helper) {
                     parserNode->str_begin, parserNode->str_end);
 }
 
-AstTree *astTreeParseAccessOperator(ParserNode *parserNode,
+AstTree *astTreeParseAccessOperator(const ParserNode *parserNode,
                                     AstTreeHelper *helper, AstTreeToken token) {
   ParserNodeInfixMetadata *node_metadata = parserNode->metadata;
 
@@ -2732,7 +2741,7 @@ AstTree *astTreeParseAccessOperator(ParserNode *parserNode,
     return NULL;
   }
 
-  ParserNode *right_node = node_metadata->right;
+  const ParserNode *right_node = node_metadata->right;
   if (right_node->token != PARSER_TOKEN_IDENTIFIER) {
     printError(right_node->str_begin, right_node->str_end,
                "Should be an identifier but got `%s`",
@@ -2750,7 +2759,8 @@ AstTree *astTreeParseAccessOperator(ParserNode *parserNode,
                     parserNode->str_end);
 }
 
-AstTree *astTreeParseBuiltin(ParserNode *parserNode, AstTreeHelper *helper) {
+AstTree *astTreeParseBuiltin(const ParserNode *parserNode,
+                             AstTreeHelper *helper) {
   (void)helper;
 
   AstTreeBuiltin *metadata = a404m_malloc(sizeof(*metadata));
@@ -2770,8 +2780,8 @@ AstTree *astTreeParseBuiltin(ParserNode *parserNode, AstTreeHelper *helper) {
                     parserNode->str_begin, parserNode->str_end);
 }
 
-AstTree *astTreeParseBracket(ParserNode *parserNode, AstTreeHelper *helper,
-                             AstTreeToken token) {
+AstTree *astTreeParseBracket(const ParserNode *parserNode,
+                             AstTreeHelper *helper, AstTreeToken token) {
   ParserNodeBracketMetadata *node_metadata = parserNode->metadata;
 
   AstTreeBracket *metadata = a404m_malloc(sizeof(*metadata));
@@ -2783,7 +2793,7 @@ AstTree *astTreeParseBracket(ParserNode *parserNode, AstTreeHelper *helper,
                                            metadata->parameters.size);
 
   for (size_t i = 0; i < node_metadata->params->size; ++i) {
-    ParserNode *node_param = node_metadata->params->data[i];
+    const ParserNode *node_param = node_metadata->params->data[i];
 
     if (node_param->token == PARSER_TOKEN_SYMBOL_COMMA) {
       node_param = (ParserNodeSingleChildMetadata *)node_param->metadata;
@@ -3450,7 +3460,9 @@ bool isIntType(AstTree *type) {
   case AST_TREE_TOKEN_TYPE_ARRAY:
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_VOID:
+       #ifdef FLOAT_16_SUPPORT
   case AST_TREE_TOKEN_TYPE_F16:
+       #endif
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
@@ -3510,7 +3522,9 @@ bool isEqual(AstTree *left, AstTree *right) {
   case AST_TREE_TOKEN_TYPE_U32:
   case AST_TREE_TOKEN_TYPE_I64:
   case AST_TREE_TOKEN_TYPE_U64:
+       #ifdef FLOAT_16_SUPPORT
   case AST_TREE_TOKEN_TYPE_F16:
+       #endif
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
