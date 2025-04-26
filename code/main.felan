@@ -1,4 +1,4 @@
-@import("basic.felan");
+@import("lib/print.felan");
 
 main :: () -> void {
   str := "123\n";

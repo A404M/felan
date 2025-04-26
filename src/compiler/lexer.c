@@ -417,7 +417,7 @@ inline __attribute__((always_inline)) void lexerPushClear(LexerNodeArray *array,
     goto RETURN_SUCCESS;
   }
   printLog("Bad token '%d'", *node_token);
-  exit(1);
+  UNREACHABLE;
 RETURN_SUCCESS:
   *node_str_begin = iter;
   *node_token = token;
