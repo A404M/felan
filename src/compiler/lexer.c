@@ -169,6 +169,19 @@ static const LexerToken LEXER_KEYWORD_TOKENS[] = {
 static const size_t LEXER_KEYWORD_SIZE =
     sizeof(LEXER_KEYWORD_TOKENS) / sizeof(*LEXER_KEYWORD_TOKENS);
 
+static const char *LEXER_BUILTIN_STRINGS[] = {
+    "@cast",
+    "@typeOf",
+    "@import",
+};
+static const LexerToken LEXER_BUILTIN_TOKENS[] = {
+    LEXER_TOKEN_BUILTIN_CAST,
+    LEXER_TOKEN_BUILTIN_TYPE_OF,
+    LEXER_TOKEN_BUILTIN_IMPORT,
+};
+static const size_t LEXER_BUILTIN_SIZE =
+    sizeof(LEXER_BUILTIN_TOKENS) / sizeof(*LEXER_BUILTIN_TOKENS);
+
 const LexerNodeArray LEXER_NODE_ARRAY_ERROR = {
     .size = SIZE_MAX,
 };
@@ -305,9 +318,10 @@ RETURN_SUCCESS:
   return result;
 }
 
-inline __attribute__((always_inline)) void lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
-                    char **node_str_begin, LexerToken *node_token,
-                    LexerToken token) {
+inline __attribute__((always_inline)) void
+lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
+               char **node_str_begin, LexerToken *node_token,
+               LexerToken token) {
   switch (*node_token) {
   case LEXER_TOKEN_IDENTIFIER: {
     const size_t index =
@@ -325,6 +339,17 @@ inline __attribute__((always_inline)) void lexerPushClear(LexerNodeArray *array,
     if (index != LEXER_SYMBOL_SIZE) {
       *node_token = LEXER_SYMBOL_TOKENS[index];
     }
+  }
+    goto PUSH;
+  case LEXER_TOKEN_BUILTIN: {
+    const size_t index =
+        searchInStringArray(LEXER_BUILTIN_STRINGS, LEXER_BUILTIN_SIZE,
+                            *node_str_begin, iter - *node_str_begin);
+    if (index == LEXER_BUILTIN_SIZE) {
+      printError(*node_str_begin, iter, "Bad builtin");
+      UNREACHABLE;
+    }
+    *node_token = LEXER_BUILTIN_TOKENS[index];
   }
     // goto PUSH;
     // fall through
@@ -395,7 +420,9 @@ inline __attribute__((always_inline)) void lexerPushClear(LexerNodeArray *array,
   case LEXER_TOKEN_SYMBOL_LOGICAL_NOT:
   case LEXER_TOKEN_SYMBOL_LOGICAL_AND:
   case LEXER_TOKEN_SYMBOL_LOGICAL_OR:
-  case LEXER_TOKEN_BUILTIN:
+  case LEXER_TOKEN_BUILTIN_CAST:
+  case LEXER_TOKEN_BUILTIN_TYPE_OF:
+  case LEXER_TOKEN_BUILTIN_IMPORT:
   case LEXER_TOKEN_SYMBOL_CLOSE_BRACKET:
   case LEXER_TOKEN_SYMBOL_OPEN_BRACKET:
     if (*array_size == array->size) {
@@ -477,6 +504,4 @@ bool isSpace(char c) {
   }
 }
 
-bool isString(char c) {
-  return c == '\'' || c == '\"';
-}
+bool isString(char c) { return c == '\'' || c == '\"'; }

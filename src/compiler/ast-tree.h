@@ -5,7 +5,9 @@
 
 typedef enum AstTreeToken {
   AST_TREE_TOKEN_FUNCTION,
-  AST_TREE_TOKEN_BUILTIN,
+  AST_TREE_TOKEN_BUILTIN_CAST,
+  AST_TREE_TOKEN_BUILTIN_TYPE_OF,
+  AST_TREE_TOKEN_BUILTIN_IMPORT,
 
   AST_TREE_TOKEN_KEYWORD_PUTC,
   AST_TREE_TOKEN_KEYWORD_RETURN,
@@ -244,19 +246,6 @@ typedef struct AstTreeBracket {
   AstTrees parameters;
 } AstTreeBracket;
 
-typedef enum AstTreeBuiltinToken {
-  AST_TREE_BUILTIN_TOKEN_CAST,
-  AST_TREE_BUILTIN_TOKEN_TYPE_OF,
-  AST_TREE_BUILTIN_TOKEN_IMPORT,
-  AST_TREE_BUILTIN_TOKEN__SIZE__,
-} AstTreeBuiltinToken;
-
-extern const char *AST_TREE_BUILTIN_TOKEN_STRINGS[];
-
-typedef struct AstTreeBuiltin {
-  AstTreeBuiltinToken token;
-} AstTreeBuiltin;
-
 #ifdef PRINT_COMPILE_TREE
 void astTreePrint(const AstTree *tree, int indent);
 void astTreeVariablePrint(const AstTreeVariable *variable, int indent);
@@ -330,7 +319,6 @@ AstTree *astTreeParseParenthesis(const ParserNode *parserNode, AstTreeHelper *he
 AstTree *astTreeParseStruct(const ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseAccessOperator(const ParserNode *parserNode,
                                     AstTreeHelper *helper, AstTreeToken token);
-AstTree *astTreeParseBuiltin(const ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseBracket(const ParserNode *parserNode, AstTreeHelper *helper,
                              AstTreeToken token);
 
@@ -388,7 +376,11 @@ bool setTypesScope(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesComptime(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesStruct(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper);
-bool setTypesBuiltin(AstTree *tree, AstTreeSetTypesHelper helper,
+bool setTypesBuiltinCast(AstTree *tree, AstTreeSetTypesHelper helper,
+                     AstTreeFunctionCall *functionCall);
+bool setTypesBuiltinTypeOf(AstTree *tree, AstTreeSetTypesHelper helper,
+                     AstTreeFunctionCall *functionCall);
+bool setTypesBuiltinImport(AstTree *tree, AstTreeSetTypesHelper helper,
                      AstTreeFunctionCall *functionCall);
 bool setTypesTypeArray(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesArrayAccess(AstTree *tree, AstTreeSetTypesHelper helper);

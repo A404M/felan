@@ -8,9 +8,9 @@
 #endif
 
 #ifdef __GNUC__
-#define UNREACHABLE_BACK (__builtin_unreachable())
+#define UNREACHABLE_BACK exit(1);__builtin_unreachable()
 #else
-#define UNREACHABLE_BACK (exit(1))
+#define UNREACHABLE_BACK exit(1)
 #endif
 
 #define printLog(format,...) _printLogBack(format, __FILE_NAME__, __LINE__, ## __VA_ARGS__)

@@ -11,7 +11,10 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_ROOT",
 
     "PARSER_TOKEN_IDENTIFIER",
-    "PARSER_TOKEN_BUILTIN",
+
+    "PARSER_TOKEN_BUILTIN_CAST",
+    "PARSER_TOKEN_BUILTIN_TYPE_OF",
+    "PARSER_TOKEN_BUILTIN_IMPORT",
 
     "PARSER_TOKEN_VALUE_INT",
     "PARSER_TOKEN_VALUE_FLOAT",
@@ -220,7 +223,9 @@ void parserNodePrint(const ParserNode *node, int indent) {
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_IDENTIFIER:
-  case PARSER_TOKEN_BUILTIN:
+  case PARSER_TOKEN_BUILTIN_CAST:
+  case PARSER_TOKEN_BUILTIN_TYPE_OF:
+  case PARSER_TOKEN_BUILTIN_IMPORT:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_BOOL:
@@ -504,7 +509,9 @@ void parserNodeDelete(ParserNode *node) {
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_IDENTIFIER:
-  case PARSER_TOKEN_BUILTIN:
+  case PARSER_TOKEN_BUILTIN_CAST:
+  case PARSER_TOKEN_BUILTIN_TYPE_OF:
+  case PARSER_TOKEN_BUILTIN_IMPORT:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_BOOL:
@@ -783,8 +790,12 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
   switch (node->token) {
   case LEXER_TOKEN_IDENTIFIER:
     return parserNoMetadata(node, parent, PARSER_TOKEN_IDENTIFIER);
-  case LEXER_TOKEN_BUILTIN:
-    return parserNoMetadata(node, parent, PARSER_TOKEN_BUILTIN);
+  case LEXER_TOKEN_BUILTIN_CAST:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_BUILTIN_CAST);
+  case LEXER_TOKEN_BUILTIN_TYPE_OF:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_BUILTIN_TYPE_OF);
+  case LEXER_TOKEN_BUILTIN_IMPORT:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_BUILTIN_IMPORT);
   case LEXER_TOKEN_KEYWORD_TYPE:
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_TYPE);
   case LEXER_TOKEN_KEYWORD_VOID:
@@ -957,6 +968,7 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
   case LEXER_TOKEN_KEYWORD_STRUCT:
     return parserStruct(node, end, parent);
   case LEXER_TOKEN_KEYWORD_ELSE:
+  case LEXER_TOKEN_BUILTIN:
   case LEXER_TOKEN_SYMBOL:
   case LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS:
   case LEXER_TOKEN_SYMBOL_OPEN_CURLY_BRACKET:
@@ -1516,7 +1528,9 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
         continue;
       case PARSER_TOKEN_ROOT:
       case PARSER_TOKEN_IDENTIFIER:
-      case PARSER_TOKEN_BUILTIN:
+      case PARSER_TOKEN_BUILTIN_CAST:
+      case PARSER_TOKEN_BUILTIN_TYPE_OF:
+      case PARSER_TOKEN_BUILTIN_IMPORT:
       case PARSER_TOKEN_VALUE_INT:
       case PARSER_TOKEN_VALUE_FLOAT:
       case PARSER_TOKEN_VALUE_BOOL:
@@ -1977,7 +1991,9 @@ bool isAllArguments(const ParserNodeArray *nodes) {
 bool isExpression(ParserNode *node) {
   switch (node->token) {
   case PARSER_TOKEN_IDENTIFIER:
-  case PARSER_TOKEN_BUILTIN:
+  case PARSER_TOKEN_BUILTIN_CAST:
+  case PARSER_TOKEN_BUILTIN_TYPE_OF:
+  case PARSER_TOKEN_BUILTIN_IMPORT:
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_VARIABLE:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
@@ -2076,7 +2092,6 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_TYPE_CODE:
   case PARSER_TOKEN_TYPE_BOOL:
   case PARSER_TOKEN_IDENTIFIER:
-  case PARSER_TOKEN_BUILTIN:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
   case PARSER_TOKEN_SYMBOL_BRACKET_LEFT:
   case PARSER_TOKEN_SYMBOL_BRACKET_RIGHT:
@@ -2088,6 +2103,9 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_KEYWORD_STRUCT:
   case PARSER_TOKEN_OPERATOR_ACCESS:
     return true;
+  case PARSER_TOKEN_BUILTIN_CAST:
+  case PARSER_TOKEN_BUILTIN_TYPE_OF:
+  case PARSER_TOKEN_BUILTIN_IMPORT:
   case PARSER_TOKEN_OPERATOR_ADDRESS:
   case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
@@ -2144,7 +2162,9 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_VALUE_CHAR:
   case PARSER_TOKEN_VALUE_STRING:
   case PARSER_TOKEN_IDENTIFIER:
-  case PARSER_TOKEN_BUILTIN:
+  case PARSER_TOKEN_BUILTIN_CAST:
+  case PARSER_TOKEN_BUILTIN_TYPE_OF:
+  case PARSER_TOKEN_BUILTIN_IMPORT:
   case PARSER_TOKEN_OPERATOR_ACCESS:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:

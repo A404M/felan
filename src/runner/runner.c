@@ -27,6 +27,7 @@
 
 void runnerVariableSetValue(AstTreeVariable *variable, AstTree *value) {
   if (variable->isConst) {
+    printLog("Can't assign to const");
     UNREACHABLE;
   }
   runnerVariableSetValueWihtoutConstCheck(variable, value);
@@ -119,8 +120,6 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTreeFunctionCallParam *arguments,
 AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
                            AstTreeFunctionCallParam *arguments,
                            size_t arguments_size) {
-  AstTreeBuiltin *metadata = tree->metadata;
-
   AstTrees args = {
       .data = a404m_malloc(arguments_size * sizeof(*args.data)),
       .size = arguments_size,
@@ -134,13 +133,14 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
   }
 
   if (shouldRet) {
+    printLog("Bad return");
     UNREACHABLE;
   }
 
   AstTree *ret;
 
-  switch (metadata->token) {
-  case AST_TREE_BUILTIN_TOKEN_CAST: {
+  switch (tree->token) {
+  case AST_TREE_TOKEN_BUILTIN_CAST: {
     AstTree *from = args.data[0];
     AstTree *to = args.data[1];
 
@@ -186,13 +186,13 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
         *newValue = (i64)value;
         ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I64_TYPE,
                          NULL, NULL);
-       #ifdef FLOAT_16_SUPPORT
+#ifdef FLOAT_16_SUPPORT
       } else if (typeIsEqual(to, &AST_TREE_F16_TYPE)) {
         AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
         *newValue = (f16)value;
         ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
                          &AST_TREE_F16_TYPE, NULL, NULL);
-          #endif
+#endif
       } else if (typeIsEqual(to, &AST_TREE_F32_TYPE)) {
         AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
         *newValue = (f32)value;
@@ -260,13 +260,13 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
         *newValue = (i64)value;
         ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I64_TYPE,
                          NULL, NULL);
-       #ifdef FLOAT_16_SUPPORT
+#ifdef FLOAT_16_SUPPORT
       } else if (typeIsEqual(to, &AST_TREE_F16_TYPE)) {
         AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
         *newValue = (f16)value;
         ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
                          &AST_TREE_F16_TYPE, NULL, NULL);
-          #endif
+#endif
       } else if (typeIsEqual(to, &AST_TREE_F32_TYPE)) {
         AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
         *newValue = (f32)value;
@@ -334,13 +334,13 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
         *newValue = (i64)value;
         ret = newAstTree(AST_TREE_TOKEN_VALUE_INT, newValue, &AST_TREE_I64_TYPE,
                          NULL, NULL);
-       #ifdef FLOAT_16_SUPPORT
+#ifdef FLOAT_16_SUPPORT
       } else if (typeIsEqual(to, &AST_TREE_F16_TYPE)) {
         AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
         *newValue = (f16)value;
         ret = newAstTree(AST_TREE_TOKEN_VALUE_FLOAT, newValue,
                          &AST_TREE_F16_TYPE, NULL, NULL);
-          #endif
+#endif
       } else if (typeIsEqual(to, &AST_TREE_F32_TYPE)) {
         AstTreeFloat *newValue = a404m_malloc(sizeof(*newValue));
         *newValue = (f32)value;
@@ -373,14 +373,15 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     }
     goto RETURN;
   }
-  case AST_TREE_BUILTIN_TOKEN_TYPE_OF: {
+  case AST_TREE_TOKEN_BUILTIN_TYPE_OF: {
     AstTree *variable = args.data[0];
     ret = copyAstTree(variable->type);
   }
     goto RETURN;
-  case AST_TREE_BUILTIN_TOKEN_IMPORT:
-  case AST_TREE_BUILTIN_TOKEN__SIZE__:
+  case AST_TREE_TOKEN_BUILTIN_IMPORT:
+  default:
   }
+  printLog("Bad builtin");
   UNREACHABLE;
 
 RETURN:
@@ -410,7 +411,9 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
     if (function->token == AST_TREE_TOKEN_FUNCTION) {
       result = runAstTreeFunction(function, metadata->parameters,
                                   metadata->parameters_size);
-    } else if (function->token == AST_TREE_TOKEN_BUILTIN) {
+    } else if (function->token == AST_TREE_TOKEN_BUILTIN_CAST ||
+               function->token == AST_TREE_TOKEN_BUILTIN_TYPE_OF ||
+               function->token == AST_TREE_TOKEN_BUILTIN_IMPORT) {
       result = runAstTreeBuiltin(function, scope, metadata->parameters,
                                  metadata->parameters_size);
     } else {
@@ -1156,8 +1159,10 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
   case AST_TREE_TOKEN_VALUE_FLOAT:
   case AST_TREE_TOKEN_VALUE_OBJECT:
   case AST_TREE_TOKEN_FUNCTION:
-  case AST_TREE_TOKEN_BUILTIN:
   case AST_TREE_TOKEN_TYPE_ARRAY:
+  case AST_TREE_TOKEN_BUILTIN_CAST:
+  case AST_TREE_TOKEN_BUILTIN_TYPE_OF:
+  case AST_TREE_TOKEN_BUILTIN_IMPORT:
     return copyAstTree(expr);
   case AST_TREE_TOKEN_OPERATOR_ADDRESS: {
     AstTreeSingleChild *metadata = expr->metadata;
