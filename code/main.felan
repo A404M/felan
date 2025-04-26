@@ -1,9 +1,15 @@
-@import("lib/print.felan");
+@import("basic.felan");
 
 main :: () -> void {
-  print(@isComptime);
+  a : u8 = 65;
+  b : u8 = 70;
+  a + b;
 };
 
-comptime {
-  print(@isComptime);
+__sum__ :: (a:u8,b:u8)->void{
+  putc 'h';
+  putc a;
+  putc '\n';
+  putc b;
 };
+

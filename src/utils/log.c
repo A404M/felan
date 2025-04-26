@@ -15,7 +15,7 @@ void _printLogBack(const char *format, const char *file, int line, ...) {
   free(errorStr);
 }
 
-void _printErrorWarningBack(const char *file, int line, char *begin, char *end,
+void _printErrorWarningBack(const char *file, int line, const char *begin, const char *end,
                             bool isError, const char *format, ...) {
   va_list args;
   va_start(args, end);

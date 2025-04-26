@@ -1,40 +1,53 @@
-string :: []u8;
-
-print :: (value:[]u8)->void{
-  i :u64= 0;
-  while i < value.length {
-    putc value[i];
-    i += 1;
-  }
+__plus__ :: (a:u8) -> u8 {
+  return a;
 };
 
-print :: (value:u64)->void{
-  value := value;
-  result :[20]u8 = undefined;
-  i := 0;
-  while {
-    result[i] = '0' + @cast(value % 10,u8);
-    i += 1;
-    value /= 10;
-    value != 0;
-  } {}
-
-  j := 0;
-  while j < i {
-    putc result[j];
-    j += 1;
-  }
+__plus__ :: (a:i8) -> i8 {
+  return a;
 };
 
-to_u64 :: (value:string) -> u64 {
-  i := value.length;
-  result :u64= 0;
-
-  while i > 0 {
-    c := value[i-1];
-    result *= 10;
-    result += @cast(c - '0',u64);
-    i -= 1;
-  }
-  return result;
+__plus__ :: (a:u16) -> u16 {
+  return a;
 };
+
+__plus__ :: (a:i16) -> i16 {
+  return a;
+};
+
+__plus__ :: (a:u32) -> u32 {
+  return a;
+};
+
+__plus__ :: (a:i32) -> i32 {
+  return a;
+};
+
+__plus__ :: (a:u64) -> u64 {
+  return a;
+};
+
+__plus__ :: (a:i64) -> i64 {
+  return a;
+};
+
+__minus__ :: (a:i8) -> i8 {
+  return a;
+};
+
+__minus__ :: (a:i16) -> i16 {
+  return a;
+};
+
+__minus__ :: (a:i32) -> i32 {
+  return a;
+};
+
+__minus__ :: (a:i64) -> i64 {
+  return a;
+};
+
+__logical_not__ :: (a:bool) -> bool {
+  return a;
+};
+
+

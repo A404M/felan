@@ -10,6 +10,8 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_BUILTIN_TYPE_OF,
   AST_TREE_TOKEN_BUILTIN_IMPORT,
   AST_TREE_TOKEN_BUILTIN_IS_COMPTIME,
+  AST_TREE_TOKEN_BUILTIN_STACK_ALLOC,
+  AST_TREE_TOKEN_BUILTIN_HEAP_ALLOC,
 
   AST_TREE_TOKEN_KEYWORD_PUTC,
   AST_TREE_TOKEN_KEYWORD_RETURN,
@@ -194,9 +196,15 @@ typedef struct AstTreeObject {
 
 typedef AstTree AstTreeSingleChild;
 
+typedef struct AstTreeUnary {
+  AstTree *operand;
+  AstTreeVariable *function;
+} AstTreeUnary;
+
 typedef struct AstTreeInfix {
   AstTree *left;
   AstTree *right;
+  AstTreeVariable *function;
 } AstTreeInfix;
 
 typedef struct AstTreeReturn {
@@ -268,6 +276,10 @@ AstTree *copyAstTree(AstTree *tree);
 AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
                          AstTreeVariables newVariables[],
                          size_t variables_size);
+AstTreeVariable *copyAstTreeBackFindVariable(AstTreeVariable *variable,
+                                             AstTreeVariables oldVariables[],
+                                             AstTreeVariables newVariables[],
+                                             size_t variables_size);
 AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
                                       AstTreeVariables oldVariables[],
                                       AstTreeVariables newVariables[],
@@ -276,33 +288,40 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
 AstTreeRoots makeAstTree(const char *filePath
 #ifdef PRINT_STATISTICS
                          ,
-                         struct timespec *lexingTime, struct timespec* parsingTime
+                         struct timespec *lexingTime,
+                         struct timespec *parsingTime
 #endif
 );
 AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
 #ifdef PRINT_STATISTICS
-                         ,
-                         struct timespec *lexingTime, struct timespec *parsingTime
+                            ,
+                            struct timespec *lexingTime,
+                            struct timespec *parsingTime
 #endif
-                            );
+);
 AstTreeRoot *makeAstRoot(const ParserNode *parsedRoot, char *filePath);
 
 bool pushVariable(AstTreeHelper *helper, AstTreeVariables *variables,
                   AstTreeVariable *variable);
 
 AstTree *astTreeParse(const ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseFunction(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseFunction(const ParserNode *parserNode,
+                              AstTreeHelper *helper);
 AstTree *astTreeParseTypeFunction(const ParserNode *parserNode,
                                   AstTreeHelper *helper);
 AstTree *astTreeParseFunctionCall(const ParserNode *parserNode,
                                   AstTreeHelper *helper);
-AstTree *astTreeParseIdentifier(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseIdentifier(const ParserNode *parserNode,
+                                AstTreeHelper *helper);
 AstTree *astTreeParseValue(const ParserNode *parserNode, AstTreeToken token,
                            size_t metadata_size, AstTree *type);
-AstTree *astTreeParseString(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseString(const ParserNode *parserNode,
+                            AstTreeHelper *helper);
 AstTree *astTreeParseKeyword(const ParserNode *parserNode, AstTreeToken token);
-AstTree *astTreeParsePrintU64(const ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseReturn(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParsePrintU64(const ParserNode *parserNode,
+                              AstTreeHelper *helper);
+AstTree *astTreeParseReturn(const ParserNode *parserNode,
+                            AstTreeHelper *helper);
 AstTree *astTreeParseBinaryOperator(const ParserNode *parserNode,
                                     AstTreeHelper *helper, AstTreeToken token);
 AstTree *astTreeParseUnaryOperator(const ParserNode *parserNode,
@@ -311,18 +330,22 @@ AstTree *astTreeParseOperateAssignOperator(const ParserNode *parserNode,
                                            AstTreeHelper *helper,
                                            AstTreeToken token);
 bool astTreeParseConstant(const ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseVariable(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseVariable(const ParserNode *parserNode,
+                              AstTreeHelper *helper);
 AstTree *astTreeParseIf(const ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseWhile(const ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseComptime(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseComptime(const ParserNode *parserNode,
+                              AstTreeHelper *helper);
 AstTree *astTreeParseCurlyBracket(const ParserNode *parserNode,
                                   AstTreeHelper *helper);
-AstTree *astTreeParseParenthesis(const ParserNode *parserNode, AstTreeHelper *helper);
-AstTree *astTreeParseStruct(const ParserNode *parserNode, AstTreeHelper *helper);
+AstTree *astTreeParseParenthesis(const ParserNode *parserNode,
+                                 AstTreeHelper *helper);
+AstTree *astTreeParseStruct(const ParserNode *parserNode,
+                            AstTreeHelper *helper);
 AstTree *astTreeParseAccessOperator(const ParserNode *parserNode,
                                     AstTreeHelper *helper, AstTreeToken token);
-AstTree *astTreeParseBracket(const ParserNode *parserNode, AstTreeHelper *helper,
-                             AstTreeToken token);
+AstTree *astTreeParseBracket(const ParserNode *parserNode,
+                             AstTreeHelper *helper, AstTreeToken token);
 
 bool isFunction(AstTree *value);
 bool isConst(AstTree *tree);
@@ -355,16 +378,15 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper,
                       AstTreeFunctionCall *functionCall);
 bool setTypesOperatorAssign(AstTree *tree, AstTreeSetTypesHelper helper);
-bool setTypesOperatorInfix(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesOperatorInfix(AstTree *tree, AstTreeSetTypesHelper helper,
+                           const char *str, size_t str_size);
 bool setTypesOperatorInfixWithRet(AstTree *tree, AstTree *retType,
                                   AstTreeSetTypesHelper helper);
 bool setTypesOperatorInfixWithRetAndLooking(AstTree *tree, AstTree *lookingType,
                                             AstTree *retType,
                                             AstTreeSetTypesHelper helper);
-bool setTypesOperatorUnary(AstTree *tree, AstTreeSetTypesHelper helper);
-bool setTypesOperatorUnaryWithRetAndLooking(AstTree *tree, AstTree *lookingType,
-                                            AstTree *retType,
-                                            AstTreeSetTypesHelper helper);
+bool setTypesOperatorUnary(AstTree *tree, AstTreeSetTypesHelper helper,
+                           const char *funcStr, size_t funcStr_size);
 bool setTypesOperatorPointer(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorAddress(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorDereference(AstTree *tree, AstTreeSetTypesHelper helper);
@@ -379,18 +401,27 @@ bool setTypesComptime(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesStruct(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesBuiltinCast(AstTree *tree, AstTreeSetTypesHelper helper,
-                     AstTreeFunctionCall *functionCall);
+                         AstTreeFunctionCall *functionCall);
 bool setTypesBuiltinTypeOf(AstTree *tree, AstTreeSetTypesHelper helper,
-                     AstTreeFunctionCall *functionCall);
+                           AstTreeFunctionCall *functionCall);
 bool setTypesBuiltinImport(AstTree *tree, AstTreeSetTypesHelper helper,
-                     AstTreeFunctionCall *functionCall);
+                           AstTreeFunctionCall *functionCall);
 bool setTypesBuiltinIsComptime(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesBuiltinStackAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
+                               AstTreeFunctionCall *functionCall);
+bool setTypesBuiltinHeapAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
+                              AstTreeFunctionCall *functionCall);
 bool setTypesTypeArray(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesArrayAccess(AstTree *tree, AstTreeSetTypesHelper helper);
 
 bool setTypesAstVariable(AstTreeVariable *variable,
                          AstTreeSetTypesHelper helper);
 bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper helper);
+
+AstTreeVariable *setTypesFindVariable(const char *name_begin,
+                                      const char *name_end,
+                                      AstTreeSetTypesHelper helper,
+                                      AstTreeFunctionCall *functionCall);
 
 char *u8ArrayToCString(AstTree *tree);
 

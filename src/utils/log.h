@@ -22,4 +22,4 @@
 
 extern void _printLogBack(const char *format, const char *file, int line, ...);
 
-extern void _printErrorWarningBack(const char *file, int line, char *begin, char *end,bool isError,const char *format,  ...);
+extern void _printErrorWarningBack(const char *file, int line, const char *begin, const char *end,bool isError,const char *format,  ...);
