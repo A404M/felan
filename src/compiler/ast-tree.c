@@ -119,6 +119,7 @@ const char *AST_TREE_TOKEN_STRINGS[] = {
     "AST_TREE_TOKEN_BUILTIN_CAST",
     "AST_TREE_TOKEN_BUILTIN_TYPE_OF",
     "AST_TREE_TOKEN_BUILTIN_IMPORT",
+    "AST_TREE_TOKEN_BUILTIN_IS_COMPTIME",
 
     "AST_TREE_TOKEN_KEYWORD_PUTC",
     "AST_TREE_TOKEN_KEYWORD_RETURN",
@@ -232,11 +233,10 @@ void astTreePrint(const AstTree *tree, int indent) {
     printf("]");
   }
     goto RETURN_SUCCESS;
-  case AST_TREE_TOKEN_BUILTIN: {
-    AstTreeBuiltin *metadata = tree->metadata;
-    printf(",token = %s", AST_TREE_BUILTIN_TOKEN_STRINGS[metadata->token]);
-  }
-    goto RETURN_SUCCESS;
+  case AST_TREE_TOKEN_BUILTIN_CAST:
+  case AST_TREE_TOKEN_BUILTIN_TYPE_OF:
+  case AST_TREE_TOKEN_BUILTIN_IMPORT:
+  case AST_TREE_TOKEN_BUILTIN_IS_COMPTIME:
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_VOID:
   case AST_TREE_TOKEN_TYPE_I8:
@@ -623,6 +623,7 @@ void astTreeDestroy(AstTree tree) {
   case AST_TREE_TOKEN_BUILTIN_CAST:
   case AST_TREE_TOKEN_BUILTIN_TYPE_OF:
   case AST_TREE_TOKEN_BUILTIN_IMPORT:
+  case AST_TREE_TOKEN_BUILTIN_IS_COMPTIME:
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_VOID:
   case AST_TREE_TOKEN_TYPE_I8:
@@ -894,6 +895,7 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
   case AST_TREE_TOKEN_BUILTIN_CAST:
   case AST_TREE_TOKEN_BUILTIN_TYPE_OF:
   case AST_TREE_TOKEN_BUILTIN_IMPORT:
+  case AST_TREE_TOKEN_BUILTIN_IS_COMPTIME:
     return newAstTree(
         tree->token, NULL,
         copyAstTreeBack(tree->type, oldVariables, newVariables, variables_size),
@@ -1584,6 +1586,7 @@ AstTreeRoot *makeAstRoot(const ParserNode *parsedRoot, char *filePath) {
       case PARSER_TOKEN_BUILTIN_CAST:
       case PARSER_TOKEN_BUILTIN_TYPE_OF:
       case PARSER_TOKEN_BUILTIN_IMPORT:
+      case PARSER_TOKEN_BUILTIN_IS_COMPTIME:
       case PARSER_TOKEN_SYMBOL_BRACKET_LEFT:
       case PARSER_TOKEN_SYMBOL_BRACKET_RIGHT:
         goto AFTER_SWITCH;
@@ -1687,6 +1690,8 @@ AstTree *astTreeParse(const ParserNode *parserNode, AstTreeHelper *helper) {
     return astTreeParseKeyword(parserNode, AST_TREE_TOKEN_BUILTIN_TYPE_OF);
   case PARSER_TOKEN_BUILTIN_IMPORT:
     return astTreeParseKeyword(parserNode, AST_TREE_TOKEN_BUILTIN_IMPORT);
+  case PARSER_TOKEN_BUILTIN_IS_COMPTIME:
+    return astTreeParseKeyword(parserNode, AST_TREE_TOKEN_BUILTIN_IS_COMPTIME);
   case PARSER_TOKEN_TYPE_TYPE:
     return &AST_TREE_TYPE_TYPE;
   case PARSER_TOKEN_TYPE_FUNCTION:
@@ -2006,6 +2011,7 @@ AstTree *astTreeParseFunction(const ParserNode *parserNode,
     case PARSER_TOKEN_BUILTIN_CAST:
     case PARSER_TOKEN_BUILTIN_TYPE_OF:
     case PARSER_TOKEN_BUILTIN_IMPORT:
+    case PARSER_TOKEN_BUILTIN_IS_COMPTIME:
     case PARSER_TOKEN_SYMBOL_BRACKET_LEFT:
     case PARSER_TOKEN_SYMBOL_BRACKET_RIGHT:
       printError(node->str_begin, node->str_end, "Unexpected %s",
@@ -2600,6 +2606,7 @@ AstTree *astTreeParseCurlyBracket(const ParserNode *parserNode,
     case PARSER_TOKEN_BUILTIN_CAST:
     case PARSER_TOKEN_BUILTIN_TYPE_OF:
     case PARSER_TOKEN_BUILTIN_IMPORT:
+    case PARSER_TOKEN_BUILTIN_IS_COMPTIME:
     case PARSER_TOKEN_SYMBOL_BRACKET_LEFT:
     case PARSER_TOKEN_SYMBOL_BRACKET_RIGHT:
       printError(node->str_begin, node->str_end, "Unexpected %s",
@@ -2788,6 +2795,7 @@ bool isConst(AstTree *tree) {
   case AST_TREE_TOKEN_BUILTIN_CAST:
   case AST_TREE_TOKEN_BUILTIN_TYPE_OF:
   case AST_TREE_TOKEN_BUILTIN_IMPORT:
+  case AST_TREE_TOKEN_BUILTIN_IS_COMPTIME:
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_FUNCTION:
   case AST_TREE_TOKEN_TYPE_VOID:
@@ -2905,6 +2913,7 @@ bool isConstByValue(AstTree *tree) {
   case AST_TREE_TOKEN_BUILTIN_CAST:
   case AST_TREE_TOKEN_BUILTIN_TYPE_OF:
   case AST_TREE_TOKEN_BUILTIN_IMPORT:
+  case AST_TREE_TOKEN_BUILTIN_IS_COMPTIME:
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_FUNCTION:
   case AST_TREE_TOKEN_TYPE_VOID:
@@ -3141,6 +3150,7 @@ AstTree *makeTypeOf(AstTree *value) {
   case AST_TREE_TOKEN_BUILTIN_CAST:
   case AST_TREE_TOKEN_BUILTIN_TYPE_OF:
   case AST_TREE_TOKEN_BUILTIN_IMPORT:
+  case AST_TREE_TOKEN_BUILTIN_IS_COMPTIME:
   case AST_TREE_TOKEN_VALUE_OBJECT:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_KEYWORD_PUTC:
@@ -3180,6 +3190,7 @@ bool typeIsEqualBack(const AstTree *type0, const AstTree *type1) {
   case AST_TREE_TOKEN_BUILTIN_CAST:
   case AST_TREE_TOKEN_BUILTIN_TYPE_OF:
   case AST_TREE_TOKEN_BUILTIN_IMPORT:
+  case AST_TREE_TOKEN_BUILTIN_IS_COMPTIME:
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_KEYWORD_PUTC:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
@@ -3326,6 +3337,7 @@ AstTree *getValue(AstTree *tree) {
   case AST_TREE_TOKEN_BUILTIN_CAST:
   case AST_TREE_TOKEN_BUILTIN_TYPE_OF:
   case AST_TREE_TOKEN_BUILTIN_IMPORT:
+  case AST_TREE_TOKEN_BUILTIN_IS_COMPTIME:
   case AST_TREE_TOKEN_TYPE_FUNCTION:
   case AST_TREE_TOKEN_TYPE_TYPE:
   case AST_TREE_TOKEN_TYPE_VOID:
@@ -3396,7 +3408,7 @@ AstTree *getValue(AstTree *tree) {
         .str_end = NULL,
     };
 
-    AstTree *value = runExpression(tree, scope, &shouldRet, false);
+    AstTree *value = runExpression(tree, scope, &shouldRet, false, true);
 
     astTreeDestroy(scopeTree);
 
@@ -3432,6 +3444,7 @@ bool isIntType(AstTree *type) {
   case AST_TREE_TOKEN_BUILTIN_CAST:
   case AST_TREE_TOKEN_BUILTIN_TYPE_OF:
   case AST_TREE_TOKEN_BUILTIN_IMPORT:
+  case AST_TREE_TOKEN_BUILTIN_IS_COMPTIME:
   case AST_TREE_TOKEN_KEYWORD_PUTC:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
   case AST_TREE_TOKEN_KEYWORD_IF:
@@ -3531,6 +3544,7 @@ bool isEqual(AstTree *left, AstTree *right) {
   case AST_TREE_TOKEN_BUILTIN_CAST:
   case AST_TREE_TOKEN_BUILTIN_TYPE_OF:
   case AST_TREE_TOKEN_BUILTIN_IMPORT:
+  case AST_TREE_TOKEN_BUILTIN_IS_COMPTIME:
   case AST_TREE_TOKEN_KEYWORD_PUTC:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
   case AST_TREE_TOKEN_KEYWORD_IF:
@@ -3768,6 +3782,8 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
     return setTypesBuiltinTypeOf(tree, helper, functionCall);
   case AST_TREE_TOKEN_BUILTIN_IMPORT:
     return setTypesBuiltinImport(tree, helper, functionCall);
+  case AST_TREE_TOKEN_BUILTIN_IS_COMPTIME:
+    return setTypesBuiltinIsComptime(tree, helper);
   case AST_TREE_TOKEN_TYPE_ARRAY:
     return setTypesTypeArray(tree, helper);
   case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS:
@@ -4936,6 +4952,12 @@ bool setTypesBuiltinImport(AstTree *tree, AstTreeSetTypesHelper helper,
     return false;
   }
   return false;
+}
+
+bool setTypesBuiltinIsComptime(AstTree *tree, AstTreeSetTypesHelper helper) {
+  (void)helper;
+  tree->type = copyAstTree(&AST_TREE_BOOL_TYPE);
+  return true;
 }
 
 bool setTypesTypeArray(AstTree *tree, AstTreeSetTypesHelper helper) {

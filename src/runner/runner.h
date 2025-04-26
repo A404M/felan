@@ -9,11 +9,11 @@ void runnerVariableSetValueWihtoutConstCheck(AstTreeVariable *variable,
 bool runAstTree(AstTreeRoots roots);
 
 AstTree *runAstTreeFunction(AstTree *tree, AstTreeFunctionCallParam *arguments,
-                            size_t arguments_size);
+                            size_t arguments_size,bool isComptime);
 
 AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
                            AstTreeFunctionCallParam *arguments,
-                           size_t arguments_size);
+                           size_t arguments_size,bool isComptime);
 
 AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
-                       bool isLeft);
+                       bool isLeft,bool isComptime);

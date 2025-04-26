@@ -5,9 +5,11 @@
 
 typedef enum AstTreeToken {
   AST_TREE_TOKEN_FUNCTION,
+
   AST_TREE_TOKEN_BUILTIN_CAST,
   AST_TREE_TOKEN_BUILTIN_TYPE_OF,
   AST_TREE_TOKEN_BUILTIN_IMPORT,
+  AST_TREE_TOKEN_BUILTIN_IS_COMPTIME,
 
   AST_TREE_TOKEN_KEYWORD_PUTC,
   AST_TREE_TOKEN_KEYWORD_RETURN,
@@ -382,6 +384,7 @@ bool setTypesBuiltinTypeOf(AstTree *tree, AstTreeSetTypesHelper helper,
                      AstTreeFunctionCall *functionCall);
 bool setTypesBuiltinImport(AstTree *tree, AstTreeSetTypesHelper helper,
                      AstTreeFunctionCall *functionCall);
+bool setTypesBuiltinIsComptime(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesTypeArray(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesArrayAccess(AstTree *tree, AstTreeSetTypesHelper helper);
 

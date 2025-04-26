@@ -1,6 +1,9 @@
 @import("lib/print.felan");
 
 main :: () -> void {
-  str := "123\n";
-  print(str);
+  print(@isComptime);
+};
+
+comptime {
+  print(@isComptime);
 };

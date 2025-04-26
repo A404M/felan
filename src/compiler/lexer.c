@@ -10,7 +10,10 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_CLOSE_PARENTHESIS",
     "LEXER_TOKEN_SYMBOL_CLOSE_BRACKET",
     "LEXER_TOKEN_IDENTIFIER",
-    "LEXER_TOKEN_BUILTIN",
+    "LEXER_TOKEN_BUILTIN_CAST",
+    "LEXER_TOKEN_BUILTIN_TYPE_OF",
+    "LEXER_TOKEN_BUILTIN_IMPORT",
+    "LEXER_TOKEN_BUILTIN_IS_COMPTIME",
     "LEXER_TOKEN_KEYWORD_TYPE",
     "LEXER_TOKEN_KEYWORD_VOID",
     "LEXER_TOKEN_KEYWORD_I8",
@@ -170,14 +173,16 @@ static const size_t LEXER_KEYWORD_SIZE =
     sizeof(LEXER_KEYWORD_TOKENS) / sizeof(*LEXER_KEYWORD_TOKENS);
 
 static const char *LEXER_BUILTIN_STRINGS[] = {
-    "@cast",
-    "@typeOf",
-    "@import",
+    "cast",
+    "typeOf",
+    "import",
+    "isComptime",
 };
 static const LexerToken LEXER_BUILTIN_TOKENS[] = {
     LEXER_TOKEN_BUILTIN_CAST,
     LEXER_TOKEN_BUILTIN_TYPE_OF,
     LEXER_TOKEN_BUILTIN_IMPORT,
+    LEXER_TOKEN_BUILTIN_IS_COMPTIME,
 };
 static const size_t LEXER_BUILTIN_SIZE =
     sizeof(LEXER_BUILTIN_TOKENS) / sizeof(*LEXER_BUILTIN_TOKENS);
@@ -344,7 +349,7 @@ lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_BUILTIN: {
     const size_t index =
         searchInStringArray(LEXER_BUILTIN_STRINGS, LEXER_BUILTIN_SIZE,
-                            *node_str_begin, iter - *node_str_begin);
+                            *node_str_begin + 1, iter - *node_str_begin - 1);
     if (index == LEXER_BUILTIN_SIZE) {
       printError(*node_str_begin, iter, "Bad builtin");
       UNREACHABLE;
@@ -423,6 +428,7 @@ lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
   case LEXER_TOKEN_BUILTIN_CAST:
   case LEXER_TOKEN_BUILTIN_TYPE_OF:
   case LEXER_TOKEN_BUILTIN_IMPORT:
+  case LEXER_TOKEN_BUILTIN_IS_COMPTIME:
   case LEXER_TOKEN_SYMBOL_CLOSE_BRACKET:
   case LEXER_TOKEN_SYMBOL_OPEN_BRACKET:
     if (*array_size == array->size) {
