@@ -1,62 +1,599 @@
-__plus__ :: (a:u8) -> u8 {
-  return a;
+__plus__ :: (value:u8) -> u8 {
+  return value;
 };
 
-__plus__ :: (a:i8) -> i8 {
-  return a;
+__plus__ :: (value:i8) -> i8 {
+  return value;
 };
 
-__plus__ :: (a:u16) -> u16 {
-  return a;
+__plus__ :: (value:u16) -> u16 {
+  return value;
 };
 
-__plus__ :: (a:i16) -> i16 {
-  return a;
+__plus__ :: (value:i16) -> i16 {
+  return value;
 };
 
-__plus__ :: (a:u32) -> u32 {
-  return a;
+__plus__ :: (value:u32) -> u32 {
+  return value;
 };
 
-__plus__ :: (a:i32) -> i32 {
-  return a;
+__plus__ :: (value:i32) -> i32 {
+  return value;
 };
 
-__plus__ :: (a:u64) -> u64 {
-  return a;
+__plus__ :: (value:u64) -> u64 {
+  return value;
 };
 
-__plus__ :: (a:i64) -> i64 {
-  return a;
+__plus__ :: (value:i64) -> i64 {
+  return value;
 };
 
-__minus__ :: (a:i8) -> i8 {
-  return @neg(a);
+__minus__ :: (value:i8) -> i8 {
+  return @neg(value);
 };
 
-__minus__ :: (a:i16) -> i16 {
-  return @neg(a);
+__minus__ :: (value:i16) -> i16 {
+  return @neg(value);
 };
 
-__minus__ :: (a:i32) -> i32 {
-  return @neg(a);
+__minus__ :: (value:i32) -> i32 {
+  return @neg(value);
 };
 
-__minus__ :: (a:i64) -> i64 {
-  return @neg(a);
+__minus__ :: (value:i64) -> i64 {
+  return @neg(value);
+};
+
+__add__ :: (left:u8,right:u8) -> u8 {
+  return @add(left,right);
+};
+
+__add__ :: (left:i8,right:i8) -> i8 {
+  return @add(left,right);
+};
+
+__add__ :: (left:u16,right:u16) -> u16 {
+  return @add(left,right);
+};
+
+__add__ :: (left:i16,right:i16) -> i16 {
+  return @add(left,right);
+};
+
+__add__ :: (left:u32,right:u32) -> u32 {
+  return @add(left,right);
+};
+
+__add__ :: (left:i32,right:i32) -> i32 {
+  return @add(left,right);
+};
+
+__add__ :: (left:u64,right:u64) -> u64 {
+  return @add(left,right);
+};
+
+__add__ :: (left:i64,right:i64) -> i64 {
+  return @add(left,right);
+};
+
+__add__ :: (left:f16,right:f16) -> f16 {
+  return @add(left,right);
+};
+
+__add__ :: (left:f32,right:f32) -> f32 {
+  return @add(left,right);
+};
+
+__add__ :: (left:f64,right:f64) -> f64 {
+  return @add(left,right);
+};
+
+__add__ :: (left:f128,right:f128) -> f128 {
+  return @add(left,right);
+};
+
+__sub__ :: (left:u8,right:u8) -> u8 {
+  return @sub(left,right);
+};
+
+__sub__ :: (left:i8,right:i8) -> i8 {
+  return @sub(left,right);
+};
+
+__sub__ :: (left:u16,right:u16) -> u16 {
+  return @sub(left,right);
+};
+
+__sub__ :: (left:i16,right:i16) -> i16 {
+  return @sub(left,right);
+};
+
+__sub__ :: (left:u32,right:u32) -> u32 {
+  return @sub(left,right);
+};
+
+__sub__ :: (left:i32,right:i32) -> i32 {
+  return @sub(left,right);
+};
+
+__sub__ :: (left:u64,right:u64) -> u64 {
+  return @sub(left,right);
+};
+
+__sub__ :: (left:i64,right:i64) -> i64 {
+  return @sub(left,right);
+};
+
+__sub__ :: (left:f16,right:f16) -> f16 {
+  return @sub(left,right);
+};
+
+__sub__ :: (left:f32,right:f32) -> f32 {
+  return @sub(left,right);
+};
+
+__sub__ :: (left:f64,right:f64) -> f64 {
+  return @sub(left,right);
+};
+
+__sub__ :: (left:f128,right:f128) -> f128 {
+  return @sub(left,right);
+};
+
+__mul__ :: (left:u8,right:u8) -> u8 {
+  return @mul(left,right);
+};
+
+__mul__ :: (left:i8,right:i8) -> i8 {
+  return @mul(left,right);
+};
+
+__mul__ :: (left:u16,right:u16) -> u16 {
+  return @mul(left,right);
+};
+
+__mul__ :: (left:i16,right:i16) -> i16 {
+  return @mul(left,right);
+};
+
+__mul__ :: (left:u32,right:u32) -> u32 {
+  return @mul(left,right);
+};
+
+__mul__ :: (left:i32,right:i32) -> i32 {
+  return @mul(left,right);
+};
+
+__mul__ :: (left:u64,right:u64) -> u64 {
+  return @mul(left,right);
+};
+
+__mul__ :: (left:i64,right:i64) -> i64 {
+  return @mul(left,right);
+};
+
+__mul__ :: (left:f16,right:f16) -> f16 {
+  return @mul(left,right);
+};
+
+__mul__ :: (left:f32,right:f32) -> f32 {
+  return @mul(left,right);
+};
+
+__mul__ :: (left:f64,right:f64) -> f64 {
+  return @mul(left,right);
+};
+
+__mul__ :: (left:f128,right:f128) -> f128 {
+  return @mul(left,right);
+};
+
+__div__ :: (left:u8,right:u8) -> u8 {
+  return @div(left,right);
+};
+
+__div__ :: (left:i8,right:i8) -> i8 {
+  return @div(left,right);
+};
+
+__div__ :: (left:u16,right:u16) -> u16 {
+  return @div(left,right);
+};
+
+__div__ :: (left:i16,right:i16) -> i16 {
+  return @div(left,right);
+};
+
+__div__ :: (left:u32,right:u32) -> u32 {
+  return @div(left,right);
+};
+
+__div__ :: (left:i32,right:i32) -> i32 {
+  return @div(left,right);
+};
+
+__div__ :: (left:u64,right:u64) -> u64 {
+  return @div(left,right);
+};
+
+__div__ :: (left:i64,right:i64) -> i64 {
+  return @div(left,right);
+};
+
+__div__ :: (left:f16,right:f16) -> f16 {
+  return @div(left,right);
+};
+
+__div__ :: (left:f32,right:f32) -> f32 {
+  return @div(left,right);
+};
+
+__div__ :: (left:f64,right:f64) -> f64 {
+  return @div(left,right);
+};
+
+__div__ :: (left:f128,right:f128) -> f128 {
+  return @div(left,right);
+};
+
+__mod__ :: (left:u8,right:u8) -> u8 {
+  return @mod(left,right);
+};
+
+__mod__ :: (left:i8,right:i8) -> i8 {
+  return @mod(left,right);
+};
+
+__mod__ :: (left:u16,right:u16) -> u16 {
+  return @mod(left,right);
+};
+
+__mod__ :: (left:i16,right:i16) -> i16 {
+  return @mod(left,right);
+};
+
+__mod__ :: (left:u32,right:u32) -> u32 {
+  return @mod(left,right);
+};
+
+__mod__ :: (left:i32,right:i32) -> i32 {
+  return @mod(left,right);
+};
+
+__mod__ :: (left:u64,right:u64) -> u64 {
+  return @mod(left,right);
+};
+
+__mod__ :: (left:i64,right:i64) -> i64 {
+  return @mod(left,right);
+};
+
+__mod__ :: (left:f16,right:f16) -> f16 {
+  return @mod(left,right);
+};
+
+__mod__ :: (left:f32,right:f32) -> f32 {
+  return @mod(left,right);
+};
+
+__mod__ :: (left:f64,right:f64) -> f64 {
+  return @mod(left,right);
+};
+
+__mod__ :: (left:f128,right:f128) -> f128 {
+  return @mod(left,right);
+};
+
+__greater__ :: (left:u8,right:u8) -> bool {
+  return @greater(left,right);
+};
+
+__greater__ :: (left:i8,right:i8) -> bool {
+  return @greater(left,right);
+};
+
+__greater__ :: (left:u16,right:u16) -> bool {
+  return @greater(left,right);
+};
+
+__greater__ :: (left:i16,right:i16) -> bool {
+  return @greater(left,right);
+};
+
+__greater__ :: (left:u32,right:u32) -> bool {
+  return @greater(left,right);
+};
+
+__greater__ :: (left:i32,right:i32) -> bool {
+  return @greater(left,right);
+};
+
+__greater__ :: (left:u64,right:u64) -> bool {
+  return @greater(left,right);
+};
+
+__greater__ :: (left:i64,right:i64) -> bool {
+  return @greater(left,right);
+};
+
+__greater__ :: (left:f16,right:f16) -> bool {
+  return @greater(left,right);
+};
+
+__greater__ :: (left:f32,right:f32) -> bool {
+  return @greater(left,right);
+};
+
+__greater__ :: (left:f64,right:f64) -> bool {
+  return @greater(left,right);
+};
+
+__greater__ :: (left:f128,right:f128) -> bool {
+  return @greater(left,right);
+};
+
+__smaller__ :: (left:u8,right:u8) -> bool {
+  return @smaller(left,right);
+};
+
+__smaller__ :: (left:i8,right:i8) -> bool {
+  return @smaller(left,right);
+};
+
+__smaller__ :: (left:u16,right:u16) -> bool {
+  return @smaller(left,right);
+};
+
+__smaller__ :: (left:i16,right:i16) -> bool {
+  return @smaller(left,right);
+};
+
+__smaller__ :: (left:u32,right:u32) -> bool {
+  return @smaller(left,right);
+};
+
+__smaller__ :: (left:i32,right:i32) -> bool {
+  return @smaller(left,right);
+};
+
+__smaller__ :: (left:u64,right:u64) -> bool {
+  return @smaller(left,right);
+};
+
+__smaller__ :: (left:i64,right:i64) -> bool {
+  return @smaller(left,right);
+};
+
+__smaller__ :: (left:f16,right:f16) -> bool {
+  return @smaller(left,right);
+};
+
+__smaller__ :: (left:f32,right:f32) -> bool {
+  return @smaller(left,right);
+};
+
+__smaller__ :: (left:f64,right:f64) -> bool {
+  return @smaller(left,right);
+};
+
+__smaller__ :: (left:f128,right:f128) -> bool {
+  return @smaller(left,right);
+};
+
+__greaterOrEqual__ :: (left:u8,right:u8) -> bool {
+  return @greaterOrEqual(left,right);
+};
+
+__greaterOrEqual__ :: (left:i8,right:i8) -> bool {
+  return @greaterOrEqual(left,right);
+};
+
+__greaterOrEqual__ :: (left:u16,right:u16) -> bool {
+  return @greaterOrEqual(left,right);
+};
+
+__greaterOrEqual__ :: (left:i16,right:i16) -> bool {
+  return @greaterOrEqual(left,right);
+};
+
+__greaterOrEqual__ :: (left:u32,right:u32) -> bool {
+  return @greaterOrEqual(left,right);
+};
+
+__greaterOrEqual__ :: (left:i32,right:i32) -> bool {
+  return @greaterOrEqual(left,right);
+};
+
+__greaterOrEqual__ :: (left:u64,right:u64) -> bool {
+  return @greaterOrEqual(left,right);
+};
+
+__greaterOrEqual__ :: (left:i64,right:i64) -> bool {
+  return @greaterOrEqual(left,right);
+};
+
+__greaterOrEqual__ :: (left:f16,right:f16) -> bool {
+  return @greaterOrEqual(left,right);
+};
+
+__greaterOrEqual__ :: (left:f32,right:f32) -> bool {
+  return @greaterOrEqual(left,right);
+};
+
+__greaterOrEqual__ :: (left:f64,right:f64) -> bool {
+  return @greaterOrEqual(left,right);
+};
+
+__greaterOrEqual__ :: (left:f128,right:f128) -> bool {
+  return @greaterOrEqual(left,right);
+};
+
+__smallerOrEqual__ :: (left:u8,right:u8) -> bool {
+  return @smallerOrEqual(left,right);
+};
+
+__smallerOrEqual__ :: (left:i8,right:i8) -> bool {
+  return @smallerOrEqual(left,right);
+};
+
+__smallerOrEqual__ :: (left:u16,right:u16) -> bool {
+  return @smallerOrEqual(left,right);
+};
+
+__smallerOrEqual__ :: (left:i16,right:i16) -> bool {
+  return @smallerOrEqual(left,right);
+};
+
+__smallerOrEqual__ :: (left:u32,right:u32) -> bool {
+  return @smallerOrEqual(left,right);
+};
+
+__smallerOrEqual__ :: (left:i32,right:i32) -> bool {
+  return @smallerOrEqual(left,right);
+};
+
+__smallerOrEqual__ :: (left:u64,right:u64) -> bool {
+  return @smallerOrEqual(left,right);
+};
+
+__smallerOrEqual__ :: (left:i64,right:i64) -> bool {
+  return @smallerOrEqual(left,right);
+};
+
+__smallerOrEqual__ :: (left:f16,right:f16) -> bool {
+  return @smallerOrEqual(left,right);
+};
+
+__smallerOrEqual__ :: (left:f32,right:f32) -> bool {
+  return @smallerOrEqual(left,right);
+};
+
+__smallerOrEqual__ :: (left:f64,right:f64) -> bool {
+  return @smallerOrEqual(left,right);
+};
+
+__smallerOrEqual__ :: (left:f128,right:f128) -> bool {
+  return @smallerOrEqual(left,right);
+};
+
+__equal__ :: (left:u8,right:u8) -> bool {
+  return @equal(left,right);
+};
+
+__equal__ :: (left:i8,right:i8) -> bool {
+  return @equal(left,right);
+};
+
+__equal__ :: (left:u16,right:u16) -> bool {
+  return @equal(left,right);
+};
+
+__equal__ :: (left:i16,right:i16) -> bool {
+  return @equal(left,right);
+};
+
+__equal__ :: (left:u32,right:u32) -> bool {
+  return @equal(left,right);
+};
+
+__equal__ :: (left:i32,right:i32) -> bool {
+  return @equal(left,right);
+};
+
+__equal__ :: (left:u64,right:u64) -> bool {
+  return @equal(left,right);
+};
+
+__equal__ :: (left:i64,right:i64) -> bool {
+  return @equal(left,right);
+};
+
+__equal__ :: (left:f16,right:f16) -> bool {
+  return @equal(left,right);
+};
+
+__equal__ :: (left:f32,right:f32) -> bool {
+  return @equal(left,right);
+};
+
+__equal__ :: (left:f64,right:f64) -> bool {
+  return @equal(left,right);
+};
+
+__equal__ :: (left:f128,right:f128) -> bool {
+  return @equal(left,right);
+};
+
+__equal__ :: (left:bool,right:bool) -> bool {
+  return @equal(left,right);
+};
+
+__notEqual__ :: (left:u8,right:u8) -> bool {
+  return @notEqual(left,right);
+};
+
+__notEqual__ :: (left:i8,right:i8) -> bool {
+  return @notEqual(left,right);
+};
+
+__notEqual__ :: (left:u16,right:u16) -> bool {
+  return @notEqual(left,right);
+};
+
+__notEqual__ :: (left:i16,right:i16) -> bool {
+  return @notEqual(left,right);
+};
+
+__notEqual__ :: (left:u32,right:u32) -> bool {
+  return @notEqual(left,right);
+};
+
+__notEqual__ :: (left:i32,right:i32) -> bool {
+  return @notEqual(left,right);
+};
+
+__notEqual__ :: (left:u64,right:u64) -> bool {
+  return @notEqual(left,right);
+};
+
+__notEqual__ :: (left:i64,right:i64) -> bool {
+  return @notEqual(left,right);
+};
+
+__notEqual__ :: (left:f16,right:f16) -> bool {
+  return @notEqual(left,right);
+};
+
+__notEqual__ :: (left:f32,right:f32) -> bool {
+  return @notEqual(left,right);
+};
+
+__notEqual__ :: (left:f64,right:f64) -> bool {
+  return @notEqual(left,right);
+};
+
+__notEqual__ :: (left:f128,right:f128) -> bool {
+  return @notEqual(left,right);
+};
+
+__notEqual__ :: (left:bool,right:bool) -> bool {
+  return @notEqual(left,right);
 };
 
 __logical_not__ :: (value:bool) -> bool {
-  return value == true;
+  return value == false;
 };
 
 __logical_and__ :: (left:bool,right:bool) -> bool {
-  if left == true {
-    if right == true {
-      return true;
-    }
+  if left == false {
+    return false;
+  } else if right == false {
+    return false;
+  } else {
+    return true;
   }
-  return false;
 };
 
 __logical_or__ :: (left:bool,right:bool) -> bool {
@@ -67,8 +604,4 @@ __logical_or__ :: (left:bool,right:bool) -> bool {
   } else {
     return false;
   }
-};
-
-__equal__ :: (left:bool,right:bool) -> bool {
-  return @equal(left,right);
 };

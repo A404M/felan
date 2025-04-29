@@ -4659,7 +4659,6 @@ bool setTypesOperatorInfix(AstTree *tree, AstTreeSetTypesHelper _helper,
   AstTreeVariable *variable =
       setTypesFindVariable(str, str + str_size, helper, &functionCall);
   if (variable == NULL) {
-    printError(tree->str_begin, tree->str_end, "Can't find operator");
     return false;
   }
 
@@ -5755,6 +5754,11 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
       variable = var;
     CONTINUE_OUTER:
     }
+  }
+  if (variable == NULL) {
+    printError(name_begin, name_end, "No candidates found for %.*s",
+               (int)(name_end - name_begin), name_begin);
+    return NULL;
   }
 
   return variable;
