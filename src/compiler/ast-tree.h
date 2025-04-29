@@ -12,6 +12,18 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_BUILTIN_IS_COMPTIME,
   AST_TREE_TOKEN_BUILTIN_STACK_ALLOC,
   AST_TREE_TOKEN_BUILTIN_HEAP_ALLOC,
+  AST_TREE_TOKEN_BUILTIN_NEG,
+  AST_TREE_TOKEN_BUILTIN_ADD,
+  AST_TREE_TOKEN_BUILTIN_SUB,
+  AST_TREE_TOKEN_BUILTIN_MUL,
+  AST_TREE_TOKEN_BUILTIN_DIV,
+  AST_TREE_TOKEN_BUILTIN_MOD,
+  AST_TREE_TOKEN_BUILTIN_EQUAL,
+  AST_TREE_TOKEN_BUILTIN_NOT_EQUAL,
+  AST_TREE_TOKEN_BUILTIN_GREATER,
+  AST_TREE_TOKEN_BUILTIN_SMALLER,
+  AST_TREE_TOKEN_BUILTIN_GREATER_OR_EQUAL,
+  AST_TREE_TOKEN_BUILTIN_SMALLER_OR_EQUAL,
 
   AST_TREE_TOKEN_KEYWORD_PUTC,
   AST_TREE_TOKEN_KEYWORD_RETURN,
@@ -411,6 +423,10 @@ bool setTypesBuiltinStackAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
                                AstTreeFunctionCall *functionCall);
 bool setTypesBuiltinHeapAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
                               AstTreeFunctionCall *functionCall);
+bool setTypesBuiltinUnary(AstTree *tree, AstTreeSetTypesHelper helper,
+                          AstTreeFunctionCall *functionCall);
+bool setTypesBuiltinBinary(AstTree *tree, AstTreeSetTypesHelper helper,
+                          AstTreeFunctionCall *functionCall);
 bool setTypesTypeArray(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesArrayAccess(AstTree *tree, AstTreeSetTypesHelper helper);
 

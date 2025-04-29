@@ -1,15 +1,11 @@
 @import("basic.felan");
 
 main :: () -> void {
-  a : u8 = 65;
-  b : u8 = 70;
-  a + b;
+  a : i8 = 65;
+  b : i8 = 70;
+  a+b;
 };
 
-__sum__ :: (a:u8,b:u8)->void{
-  putc 'h';
-  putc a;
-  putc '\n';
-  putc b;
+__sum__ :: (left:i8,right:i8)->i8{
+  return @add(left,right);
 };
-

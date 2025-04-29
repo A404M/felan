@@ -3,6 +3,7 @@
 #include "utils/log.h"
 #include "utils/memory.h"
 #include "utils/string.h"
+#include <math.h>
 #include <stdatomic.h>
 #include <stdio.h>
 
@@ -381,10 +382,621 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     ret = copyAstTree(variable->type);
   }
     goto RETURN;
+  case AST_TREE_TOKEN_BUILTIN_NEG: {
+    AstTree *value = args.data[0];
+    bool shouldRet = false;
+    ret = runExpression(value, scope, &shouldRet, false, isComptime);
+    switch (value->type->token) {
+    case AST_TREE_TOKEN_TYPE_I8:
+      *(i8 *)ret->metadata = -*(i8 *)ret->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U8:
+      *(u8 *)ret->metadata = -*(u8 *)ret->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I16:
+      *(i16 *)ret->metadata = -*(i16 *)ret->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U16:
+      *(u16 *)ret->metadata = -*(u16 *)ret->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I32:
+      *(i32 *)ret->metadata = -*(i32 *)ret->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U32:
+      *(u32 *)ret->metadata = -*(u32 *)ret->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I64:
+      *(i64 *)ret->metadata = -*(i64 *)ret->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U64:
+      *(u64 *)ret->metadata = -*(u64 *)ret->metadata;
+      break;
+#ifdef FLOAT_16_SUPPORT
+    case AST_TREE_TOKEN_TYPE_F16:
+      *(f16 *)ret->metadata = -*(f16 *)ret->metadata;
+      break;
+#endif
+    case AST_TREE_TOKEN_TYPE_F32:
+      *(f32 *)ret->metadata = -*(f32 *)ret->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F64:
+      *(f64 *)ret->metadata = -*(f64 *)ret->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F128:
+      *(f128 *)ret->metadata = -*(f128 *)ret->metadata;
+      break;
+    default:
+      UNREACHABLE;
+    }
+  }
+    goto RETURN;
+  case AST_TREE_TOKEN_BUILTIN_ADD: {
+    bool shouldRet = false;
+    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *right =
+        runExpression(args.data[1], scope, &shouldRet, false, isComptime);
+
+    switch (ret->type->token) {
+    case AST_TREE_TOKEN_TYPE_I8:
+      *(i8 *)ret->metadata = *(i8 *)ret->metadata + *(i8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U8:
+      *(u8 *)ret->metadata = *(u8 *)ret->metadata + *(u8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I16:
+      *(i16 *)ret->metadata = *(i16 *)ret->metadata + *(i16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U16:
+      *(u16 *)ret->metadata = *(u16 *)ret->metadata + *(u16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I32:
+      *(i32 *)ret->metadata = *(i32 *)ret->metadata + *(i32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U32:
+      *(u32 *)ret->metadata = *(u32 *)ret->metadata + *(u32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I64:
+      *(i64 *)ret->metadata = *(i64 *)ret->metadata + *(i64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U64:
+      *(u64 *)ret->metadata = *(u64 *)ret->metadata + *(u64 *)right->metadata;
+      break;
+#ifdef FLOAT_16_SUPPORT
+    case AST_TREE_TOKEN_TYPE_F16:
+      *(f16 *)ret->metadata = *(f16 *)ret->metadata + *(f16 *)right->metadata;
+      break;
+#endif
+    case AST_TREE_TOKEN_TYPE_F32:
+      *(f32 *)ret->metadata = *(f32 *)ret->metadata + *(f32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F64:
+      *(f64 *)ret->metadata = *(f64 *)ret->metadata + *(f64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F128:
+      *(f128 *)ret->metadata =
+          *(f128 *)ret->metadata + *(f128 *)right->metadata;
+      break;
+    default:
+      UNREACHABLE;
+    }
+  }
+    goto RETURN;
+  case AST_TREE_TOKEN_BUILTIN_SUB: {
+    bool shouldRet = false;
+    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *right =
+        runExpression(args.data[1], scope, &shouldRet, false, isComptime);
+
+    switch (ret->type->token) {
+    case AST_TREE_TOKEN_TYPE_I8:
+      *(i8 *)ret->metadata = *(i8 *)ret->metadata - *(i8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U8:
+      *(u8 *)ret->metadata = *(u8 *)ret->metadata - *(u8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I16:
+      *(i16 *)ret->metadata = *(i16 *)ret->metadata - *(i16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U16:
+      *(u16 *)ret->metadata = *(u16 *)ret->metadata - *(u16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I32:
+      *(i32 *)ret->metadata = *(i32 *)ret->metadata - *(i32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U32:
+      *(u32 *)ret->metadata = *(u32 *)ret->metadata - *(u32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I64:
+      *(i64 *)ret->metadata = *(i64 *)ret->metadata - *(i64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U64:
+      *(u64 *)ret->metadata = *(u64 *)ret->metadata - *(u64 *)right->metadata;
+      break;
+#ifdef FLOAT_16_SUPPORT
+    case AST_TREE_TOKEN_TYPE_F16:
+      *(f16 *)ret->metadata = *(f16 *)ret->metadata - *(f16 *)right->metadata;
+      break;
+#endif
+    case AST_TREE_TOKEN_TYPE_F32:
+      *(f32 *)ret->metadata = *(f32 *)ret->metadata - *(f32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F64:
+      *(f64 *)ret->metadata = *(f64 *)ret->metadata - *(f64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F128:
+      *(f128 *)ret->metadata =
+          *(f128 *)ret->metadata - *(f128 *)right->metadata;
+      break;
+    default:
+      UNREACHABLE;
+    }
+  }
+    goto RETURN;
+  case AST_TREE_TOKEN_BUILTIN_MUL: {
+    bool shouldRet = false;
+    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *right =
+        runExpression(args.data[1], scope, &shouldRet, false, isComptime);
+
+    switch (ret->type->token) {
+    case AST_TREE_TOKEN_TYPE_I8:
+      *(i8 *)ret->metadata = *(i8 *)ret->metadata * *(i8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U8:
+      *(u8 *)ret->metadata = *(u8 *)ret->metadata * *(u8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I16:
+      *(i16 *)ret->metadata = *(i16 *)ret->metadata * *(i16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U16:
+      *(u16 *)ret->metadata = *(u16 *)ret->metadata * *(u16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I32:
+      *(i32 *)ret->metadata = *(i32 *)ret->metadata * *(i32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U32:
+      *(u32 *)ret->metadata = *(u32 *)ret->metadata * *(u32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I64:
+      *(i64 *)ret->metadata = *(i64 *)ret->metadata * *(i64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U64:
+      *(u64 *)ret->metadata = *(u64 *)ret->metadata * *(u64 *)right->metadata;
+      break;
+#ifdef FLOAT_16_SUPPORT
+    case AST_TREE_TOKEN_TYPE_F16:
+      *(f16 *)ret->metadata = *(f16 *)ret->metadata * *(f16 *)right->metadata;
+      break;
+#endif
+    case AST_TREE_TOKEN_TYPE_F32:
+      *(f32 *)ret->metadata = *(f32 *)ret->metadata * *(f32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F64:
+      *(f64 *)ret->metadata = *(f64 *)ret->metadata * *(f64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F128:
+      *(f128 *)ret->metadata =
+          *(f128 *)ret->metadata * *(f128 *)right->metadata;
+      break;
+    default:
+      UNREACHABLE;
+    }
+  }
+    goto RETURN;
+  case AST_TREE_TOKEN_BUILTIN_DIV: {
+    bool shouldRet = false;
+    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *right =
+        runExpression(args.data[1], scope, &shouldRet, false, isComptime);
+
+    switch (ret->type->token) {
+    case AST_TREE_TOKEN_TYPE_I8:
+      *(i8 *)ret->metadata = *(i8 *)ret->metadata / *(i8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U8:
+      *(u8 *)ret->metadata = *(u8 *)ret->metadata / *(u8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I16:
+      *(i16 *)ret->metadata = *(i16 *)ret->metadata / *(i16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U16:
+      *(u16 *)ret->metadata = *(u16 *)ret->metadata / *(u16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I32:
+      *(i32 *)ret->metadata = *(i32 *)ret->metadata / *(i32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U32:
+      *(u32 *)ret->metadata = *(u32 *)ret->metadata / *(u32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I64:
+      *(i64 *)ret->metadata = *(i64 *)ret->metadata / *(i64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U64:
+      *(u64 *)ret->metadata = *(u64 *)ret->metadata / *(u64 *)right->metadata;
+      break;
+#ifdef FLOAT_16_SUPPORT
+    case AST_TREE_TOKEN_TYPE_F16:
+      *(f16 *)ret->metadata = *(f16 *)ret->metadata / *(f16 *)right->metadata;
+      break;
+#endif
+    case AST_TREE_TOKEN_TYPE_F32:
+      *(f32 *)ret->metadata = *(f32 *)ret->metadata / *(f32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F64:
+      *(f64 *)ret->metadata = *(f64 *)ret->metadata / *(f64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F128:
+      *(f128 *)ret->metadata =
+          *(f128 *)ret->metadata / *(f128 *)right->metadata;
+      break;
+    default:
+      UNREACHABLE;
+    }
+  }
+    goto RETURN;
+  case AST_TREE_TOKEN_BUILTIN_MOD: {
+    bool shouldRet = false;
+    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *right =
+        runExpression(args.data[1], scope, &shouldRet, false, isComptime);
+
+    switch (ret->type->token) {
+    case AST_TREE_TOKEN_TYPE_I8:
+      *(i8 *)ret->metadata = *(i8 *)ret->metadata % *(i8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U8:
+      *(u8 *)ret->metadata = *(u8 *)ret->metadata % *(u8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I16:
+      *(i16 *)ret->metadata = *(i16 *)ret->metadata % *(i16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U16:
+      *(u16 *)ret->metadata = *(u16 *)ret->metadata % *(u16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I32:
+      *(i32 *)ret->metadata = *(i32 *)ret->metadata % *(i32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U32:
+      *(u32 *)ret->metadata = *(u32 *)ret->metadata % *(u32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I64:
+      *(i64 *)ret->metadata = *(i64 *)ret->metadata % *(i64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U64:
+      *(u64 *)ret->metadata = *(u64 *)ret->metadata % *(u64 *)right->metadata;
+      break;
+#ifdef FLOAT_16_SUPPORT
+    case AST_TREE_TOKEN_TYPE_F16:
+      *(f16 *)ret->metadata =
+          fmodf(*(f16 *)ret->metadata, *(f16 *)right->metadata);
+      break;
+#endif
+    case AST_TREE_TOKEN_TYPE_F32:
+      *(f32 *)ret->metadata =
+          fmodf(*(f32 *)ret->metadata, *(f32 *)right->metadata);
+      break;
+    case AST_TREE_TOKEN_TYPE_F64:
+      *(f64 *)ret->metadata =
+          fmod(*(f64 *)ret->metadata, *(f64 *)right->metadata);
+      break;
+    case AST_TREE_TOKEN_TYPE_F128:
+      *(f128 *)ret->metadata =
+          fmodl(*(f128 *)ret->metadata, *(f128 *)right->metadata);
+      break;
+    default:
+      UNREACHABLE;
+    }
+  }
+    goto RETURN;
+  case AST_TREE_TOKEN_BUILTIN_EQUAL: {
+    bool shouldRet = false;
+    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *right =
+        runExpression(args.data[1], scope, &shouldRet, false, isComptime);
+
+    switch (ret->type->token) {
+    case AST_TREE_TOKEN_TYPE_I8:
+      *(i8 *)ret->metadata = *(i8 *)ret->metadata == *(i8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U8:
+      *(u8 *)ret->metadata = *(u8 *)ret->metadata == *(u8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I16:
+      *(i16 *)ret->metadata = *(i16 *)ret->metadata == *(i16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U16:
+      *(u16 *)ret->metadata = *(u16 *)ret->metadata == *(u16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I32:
+      *(i32 *)ret->metadata = *(i32 *)ret->metadata == *(i32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U32:
+      *(u32 *)ret->metadata = *(u32 *)ret->metadata == *(u32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I64:
+      *(i64 *)ret->metadata = *(i64 *)ret->metadata == *(i64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U64:
+      *(u64 *)ret->metadata = *(u64 *)ret->metadata == *(u64 *)right->metadata;
+      break;
+#ifdef FLOAT_16_SUPPORT
+    case AST_TREE_TOKEN_TYPE_F16:
+      *(f16 *)ret->metadata = *(f16 *)ret->metadata == *(f16 *)right->metadata;
+      break;
+#endif
+    case AST_TREE_TOKEN_TYPE_F32:
+      *(f32 *)ret->metadata = *(f32 *)ret->metadata == *(f32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F64:
+      *(f64 *)ret->metadata = *(f64 *)ret->metadata == *(f64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F128:
+      *(f128 *)ret->metadata =
+          *(f128 *)ret->metadata == *(f128 *)right->metadata;
+      break;
+    default:
+      UNREACHABLE;
+    }
+  }
+    goto RETURN;
+  case AST_TREE_TOKEN_BUILTIN_NOT_EQUAL: {
+    bool shouldRet = false;
+    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *right =
+        runExpression(args.data[1], scope, &shouldRet, false, isComptime);
+
+    switch (ret->type->token) {
+    case AST_TREE_TOKEN_TYPE_I8:
+      *(i8 *)ret->metadata = *(i8 *)ret->metadata != *(i8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U8:
+      *(u8 *)ret->metadata = *(u8 *)ret->metadata != *(u8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I16:
+      *(i16 *)ret->metadata = *(i16 *)ret->metadata != *(i16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U16:
+      *(u16 *)ret->metadata = *(u16 *)ret->metadata != *(u16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I32:
+      *(i32 *)ret->metadata = *(i32 *)ret->metadata != *(i32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U32:
+      *(u32 *)ret->metadata = *(u32 *)ret->metadata != *(u32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I64:
+      *(i64 *)ret->metadata = *(i64 *)ret->metadata != *(i64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U64:
+      *(u64 *)ret->metadata = *(u64 *)ret->metadata != *(u64 *)right->metadata;
+      break;
+#ifdef FLOAT_16_SUPPORT
+    case AST_TREE_TOKEN_TYPE_F16:
+      *(f16 *)ret->metadata = *(f16 *)ret->metadata != *(f16 *)right->metadata;
+      break;
+#endif
+    case AST_TREE_TOKEN_TYPE_F32:
+      *(f32 *)ret->metadata = *(f32 *)ret->metadata != *(f32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F64:
+      *(f64 *)ret->metadata = *(f64 *)ret->metadata != *(f64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F128:
+      *(f128 *)ret->metadata =
+          *(f128 *)ret->metadata != *(f128 *)right->metadata;
+      break;
+    default:
+      UNREACHABLE;
+    }
+  }
+    goto RETURN;
+  case AST_TREE_TOKEN_BUILTIN_GREATER: {
+    bool shouldRet = false;
+    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *right =
+        runExpression(args.data[1], scope, &shouldRet, false, isComptime);
+
+    switch (ret->type->token) {
+    case AST_TREE_TOKEN_TYPE_I8:
+      *(i8 *)ret->metadata = *(i8 *)ret->metadata > *(i8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U8:
+      *(u8 *)ret->metadata = *(u8 *)ret->metadata > *(u8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I16:
+      *(i16 *)ret->metadata = *(i16 *)ret->metadata > *(i16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U16:
+      *(u16 *)ret->metadata = *(u16 *)ret->metadata > *(u16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I32:
+      *(i32 *)ret->metadata = *(i32 *)ret->metadata > *(i32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U32:
+      *(u32 *)ret->metadata = *(u32 *)ret->metadata > *(u32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I64:
+      *(i64 *)ret->metadata = *(i64 *)ret->metadata > *(i64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U64:
+      *(u64 *)ret->metadata = *(u64 *)ret->metadata > *(u64 *)right->metadata;
+      break;
+#ifdef FLOAT_16_SUPPORT
+    case AST_TREE_TOKEN_TYPE_F16:
+      *(f16 *)ret->metadata = *(f16 *)ret->metadata > *(f16 *)right->metadata;
+      break;
+#endif
+    case AST_TREE_TOKEN_TYPE_F32:
+      *(f32 *)ret->metadata = *(f32 *)ret->metadata > *(f32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F64:
+      *(f64 *)ret->metadata = *(f64 *)ret->metadata > *(f64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F128:
+      *(f128 *)ret->metadata =
+          *(f128 *)ret->metadata > *(f128 *)right->metadata;
+      break;
+    default:
+      UNREACHABLE;
+    }
+  }
+    goto RETURN;
+  case AST_TREE_TOKEN_BUILTIN_SMALLER: {
+    bool shouldRet = false;
+    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *right =
+        runExpression(args.data[1], scope, &shouldRet, false, isComptime);
+
+    switch (ret->type->token) {
+    case AST_TREE_TOKEN_TYPE_I8:
+      *(i8 *)ret->metadata = *(i8 *)ret->metadata < *(i8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U8:
+      *(u8 *)ret->metadata = *(u8 *)ret->metadata < *(u8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I16:
+      *(i16 *)ret->metadata = *(i16 *)ret->metadata < *(i16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U16:
+      *(u16 *)ret->metadata = *(u16 *)ret->metadata < *(u16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I32:
+      *(i32 *)ret->metadata = *(i32 *)ret->metadata < *(i32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U32:
+      *(u32 *)ret->metadata = *(u32 *)ret->metadata < *(u32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I64:
+      *(i64 *)ret->metadata = *(i64 *)ret->metadata < *(i64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U64:
+      *(u64 *)ret->metadata = *(u64 *)ret->metadata < *(u64 *)right->metadata;
+      break;
+#ifdef FLOAT_16_SUPPORT
+    case AST_TREE_TOKEN_TYPE_F16:
+      *(f16 *)ret->metadata = *(f16 *)ret->metadata < *(f16 *)right->metadata;
+      break;
+#endif
+    case AST_TREE_TOKEN_TYPE_F32:
+      *(f32 *)ret->metadata = *(f32 *)ret->metadata < *(f32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F64:
+      *(f64 *)ret->metadata = *(f64 *)ret->metadata < *(f64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F128:
+      *(f128 *)ret->metadata =
+          *(f128 *)ret->metadata < *(f128 *)right->metadata;
+      break;
+    default:
+      UNREACHABLE;
+    }
+  }
+    goto RETURN;
+  case AST_TREE_TOKEN_BUILTIN_GREATER_OR_EQUAL: {
+    bool shouldRet = false;
+    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *right =
+        runExpression(args.data[1], scope, &shouldRet, false, isComptime);
+
+    switch (ret->type->token) {
+    case AST_TREE_TOKEN_TYPE_I8:
+      *(i8 *)ret->metadata = *(i8 *)ret->metadata >= *(i8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U8:
+      *(u8 *)ret->metadata = *(u8 *)ret->metadata >= *(u8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I16:
+      *(i16 *)ret->metadata = *(i16 *)ret->metadata >= *(i16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U16:
+      *(u16 *)ret->metadata = *(u16 *)ret->metadata >= *(u16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I32:
+      *(i32 *)ret->metadata = *(i32 *)ret->metadata >= *(i32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U32:
+      *(u32 *)ret->metadata = *(u32 *)ret->metadata >= *(u32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I64:
+      *(i64 *)ret->metadata = *(i64 *)ret->metadata >= *(i64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U64:
+      *(u64 *)ret->metadata = *(u64 *)ret->metadata >= *(u64 *)right->metadata;
+      break;
+#ifdef FLOAT_16_SUPPORT
+    case AST_TREE_TOKEN_TYPE_F16:
+      *(f16 *)ret->metadata = *(f16 *)ret->metadata >= *(f16 *)right->metadata;
+      break;
+#endif
+    case AST_TREE_TOKEN_TYPE_F32:
+      *(f32 *)ret->metadata = *(f32 *)ret->metadata >= *(f32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F64:
+      *(f64 *)ret->metadata = *(f64 *)ret->metadata >= *(f64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F128:
+      *(f128 *)ret->metadata =
+          *(f128 *)ret->metadata >= *(f128 *)right->metadata;
+      break;
+    default:
+      UNREACHABLE;
+    }
+  }
+    goto RETURN;
+  case AST_TREE_TOKEN_BUILTIN_SMALLER_OR_EQUAL: {
+    bool shouldRet = false;
+    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *right =
+        runExpression(args.data[1], scope, &shouldRet, false, isComptime);
+
+    switch (ret->type->token) {
+    case AST_TREE_TOKEN_TYPE_I8:
+      *(i8 *)ret->metadata = *(i8 *)ret->metadata <= *(i8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U8:
+      *(u8 *)ret->metadata = *(u8 *)ret->metadata <= *(u8 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I16:
+      *(i16 *)ret->metadata = *(i16 *)ret->metadata <= *(i16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U16:
+      *(u16 *)ret->metadata = *(u16 *)ret->metadata <= *(u16 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I32:
+      *(i32 *)ret->metadata = *(i32 *)ret->metadata <= *(i32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U32:
+      *(u32 *)ret->metadata = *(u32 *)ret->metadata <= *(u32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_I64:
+      *(i64 *)ret->metadata = *(i64 *)ret->metadata <= *(i64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_U64:
+      *(u64 *)ret->metadata = *(u64 *)ret->metadata <= *(u64 *)right->metadata;
+      break;
+#ifdef FLOAT_16_SUPPORT
+    case AST_TREE_TOKEN_TYPE_F16:
+      *(f16 *)ret->metadata = *(f16 *)ret->metadata <= *(f16 *)right->metadata;
+      break;
+#endif
+    case AST_TREE_TOKEN_TYPE_F32:
+      *(f32 *)ret->metadata = *(f32 *)ret->metadata <= *(f32 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F64:
+      *(f64 *)ret->metadata = *(f64 *)ret->metadata <= *(f64 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_F128:
+      *(f128 *)ret->metadata =
+          *(f128 *)ret->metadata <= *(f128 *)right->metadata;
+      break;
+    default:
+      UNREACHABLE;
+    }
+  }
+    goto RETURN;
   case AST_TREE_TOKEN_BUILTIN_IMPORT:
   default:
   }
-  printLog("Bad builtin");
   UNREACHABLE;
 
 RETURN:
@@ -417,7 +1029,19 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                                   metadata->parameters_size, isComptime);
     } else if (function->token == AST_TREE_TOKEN_BUILTIN_CAST ||
                function->token == AST_TREE_TOKEN_BUILTIN_TYPE_OF ||
-               function->token == AST_TREE_TOKEN_BUILTIN_IMPORT) {
+               function->token == AST_TREE_TOKEN_BUILTIN_IMPORT ||
+               function->token == AST_TREE_TOKEN_BUILTIN_NEG ||
+               function->token == AST_TREE_TOKEN_BUILTIN_ADD ||
+               function->token == AST_TREE_TOKEN_BUILTIN_SUB ||
+               function->token == AST_TREE_TOKEN_BUILTIN_MUL ||
+               function->token == AST_TREE_TOKEN_BUILTIN_DIV ||
+               function->token == AST_TREE_TOKEN_BUILTIN_MOD ||
+               function->token == AST_TREE_TOKEN_BUILTIN_EQUAL ||
+               function->token == AST_TREE_TOKEN_BUILTIN_NOT_EQUAL ||
+               function->token == AST_TREE_TOKEN_BUILTIN_GREATER ||
+               function->token == AST_TREE_TOKEN_BUILTIN_SMALLER ||
+               function->token == AST_TREE_TOKEN_BUILTIN_GREATER_OR_EQUAL ||
+               function->token == AST_TREE_TOKEN_BUILTIN_SMALLER_OR_EQUAL) {
       result = runAstTreeBuiltin(function, scope, metadata->parameters,
                                  metadata->parameters_size, isComptime);
     } else {
@@ -590,6 +1214,18 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
   case AST_TREE_TOKEN_BUILTIN_IMPORT:
   case AST_TREE_TOKEN_BUILTIN_STACK_ALLOC:
   case AST_TREE_TOKEN_BUILTIN_HEAP_ALLOC:
+  case AST_TREE_TOKEN_BUILTIN_NEG:
+  case AST_TREE_TOKEN_BUILTIN_ADD:
+  case AST_TREE_TOKEN_BUILTIN_SUB:
+  case AST_TREE_TOKEN_BUILTIN_MUL:
+  case AST_TREE_TOKEN_BUILTIN_DIV:
+  case AST_TREE_TOKEN_BUILTIN_MOD:
+  case AST_TREE_TOKEN_BUILTIN_EQUAL:
+  case AST_TREE_TOKEN_BUILTIN_NOT_EQUAL:
+  case AST_TREE_TOKEN_BUILTIN_GREATER:
+  case AST_TREE_TOKEN_BUILTIN_SMALLER:
+  case AST_TREE_TOKEN_BUILTIN_GREATER_OR_EQUAL:
+  case AST_TREE_TOKEN_BUILTIN_SMALLER_OR_EQUAL:
     return copyAstTree(expr);
   case AST_TREE_TOKEN_BUILTIN_IS_COMPTIME: {
     AstTreeBool *metadata = a404m_malloc(sizeof(*metadata));
