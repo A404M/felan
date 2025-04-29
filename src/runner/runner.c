@@ -479,6 +479,7 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     default:
       UNREACHABLE;
     }
+    astTreeDelete(right);
   }
     goto RETURN;
   case AST_TREE_TOKEN_BUILTIN_SUB: {
@@ -530,6 +531,7 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     default:
       UNREACHABLE;
     }
+    astTreeDelete(right);
   }
     goto RETURN;
   case AST_TREE_TOKEN_BUILTIN_MUL: {
@@ -581,6 +583,7 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     default:
       UNREACHABLE;
     }
+    astTreeDelete(right);
   }
     goto RETURN;
   case AST_TREE_TOKEN_BUILTIN_DIV: {
@@ -632,6 +635,7 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     default:
       UNREACHABLE;
     }
+    astTreeDelete(right);
   }
     goto RETURN;
   case AST_TREE_TOKEN_BUILTIN_MOD: {
@@ -686,312 +690,437 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     default:
       UNREACHABLE;
     }
+    astTreeDelete(right);
   }
     goto RETURN;
   case AST_TREE_TOKEN_BUILTIN_EQUAL: {
     bool shouldRet = false;
-    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *left =
+        runExpression(args.data[0], scope, &shouldRet, false, isComptime);
     AstTree *right =
         runExpression(args.data[1], scope, &shouldRet, false, isComptime);
 
-    switch (ret->type->token) {
+    ret =
+        newAstTree(AST_TREE_TOKEN_VALUE_BOOL, a404m_malloc(sizeof(AstTreeBool)),
+                   &AST_TREE_BOOL_TYPE, NULL, NULL);
+
+    switch (left->type->token) {
     case AST_TREE_TOKEN_TYPE_I8:
-      *(i8 *)ret->metadata = *(i8 *)ret->metadata == *(i8 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i8 *)left->metadata == *(i8 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U8:
-      *(u8 *)ret->metadata = *(u8 *)ret->metadata == *(u8 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u8 *)left->metadata == *(u8 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I16:
-      *(i16 *)ret->metadata = *(i16 *)ret->metadata == *(i16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i16 *)left->metadata == *(i16 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U16:
-      *(u16 *)ret->metadata = *(u16 *)ret->metadata == *(u16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u16 *)left->metadata == *(u16 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I32:
-      *(i32 *)ret->metadata = *(i32 *)ret->metadata == *(i32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i32 *)left->metadata == *(i32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U32:
-      *(u32 *)ret->metadata = *(u32 *)ret->metadata == *(u32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u32 *)left->metadata == *(u32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I64:
-      *(i64 *)ret->metadata = *(i64 *)ret->metadata == *(i64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i64 *)left->metadata == *(i64 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U64:
-      *(u64 *)ret->metadata = *(u64 *)ret->metadata == *(u64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u64 *)left->metadata == *(u64 *)right->metadata;
       break;
 #ifdef FLOAT_16_SUPPORT
     case AST_TREE_TOKEN_TYPE_F16:
-      *(f16 *)ret->metadata = *(f16 *)ret->metadata == *(f16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f16 *)left->metadata == *(f16 *)right->metadata;
       break;
 #endif
     case AST_TREE_TOKEN_TYPE_F32:
-      *(f32 *)ret->metadata = *(f32 *)ret->metadata == *(f32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f32 *)left->metadata == *(f32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_F64:
-      *(f64 *)ret->metadata = *(f64 *)ret->metadata == *(f64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f64 *)left->metadata == *(f64 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_F128:
-      *(f128 *)ret->metadata =
-          *(f128 *)ret->metadata == *(f128 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f128 *)left->metadata == *(f128 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_BOOL:
+      *(AstTreeBool *)ret->metadata =
+          *(AstTreeBool *)left->metadata == *(AstTreeBool *)right->metadata;
       break;
     default:
       UNREACHABLE;
     }
+    astTreeDelete(left);
+    astTreeDelete(right);
   }
     goto RETURN;
   case AST_TREE_TOKEN_BUILTIN_NOT_EQUAL: {
     bool shouldRet = false;
-    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *left =
+        runExpression(args.data[0], scope, &shouldRet, false, isComptime);
     AstTree *right =
         runExpression(args.data[1], scope, &shouldRet, false, isComptime);
 
-    switch (ret->type->token) {
+    ret =
+        newAstTree(AST_TREE_TOKEN_VALUE_BOOL, a404m_malloc(sizeof(AstTreeBool)),
+                   &AST_TREE_BOOL_TYPE, NULL, NULL);
+
+    switch (left->type->token) {
     case AST_TREE_TOKEN_TYPE_I8:
-      *(i8 *)ret->metadata = *(i8 *)ret->metadata != *(i8 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i8 *)left->metadata != *(i8 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U8:
-      *(u8 *)ret->metadata = *(u8 *)ret->metadata != *(u8 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u8 *)left->metadata != *(u8 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I16:
-      *(i16 *)ret->metadata = *(i16 *)ret->metadata != *(i16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i16 *)left->metadata != *(i16 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U16:
-      *(u16 *)ret->metadata = *(u16 *)ret->metadata != *(u16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u16 *)left->metadata != *(u16 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I32:
-      *(i32 *)ret->metadata = *(i32 *)ret->metadata != *(i32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i32 *)left->metadata != *(i32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U32:
-      *(u32 *)ret->metadata = *(u32 *)ret->metadata != *(u32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u32 *)left->metadata != *(u32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I64:
-      *(i64 *)ret->metadata = *(i64 *)ret->metadata != *(i64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i64 *)left->metadata != *(i64 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U64:
-      *(u64 *)ret->metadata = *(u64 *)ret->metadata != *(u64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u64 *)left->metadata != *(u64 *)right->metadata;
       break;
 #ifdef FLOAT_16_SUPPORT
     case AST_TREE_TOKEN_TYPE_F16:
-      *(f16 *)ret->metadata = *(f16 *)ret->metadata != *(f16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f16 *)left->metadata != *(f16 *)right->metadata;
       break;
 #endif
     case AST_TREE_TOKEN_TYPE_F32:
-      *(f32 *)ret->metadata = *(f32 *)ret->metadata != *(f32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f32 *)left->metadata != *(f32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_F64:
-      *(f64 *)ret->metadata = *(f64 *)ret->metadata != *(f64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f64 *)left->metadata != *(f64 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_F128:
-      *(f128 *)ret->metadata =
-          *(f128 *)ret->metadata != *(f128 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f128 *)left->metadata != *(f128 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_BOOL:
+      *(AstTreeBool *)ret->metadata =
+          *(AstTreeBool *)left->metadata == *(AstTreeBool *)right->metadata;
       break;
     default:
       UNREACHABLE;
     }
+    astTreeDelete(left);
+    astTreeDelete(right);
   }
     goto RETURN;
   case AST_TREE_TOKEN_BUILTIN_GREATER: {
     bool shouldRet = false;
-    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *left =
+        runExpression(args.data[0], scope, &shouldRet, false, isComptime);
     AstTree *right =
         runExpression(args.data[1], scope, &shouldRet, false, isComptime);
 
-    switch (ret->type->token) {
+    ret =
+        newAstTree(AST_TREE_TOKEN_VALUE_BOOL, a404m_malloc(sizeof(AstTreeBool)),
+                   &AST_TREE_BOOL_TYPE, NULL, NULL);
+
+    switch (left->type->token) {
     case AST_TREE_TOKEN_TYPE_I8:
-      *(i8 *)ret->metadata = *(i8 *)ret->metadata > *(i8 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i8 *)left->metadata > *(i8 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U8:
-      *(u8 *)ret->metadata = *(u8 *)ret->metadata > *(u8 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u8 *)left->metadata > *(u8 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I16:
-      *(i16 *)ret->metadata = *(i16 *)ret->metadata > *(i16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i16 *)left->metadata > *(i16 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U16:
-      *(u16 *)ret->metadata = *(u16 *)ret->metadata > *(u16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u16 *)left->metadata > *(u16 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I32:
-      *(i32 *)ret->metadata = *(i32 *)ret->metadata > *(i32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i32 *)left->metadata > *(i32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U32:
-      *(u32 *)ret->metadata = *(u32 *)ret->metadata > *(u32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u32 *)left->metadata > *(u32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I64:
-      *(i64 *)ret->metadata = *(i64 *)ret->metadata > *(i64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i64 *)left->metadata > *(i64 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U64:
-      *(u64 *)ret->metadata = *(u64 *)ret->metadata > *(u64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u64 *)left->metadata > *(u64 *)right->metadata;
       break;
 #ifdef FLOAT_16_SUPPORT
     case AST_TREE_TOKEN_TYPE_F16:
-      *(f16 *)ret->metadata = *(f16 *)ret->metadata > *(f16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f16 *)left->metadata > *(f16 *)right->metadata;
       break;
 #endif
     case AST_TREE_TOKEN_TYPE_F32:
-      *(f32 *)ret->metadata = *(f32 *)ret->metadata > *(f32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f32 *)left->metadata > *(f32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_F64:
-      *(f64 *)ret->metadata = *(f64 *)ret->metadata > *(f64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f64 *)left->metadata > *(f64 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_F128:
-      *(f128 *)ret->metadata =
-          *(f128 *)ret->metadata > *(f128 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f128 *)left->metadata > *(f128 *)right->metadata;
       break;
     default:
       UNREACHABLE;
     }
+    astTreeDelete(left);
+    astTreeDelete(right);
   }
     goto RETURN;
   case AST_TREE_TOKEN_BUILTIN_SMALLER: {
     bool shouldRet = false;
-    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *left =
+        runExpression(args.data[0], scope, &shouldRet, false, isComptime);
     AstTree *right =
         runExpression(args.data[1], scope, &shouldRet, false, isComptime);
 
-    switch (ret->type->token) {
+    ret =
+        newAstTree(AST_TREE_TOKEN_VALUE_BOOL, a404m_malloc(sizeof(AstTreeBool)),
+                   &AST_TREE_BOOL_TYPE, NULL, NULL);
+
+    switch (left->type->token) {
     case AST_TREE_TOKEN_TYPE_I8:
-      *(i8 *)ret->metadata = *(i8 *)ret->metadata < *(i8 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i8 *)left->metadata < *(i8 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U8:
-      *(u8 *)ret->metadata = *(u8 *)ret->metadata < *(u8 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u8 *)left->metadata < *(u8 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I16:
-      *(i16 *)ret->metadata = *(i16 *)ret->metadata < *(i16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i16 *)left->metadata < *(i16 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U16:
-      *(u16 *)ret->metadata = *(u16 *)ret->metadata < *(u16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u16 *)left->metadata < *(u16 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I32:
-      *(i32 *)ret->metadata = *(i32 *)ret->metadata < *(i32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i32 *)left->metadata < *(i32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U32:
-      *(u32 *)ret->metadata = *(u32 *)ret->metadata < *(u32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u32 *)left->metadata < *(u32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I64:
-      *(i64 *)ret->metadata = *(i64 *)ret->metadata < *(i64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i64 *)left->metadata < *(i64 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U64:
-      *(u64 *)ret->metadata = *(u64 *)ret->metadata < *(u64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u64 *)left->metadata < *(u64 *)right->metadata;
       break;
 #ifdef FLOAT_16_SUPPORT
     case AST_TREE_TOKEN_TYPE_F16:
-      *(f16 *)ret->metadata = *(f16 *)ret->metadata < *(f16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f16 *)left->metadata < *(f16 *)right->metadata;
       break;
 #endif
     case AST_TREE_TOKEN_TYPE_F32:
-      *(f32 *)ret->metadata = *(f32 *)ret->metadata < *(f32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f32 *)left->metadata < *(f32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_F64:
-      *(f64 *)ret->metadata = *(f64 *)ret->metadata < *(f64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f64 *)left->metadata < *(f64 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_F128:
-      *(f128 *)ret->metadata =
-          *(f128 *)ret->metadata < *(f128 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f128 *)left->metadata < *(f128 *)right->metadata;
       break;
     default:
       UNREACHABLE;
     }
+    astTreeDelete(left);
+    astTreeDelete(right);
   }
     goto RETURN;
   case AST_TREE_TOKEN_BUILTIN_GREATER_OR_EQUAL: {
     bool shouldRet = false;
-    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *left =
+        runExpression(args.data[0], scope, &shouldRet, false, isComptime);
     AstTree *right =
         runExpression(args.data[1], scope, &shouldRet, false, isComptime);
 
-    switch (ret->type->token) {
+    ret =
+        newAstTree(AST_TREE_TOKEN_VALUE_BOOL, a404m_malloc(sizeof(AstTreeBool)),
+                   &AST_TREE_BOOL_TYPE, NULL, NULL);
+
+    switch (left->type->token) {
     case AST_TREE_TOKEN_TYPE_I8:
-      *(i8 *)ret->metadata = *(i8 *)ret->metadata >= *(i8 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i8 *)left->metadata >= *(i8 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U8:
-      *(u8 *)ret->metadata = *(u8 *)ret->metadata >= *(u8 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u8 *)left->metadata >= *(u8 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I16:
-      *(i16 *)ret->metadata = *(i16 *)ret->metadata >= *(i16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i16 *)left->metadata >= *(i16 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U16:
-      *(u16 *)ret->metadata = *(u16 *)ret->metadata >= *(u16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u16 *)left->metadata >= *(u16 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I32:
-      *(i32 *)ret->metadata = *(i32 *)ret->metadata >= *(i32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i32 *)left->metadata >= *(i32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U32:
-      *(u32 *)ret->metadata = *(u32 *)ret->metadata >= *(u32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u32 *)left->metadata >= *(u32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I64:
-      *(i64 *)ret->metadata = *(i64 *)ret->metadata >= *(i64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i64 *)left->metadata >= *(i64 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U64:
-      *(u64 *)ret->metadata = *(u64 *)ret->metadata >= *(u64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u64 *)left->metadata >= *(u64 *)right->metadata;
       break;
 #ifdef FLOAT_16_SUPPORT
     case AST_TREE_TOKEN_TYPE_F16:
-      *(f16 *)ret->metadata = *(f16 *)ret->metadata >= *(f16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f16 *)left->metadata >= *(f16 *)right->metadata;
       break;
 #endif
     case AST_TREE_TOKEN_TYPE_F32:
-      *(f32 *)ret->metadata = *(f32 *)ret->metadata >= *(f32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f32 *)left->metadata >= *(f32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_F64:
-      *(f64 *)ret->metadata = *(f64 *)ret->metadata >= *(f64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f64 *)left->metadata >= *(f64 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_F128:
-      *(f128 *)ret->metadata =
-          *(f128 *)ret->metadata >= *(f128 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f128 *)left->metadata >= *(f128 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_BOOL:
+      *(AstTreeBool *)ret->metadata =
+          *(AstTreeBool *)left->metadata == *(AstTreeBool *)right->metadata;
       break;
     default:
       UNREACHABLE;
     }
+    astTreeDelete(left);
+    astTreeDelete(right);
   }
     goto RETURN;
   case AST_TREE_TOKEN_BUILTIN_SMALLER_OR_EQUAL: {
     bool shouldRet = false;
-    ret = runExpression(args.data[0], scope, &shouldRet, false, isComptime);
+    AstTree *left =
+        runExpression(args.data[0], scope, &shouldRet, false, isComptime);
     AstTree *right =
         runExpression(args.data[1], scope, &shouldRet, false, isComptime);
 
-    switch (ret->type->token) {
+    ret =
+        newAstTree(AST_TREE_TOKEN_VALUE_BOOL, a404m_malloc(sizeof(AstTreeBool)),
+                   &AST_TREE_BOOL_TYPE, NULL, NULL);
+
+    switch (left->type->token) {
     case AST_TREE_TOKEN_TYPE_I8:
-      *(i8 *)ret->metadata = *(i8 *)ret->metadata <= *(i8 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i8 *)left->metadata <= *(i8 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U8:
-      *(u8 *)ret->metadata = *(u8 *)ret->metadata <= *(u8 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u8 *)left->metadata <= *(u8 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I16:
-      *(i16 *)ret->metadata = *(i16 *)ret->metadata <= *(i16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i16 *)left->metadata <= *(i16 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U16:
-      *(u16 *)ret->metadata = *(u16 *)ret->metadata <= *(u16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u16 *)left->metadata <= *(u16 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I32:
-      *(i32 *)ret->metadata = *(i32 *)ret->metadata <= *(i32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i32 *)left->metadata <= *(i32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U32:
-      *(u32 *)ret->metadata = *(u32 *)ret->metadata <= *(u32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u32 *)left->metadata <= *(u32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_I64:
-      *(i64 *)ret->metadata = *(i64 *)ret->metadata <= *(i64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(i64 *)left->metadata <= *(i64 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_U64:
-      *(u64 *)ret->metadata = *(u64 *)ret->metadata <= *(u64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(u64 *)left->metadata <= *(u64 *)right->metadata;
       break;
 #ifdef FLOAT_16_SUPPORT
     case AST_TREE_TOKEN_TYPE_F16:
-      *(f16 *)ret->metadata = *(f16 *)ret->metadata <= *(f16 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f16 *)left->metadata <= *(f16 *)right->metadata;
       break;
 #endif
     case AST_TREE_TOKEN_TYPE_F32:
-      *(f32 *)ret->metadata = *(f32 *)ret->metadata <= *(f32 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f32 *)left->metadata <= *(f32 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_F64:
-      *(f64 *)ret->metadata = *(f64 *)ret->metadata <= *(f64 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f64 *)left->metadata <= *(f64 *)right->metadata;
       break;
     case AST_TREE_TOKEN_TYPE_F128:
-      *(f128 *)ret->metadata =
-          *(f128 *)ret->metadata <= *(f128 *)right->metadata;
+      *(AstTreeBool *)ret->metadata =
+          *(f128 *)left->metadata <= *(f128 *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_BOOL:
+      *(AstTreeBool *)ret->metadata =
+          *(AstTreeBool *)left->metadata == *(AstTreeBool *)right->metadata;
       break;
     default:
       UNREACHABLE;
     }
+    astTreeDelete(left);
+    astTreeDelete(right);
   }
     goto RETURN;
   case AST_TREE_TOKEN_BUILTIN_IMPORT:

@@ -46,8 +46,29 @@ __minus__ :: (a:i64) -> i64 {
   return @neg(a);
 };
 
-__logical_not__ :: (a:bool) -> bool {
-  return a;
+__logical_not__ :: (value:bool) -> bool {
+  return value == true;
 };
 
+__logical_and__ :: (left:bool,right:bool) -> bool {
+  if left == true {
+    if right == true {
+      return true;
+    }
+  }
+  return false;
+};
 
+__logical_or__ :: (left:bool,right:bool) -> bool {
+  if left == true {
+    return true;
+  } else if right == true {
+    return true;
+  } else {
+    return false;
+  }
+};
+
+__equal__ :: (left:bool,right:bool) -> bool {
+  return @equal(left,right);
+};

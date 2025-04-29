@@ -2,6 +2,7 @@
 
 #include "utils/type.h"
 #include <stddef.h>
+#include <stdio.h>
 
 typedef enum LexerToken {
   LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET,

@@ -426,7 +426,10 @@ bool setTypesBuiltinHeapAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesBuiltinUnary(AstTree *tree, AstTreeSetTypesHelper helper,
                           AstTreeFunctionCall *functionCall);
 bool setTypesBuiltinBinary(AstTree *tree, AstTreeSetTypesHelper helper,
-                          AstTreeFunctionCall *functionCall);
+                           AstTreeFunctionCall *functionCall);
+bool setTypesBuiltinBinaryWithRet(AstTree *tree, AstTreeSetTypesHelper helper,
+                                  AstTreeFunctionCall *functionCall,
+                                  AstTree *retType);
 bool setTypesTypeArray(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesArrayAccess(AstTree *tree, AstTreeSetTypesHelper helper);
 

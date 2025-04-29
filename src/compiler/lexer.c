@@ -10,6 +10,7 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_CLOSE_PARENTHESIS",
     "LEXER_TOKEN_SYMBOL_CLOSE_BRACKET",
     "LEXER_TOKEN_IDENTIFIER",
+    "LEXER_TOKEN_BUILTIN",
     "LEXER_TOKEN_BUILTIN_CAST",
     "LEXER_TOKEN_BUILTIN_TYPE_OF",
     "LEXER_TOKEN_BUILTIN_IMPORT",
@@ -362,6 +363,10 @@ LexerNodeArray lexer(char *str) {
 
 RETURN_SUCCESS:
   result.data = a404m_realloc(result.data, result.size * sizeof(*result.data));
+
+#ifdef PRINT_COMPILE_TREE
+  lexerNodeArrayPrint(result);
+#endif
 
   return result;
 }

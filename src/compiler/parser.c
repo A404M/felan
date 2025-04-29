@@ -244,6 +244,18 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_BUILTIN_IS_COMPTIME:
   case PARSER_TOKEN_BUILTIN_STACK_ALLOC:
   case PARSER_TOKEN_BUILTIN_HEAP_ALLOC:
+  case PARSER_TOKEN_BUILTIN_NEG:
+  case PARSER_TOKEN_BUILTIN_ADD:
+  case PARSER_TOKEN_BUILTIN_SUB:
+  case PARSER_TOKEN_BUILTIN_MUL:
+  case PARSER_TOKEN_BUILTIN_DIV:
+  case PARSER_TOKEN_BUILTIN_MOD:
+  case PARSER_TOKEN_BUILTIN_EQUAL:
+  case PARSER_TOKEN_BUILTIN_NOT_EQUAL:
+  case PARSER_TOKEN_BUILTIN_GREATER:
+  case PARSER_TOKEN_BUILTIN_SMALLER:
+  case PARSER_TOKEN_BUILTIN_GREATER_OR_EQUAL:
+  case PARSER_TOKEN_BUILTIN_SMALLER_OR_EQUAL:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_BOOL:
@@ -741,6 +753,9 @@ ParserNode *parserFromPath(const char *filePath
 ParserNode *parser(LexerNodeArray lexed) {
   ParserNode *root = newParserNode(PARSER_TOKEN_ROOT, NULL, NULL, NULL, NULL);
   if (parserNodeArray(lexed.data, lexed.data + lexed.size, root)) {
+#ifdef PRINT_COMPILE_TREE
+    parserNodePrint(root, 0);
+#endif
     return root;
   } else {
     free(root);
