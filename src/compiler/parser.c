@@ -279,7 +279,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_VALUE_INT: {
     ParserNodeIntMetadata *metadata = node->metadata;
-    printf(",operand=%ld", *metadata);
+    printf(",operand=%lld", *metadata);
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_VALUE_FLOAT: {
@@ -711,8 +711,9 @@ RETURN_SUCCESS:
   free(node);
 }
 
-ParserNode *newParserNode(ParserToken token, char *str_begin, char *str_end,
-                          void *metadata, ParserNode *parent) {
+ParserNode *newParserNode(ParserToken token, char const *str_begin,
+                          char const *str_end, void *metadata,
+                          ParserNode *parent) {
   ParserNode *parserNode = a404m_malloc(sizeof(*parserNode));
   *parserNode = (ParserNode){
       .token = token,
@@ -1251,7 +1252,8 @@ ParserNode *parserString(LexerNode *node, ParserNode *parent) {
   metadata->begin = metadata->end = a404m_malloc(
       sizeof(*metadata->begin) * (node->str_end - node->str_begin));
 
-  for (char *iter = node->str_begin + 1; iter < node->str_end - 1; ++iter) {
+  for (char const *iter = node->str_begin + 1; iter < node->str_end - 1;
+       ++iter) {
     if (*iter == '\\') {
       iter += 1;
       bool success;
@@ -2374,7 +2376,7 @@ bool isValue(ParserNode *node) {
   UNREACHABLE;
 }
 
-char escapeChar(char *begin, char *end, bool *success) {
+char escapeChar(char const *begin, char const *end, bool *success) {
   (void)end;
   switch (*begin) {
   case 'a':

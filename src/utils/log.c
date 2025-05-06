@@ -7,7 +7,7 @@
 
 void _printLogBack(const char *format, const char *file, int line, ...) {
   va_list args;
-  va_start(args, end);
+  va_start(args, line);
   char *errorStr;
   vasprintf(&errorStr, format, args);
 
@@ -18,7 +18,7 @@ void _printLogBack(const char *format, const char *file, int line, ...) {
 void _printErrorWarningBack(const char *file, int line, const char *begin, const char *end,
                             bool isError, const char *format, ...) {
   va_list args;
-  va_start(args, end);
+  va_start(args, format);
   char *errorStr;
   vasprintf(&errorStr, format, args);
 

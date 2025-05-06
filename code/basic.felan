@@ -270,22 +270,6 @@ __mod__ :: (left:i64,right:i64) -> i64 {
   return @mod(left,right);
 };
 
-__mod__ :: (left:f16,right:f16) -> f16 {
-  return @mod(left,right);
-};
-
-__mod__ :: (left:f32,right:f32) -> f32 {
-  return @mod(left,right);
-};
-
-__mod__ :: (left:f64,right:f64) -> f64 {
-  return @mod(left,right);
-};
-
-__mod__ :: (left:f128,right:f128) -> f128 {
-  return @mod(left,right);
-};
-
 __greater__ :: (left:u8,right:u8) -> bool {
   return @greater(left,right);
 };

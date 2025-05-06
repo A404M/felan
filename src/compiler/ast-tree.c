@@ -320,7 +320,7 @@ void astTreePrint(const AstTree *tree, int indent) {
     goto RETURN_SUCCESS;
   case AST_TREE_TOKEN_VALUE_INT: {
     AstTreeInt *metadata = tree->metadata;
-    printf(",value=%lu", *metadata);
+    printf(",value=%lld", *metadata);
   }
     goto RETURN_SUCCESS;
   case AST_TREE_TOKEN_VALUE_FLOAT: {
@@ -900,7 +900,7 @@ void astTreeRootsDestroy(AstTreeRoots roots) {
 }
 
 AstTree *newAstTree(AstTreeToken token, void *metadata, AstTree *type,
-                    char *str_begin, char *str_end) {
+                    char const *str_begin, char const *str_end) {
   AstTree *result = a404m_malloc(sizeof(*result));
   *result = (AstTree){
       .token = token,
@@ -1758,8 +1758,8 @@ bool pushVariable(AstTreeHelper *helper, AstTreeVariables *variables,
                   AstTreeVariable *variable) {
   if (helper->variables[0] != variables) {
     for (size_t j = 0; j < variables->size; ++j) {
-      char *var_begin = variables->data[j]->name_begin;
-      char *var_end = variables->data[j]->name_end;
+      const char *var_begin = variables->data[j]->name_begin;
+      const char *var_end = variables->data[j]->name_end;
 
       if (variable->name_end - variable->name_begin == var_end - var_begin &&
           strnEquals(var_begin, variable->name_begin,
@@ -1959,10 +1959,10 @@ AstTree *astTreeParse(const ParserNode *parserNode, AstTreeHelper *helper) {
     return astTreeParseUnaryOperator(parserNode, helper,
                                      AST_TREE_TOKEN_OPERATOR_POINTER);
   case PARSER_TOKEN_OPERATOR_ADDRESS:
-    return astTreeParseUnaryOperator(parserNode, helper,
+    return astTreeParseUnaryOperatorSingleChild(parserNode, helper,
                                      AST_TREE_TOKEN_OPERATOR_ADDRESS);
   case PARSER_TOKEN_OPERATOR_DEREFERENCE:
-    return astTreeParseUnaryOperator(parserNode, helper,
+    return astTreeParseUnaryOperatorSingleChild(parserNode, helper,
                                      AST_TREE_TOKEN_OPERATOR_DEREFERENCE);
   case PARSER_TOKEN_VARIABLE:
     return astTreeParseVariable(parserNode, helper);
@@ -2462,6 +2462,20 @@ AstTree *astTreeParseUnaryOperator(const ParserNode *parserNode,
     return NULL;
   }
   metadata->function = NULL;
+
+  return newAstTree(token, metadata, NULL, parserNode->str_begin,
+                    parserNode->str_end);
+}
+
+AstTree *astTreeParseUnaryOperatorSingleChild(const ParserNode *parserNode,
+                                              AstTreeHelper *helper,
+                                              AstTreeToken token) {
+  ParserNodeSingleChildMetadata *node_metadata = parserNode->metadata;
+
+  AstTreeSingleChild *metadata = astTreeParse(node_metadata, helper);
+  if (metadata == NULL) {
+    return NULL;
+  }
 
   return newAstTree(token, metadata, NULL, parserNode->str_begin,
                     parserNode->str_end);
@@ -5276,9 +5290,9 @@ bool setTypesBuiltinUnary(AstTree *tree, AstTreeSetTypesHelper helper,
     return false;
   }
 
-  char *str = functionCall->parameters[0].nameBegin;
-  size_t str_size = functionCall->parameters[0].nameEnd -
-                    functionCall->parameters[0].nameBegin;
+  const char *str = functionCall->parameters[0].nameBegin;
+  const size_t str_size = functionCall->parameters[0].nameEnd -
+                          functionCall->parameters[0].nameBegin;
 
   static char VALUE_STR[] = "value";
   static size_t VALUE_STR_SIZE =

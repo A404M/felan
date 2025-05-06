@@ -251,7 +251,7 @@ void lexerNodeArrayPrint(LexerNodeArray array) {
 
 void lexerNodeArrayDestroy(LexerNodeArray array) { free(array.data); }
 
-LexerNodeArray lexer(char *str) {
+LexerNodeArray lexer(const char *str) {
   size_t result_size = 0;
   LexerNodeArray result = {
       .data = a404m_malloc(result_size),
@@ -259,8 +259,8 @@ LexerNodeArray lexer(char *str) {
   };
 
   LexerToken node_token = LEXER_TOKEN_NONE;
-  char *node_str_begin = str;
-  char *iter = str;
+  char const *node_str_begin = str;
+  char const *iter = str;
   for (; *iter != '\0'; ++iter) {
     char c = *iter;
     if (c == '/') {
@@ -280,7 +280,7 @@ LexerNodeArray lexer(char *str) {
                        &node_token, LEXER_TOKEN_NONE);
         ++iter;
         int in = 1;
-        char *openingIter = iter - 2;
+        char const *openingIter = iter - 2;
 
         for (; in != 0; ++iter) {
           if (*iter == '*' && *(iter + 1) == '/') {
@@ -313,7 +313,7 @@ LexerNodeArray lexer(char *str) {
       }
       lexerPushClear(&result, &result_size, iter, &node_str_begin, &node_token,
                      token);
-      char *openingIter = iter;
+      char const *openingIter = iter;
       ++iter;
       for (;; ++iter) {
         if (*iter == '\0') {
@@ -372,8 +372,8 @@ RETURN_SUCCESS:
 }
 
 inline __attribute__((always_inline)) void
-lexerPushClear(LexerNodeArray *array, size_t *array_size, char *iter,
-               char **node_str_begin, LexerToken *node_token,
+lexerPushClear(LexerNodeArray *array, size_t *array_size, char const *iter,
+               char const **node_str_begin, LexerToken *node_token,
                LexerToken token) {
   switch (*node_token) {
   case LEXER_TOKEN_IDENTIFIER: {
@@ -553,7 +553,7 @@ bool isSymbol(char c) {
   }
 }
 
-bool isCompleteSymbol(char *str, size_t str_size) {
+bool isCompleteSymbol(char const *str, size_t str_size) {
   return searchInStringArray(LEXER_SYMBOL_STRINGS, LEXER_SYMBOL_SIZE, str,
                              str_size) != LEXER_SYMBOL_SIZE;
 }

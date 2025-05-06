@@ -39,7 +39,7 @@ size_t searchInStringArray(const char *array[], size_t array_size,
   return array_size;
 }
 
-u64 decimalToU64(char *str_begin, char *str_end, bool *success) {
+u64 decimalToU64(char const *str_begin, char const *str_end, bool *success) {
   u64 result = 0;
 
   while (str_begin < str_end) {
@@ -56,7 +56,7 @@ u64 decimalToU64(char *str_begin, char *str_end, bool *success) {
   return result;
 }
 
-f128 numberToFloat(char *str_begin, char *str_end, bool *success) {
+f128 numberToFloat(char const *str_begin, char const *str_end, bool *success) {
   f128 left = 0;
   f128 right = 0;
   bool isPastPoint = false;

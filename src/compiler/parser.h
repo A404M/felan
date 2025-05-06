@@ -117,8 +117,8 @@ typedef struct ParserOrder {
 
 typedef struct ParserNode {
   ParserToken token;
-  char *str_begin;
-  char *str_end;
+  char const *str_begin;
+  char const *str_end;
   void *metadata;
   struct ParserNode *parent;
 } ParserNode;
@@ -204,7 +204,7 @@ ParserNode *parserFromPath(const char *filePath
 ParserNode *parser(LexerNodeArray lexed);
 bool parserNodeArray(LexerNode *begin, LexerNode *end, ParserNode *parent);
 
-ParserNode *newParserNode(ParserToken token, char *str_begin, char *str_end,
+ParserNode *newParserNode(ParserToken token, char const*str_begin, char const *str_end,
                           void *metadata, ParserNode *parent);
 
 ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
@@ -262,4 +262,4 @@ bool isExpression(ParserNode *node);
 bool isType(ParserNode *node);
 bool isValue(ParserNode *node);
 
-char escapeChar(char *begin, char *end, bool *success);
+char escapeChar(char const*begin, char const*end, bool *success);

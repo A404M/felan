@@ -133,8 +133,8 @@ typedef enum LexerToken {
 extern const char *LEXER_TOKEN_STRINGS[];
 
 typedef struct LexerNode {
-  char *str_begin;
-  char *str_end;
+  char const *str_begin;
+  char const *str_end;
   struct ParserNode *parserNode;
   LexerToken token;
 } LexerNode;
@@ -152,15 +152,15 @@ extern void lexerNodeArrayPrint(LexerNodeArray array);
 #endif
 extern void lexerNodeArrayDestroy(LexerNodeArray array);
 
-extern LexerNodeArray lexer(char *str);
+extern LexerNodeArray lexer(const char *str);
 
 extern void lexerPushClear(LexerNodeArray *array, size_t *array_size,
-                           char *iter, char **node_str_begin,
+                           const char *iter, char const **node_str_begin,
                            LexerToken *node_token, LexerToken token);
 
 extern bool isIdentifier(char c);
 extern bool isNumber(char c);
 extern bool isSymbol(char c);
-extern bool isCompleteSymbol(char *str, size_t str_size);
+extern bool isCompleteSymbol(const char *str, size_t str_size);
 extern bool isSpace(char c);
 extern bool isString(char c);

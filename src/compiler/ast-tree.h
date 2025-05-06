@@ -100,8 +100,8 @@ typedef struct AstTree {
   AstTreeToken token;
   void *metadata;
   struct AstTree *type;
-  char *str_begin;
-  char *str_end;
+  char const *str_begin;
+  char const *str_end;
 } AstTree;
 
 extern AstTree AST_TREE_TYPE_TYPE;
@@ -125,8 +125,8 @@ extern AstTree AST_TREE_CODE_TYPE;
 extern AstTree AST_TREE_VOID_VALUE;
 
 typedef struct AstTreeVariable {
-  char *name_begin;
-  char *name_end;
+  char const *name_begin;
+  char const *name_end;
   AstTree *type;
   AstTree *value;
   AstTree *initValue;
@@ -171,10 +171,10 @@ typedef struct AstTreeFunction {
 } AstTreeFunction;
 
 typedef struct AstTreeTypeFunctionArgument {
-  char *str_begin;
-  char *str_end;
-  char *name_begin;
-  char *name_end;
+  char const *str_begin;
+  char const *str_end;
+  char const *name_begin;
+  char const *name_end;
   AstTree *type;
 } AstTreeTypeFunctionArgument;
 
@@ -185,8 +185,8 @@ typedef struct AstTreeTypeFunction {
 } AstTreeTypeFunction;
 
 typedef struct AstTreeFunctionCallParam {
-  char *nameBegin;
-  char *nameEnd;
+  char const *nameBegin;
+  char const *nameEnd;
   AstTree *value;
 } AstTreeFunctionCallParam;
 
@@ -251,8 +251,8 @@ typedef struct AstTreeStruct {
 } AstTreeStruct;
 
 typedef struct AstTreeName {
-  char *begin;
-  char *end;
+  char const *begin;
+  char const *end;
 } AstTreeName;
 
 typedef struct AstTreeAccess {
@@ -283,7 +283,7 @@ void astTreeRootDelete(AstTreeRoot *root);
 void astTreeRootsDestroy(AstTreeRoots roots);
 
 AstTree *newAstTree(AstTreeToken token, void *metadata, AstTree *type,
-                    char *str_begin, char *str_end);
+                    char const *str_begin, char const *str_end);
 AstTree *copyAstTree(AstTree *tree);
 AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
                          AstTreeVariables newVariables[],
@@ -338,6 +338,9 @@ AstTree *astTreeParseBinaryOperator(const ParserNode *parserNode,
                                     AstTreeHelper *helper, AstTreeToken token);
 AstTree *astTreeParseUnaryOperator(const ParserNode *parserNode,
                                    AstTreeHelper *helper, AstTreeToken token);
+AstTree *astTreeParseUnaryOperatorSingleChild(const ParserNode *parserNode,
+                                              AstTreeHelper *helper,
+                                              AstTreeToken token);
 AstTree *astTreeParseOperateAssignOperator(const ParserNode *parserNode,
                                            AstTreeHelper *helper,
                                            AstTreeToken token);

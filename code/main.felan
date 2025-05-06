@@ -3,7 +3,12 @@
 main :: () -> void {
   a := false;
   b :: true;
+  c := &a;
+  c.* = true;
   if a == b {
+    putc 'a';
+  }else{
+    putc 'b';
   }
 };
 

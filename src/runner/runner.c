@@ -669,24 +669,6 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     case AST_TREE_TOKEN_TYPE_U64:
       *(u64 *)ret->metadata = *(u64 *)ret->metadata % *(u64 *)right->metadata;
       break;
-#ifdef FLOAT_16_SUPPORT
-    case AST_TREE_TOKEN_TYPE_F16:
-      *(f16 *)ret->metadata =
-          fmodf(*(f16 *)ret->metadata, *(f16 *)right->metadata);
-      break;
-#endif
-    case AST_TREE_TOKEN_TYPE_F32:
-      *(f32 *)ret->metadata =
-          fmodf(*(f32 *)ret->metadata, *(f32 *)right->metadata);
-      break;
-    case AST_TREE_TOKEN_TYPE_F64:
-      *(f64 *)ret->metadata =
-          fmod(*(f64 *)ret->metadata, *(f64 *)right->metadata);
-      break;
-    case AST_TREE_TOKEN_TYPE_F128:
-      *(f128 *)ret->metadata =
-          fmodl(*(f128 *)ret->metadata, *(f128 *)right->metadata);
-      break;
     default:
       UNREACHABLE;
     }
