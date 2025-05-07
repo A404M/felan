@@ -132,6 +132,7 @@ typedef struct ParserNodeVariableMetadata {
   ParserNode *name;
   ParserNode *type;
   ParserNode *value;
+  bool isLazy;
 } ParserNodeVariableMetadata;
 
 typedef struct ParserNodeFunctionDefnitionMetadata {
@@ -204,8 +205,9 @@ ParserNode *parserFromPath(const char *filePath
 ParserNode *parser(LexerNodeArray lexed);
 bool parserNodeArray(LexerNode *begin, LexerNode *end, ParserNode *parent);
 
-ParserNode *newParserNode(ParserToken token, char const*str_begin, char const *str_end,
-                          void *metadata, ParserNode *parent);
+ParserNode *newParserNode(ParserToken token, char const *str_begin,
+                          char const *str_end, void *metadata,
+                          ParserNode *parent);
 
 ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
                       ParserNode *parent, bool *conti);
@@ -262,4 +264,4 @@ bool isExpression(ParserNode *node);
 bool isType(ParserNode *node);
 bool isValue(ParserNode *node);
 
-char escapeChar(char const*begin, char const*end, bool *success);
+char escapeChar(char const *begin, char const *end, bool *success);

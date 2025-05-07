@@ -3,7 +3,6 @@
 #include "utils/log.h"
 #include "utils/memory.h"
 #include "utils/string.h"
-#include <math.h>
 #include <stdatomic.h>
 #include <stdio.h>
 
@@ -1186,9 +1185,14 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
   }
   case AST_TREE_TOKEN_VARIABLE_DEFINE: {
     AstTreeVariable *variable = expr->metadata;
-    runnerVariableSetValue(variable,
-                           runExpression(variable->initValue, scope, shouldRet,
-                                         false, isComptime));
+    AstTree *value;
+    if (variable->isLazy) {
+      value = copyAstTree(variable->initValue);
+    } else {
+      value = runExpression(variable->initValue, scope, shouldRet, false,
+                            isComptime);
+    }
+    runnerVariableSetValue(variable, value);
     return &AST_TREE_VOID_VALUE;
   }
   case AST_TREE_TOKEN_KEYWORD_IF: {
@@ -1378,7 +1382,12 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
       if (variable->value == NULL) {
         UNREACHABLE;
       }
-      return copyAstTree(variable->value);
+      if (variable->isLazy) {
+        return runExpression(variable->value, scope, shouldRet, false,
+                             isComptime);
+      } else {
+        return copyAstTree(variable->value);
+      }
     }
   }
   case AST_TREE_TOKEN_OPERATOR_ACCESS: {

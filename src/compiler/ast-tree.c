@@ -1331,6 +1331,7 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
     result.data[i]->name_begin = variables.data[i]->name_begin;
     result.data[i]->name_end = variables.data[i]->name_end;
     result.data[i]->isConst = variables.data[i]->isConst;
+    result.data[i]->isLazy = variables.data[i]->isLazy;
     result.data[i]->type =
         copyAstTreeBack(variables.data[i]->type, new_oldVariables,
                         new_newVariables, new_variables_size);
@@ -1538,6 +1539,7 @@ AstTreeRoot *makeAstRoot(const ParserNode *parsedRoot, char *filePath) {
       variable->name_begin = node_metadata->name->str_begin;
       variable->name_end = node_metadata->name->str_end;
       variable->isConst = node->token == PARSER_TOKEN_CONSTANT;
+      variable->isLazy = node_metadata->isLazy;
 
       if (!pushVariable(&helper, &root->variables, variable)) {
         astTreeVariableDelete(variable);
@@ -1959,11 +1961,11 @@ AstTree *astTreeParse(const ParserNode *parserNode, AstTreeHelper *helper) {
     return astTreeParseUnaryOperator(parserNode, helper,
                                      AST_TREE_TOKEN_OPERATOR_POINTER);
   case PARSER_TOKEN_OPERATOR_ADDRESS:
-    return astTreeParseUnaryOperatorSingleChild(parserNode, helper,
-                                     AST_TREE_TOKEN_OPERATOR_ADDRESS);
+    return astTreeParseUnaryOperatorSingleChild(
+        parserNode, helper, AST_TREE_TOKEN_OPERATOR_ADDRESS);
   case PARSER_TOKEN_OPERATOR_DEREFERENCE:
-    return astTreeParseUnaryOperatorSingleChild(parserNode, helper,
-                                     AST_TREE_TOKEN_OPERATOR_DEREFERENCE);
+    return astTreeParseUnaryOperatorSingleChild(
+        parserNode, helper, AST_TREE_TOKEN_OPERATOR_DEREFERENCE);
   case PARSER_TOKEN_VARIABLE:
     return astTreeParseVariable(parserNode, helper);
   case PARSER_TOKEN_KEYWORD_IF:
@@ -2053,7 +2055,7 @@ AstTree *astTreeParseFunction(const ParserNode *parserNode,
     argument->type = type;
     argument->name_begin = arg_metadata->name->str_begin;
     argument->name_end = arg_metadata->name->str_end;
-    argument->isConst = true; // all arguments are constants
+    argument->isLazy = true; // all arguments are constants
 
     if (!pushVariable(&helper, &function->arguments, argument)) {
       astTreeVariableDelete(argument);
@@ -2360,7 +2362,7 @@ AstTree *astTreeParseString(const ParserNode *parserNode,
 
     metadata->variables.data[i] =
         a404m_malloc(sizeof(*metadata->variables.data[i]));
-    metadata->variables.data[i]->isConst = true;
+    metadata->variables.data[i]->isLazy = true;
     metadata->variables.data[i]->name_begin = NULL;
     metadata->variables.data[i]->name_end = NULL;
     metadata->variables.data[i]->type = copyAstTree(&AST_TREE_U8_TYPE);
@@ -2546,6 +2548,7 @@ bool astTreeParseConstant(const ParserNode *parserNode, AstTreeHelper *helper) {
   variable->name_begin = node_metadata->name->str_begin;
   variable->name_end = node_metadata->name->str_end;
   variable->isConst = true;
+  variable->isLazy = node_metadata->isLazy;
 
   if (!pushVariable(helper, helper->variables[helper->variables_size - 1],
                     variable)) {
@@ -2593,6 +2596,7 @@ AstTree *astTreeParseVariable(const ParserNode *parserNode,
   variable->name_begin = node_metadata->name->str_begin;
   variable->name_end = node_metadata->name->str_end;
   variable->isConst = false;
+  variable->isLazy = node_metadata->isLazy;
 
   if (!pushVariable(helper, helper->variables[helper->variables_size - 1],
                     variable)) {
@@ -2898,6 +2902,7 @@ AstTree *astTreeParseStruct(const ParserNode *parserNode,
       variable->initValue = NULL;
       variable->isConst = false;
     }
+    variable->isLazy = node_variable->isLazy;
 
     variables.data[i] = variable;
   }

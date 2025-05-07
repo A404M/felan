@@ -3,9 +3,9 @@
 main :: () -> void {
   a := false;
   b :: true;
-  c := &a;
-  c.* = true;
-  if a == b {
+  lazy c := a;
+  a = true;
+  if c {
     putc 'a';
   }else{
     putc 'b';
