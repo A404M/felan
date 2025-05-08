@@ -1,31 +1,6 @@
 @import("basic.felan");
-// @import("lib/print.felan");
-
-print :: (a:bool) -> void {
-  if a {
-    putc 't';
-    putc 'r';
-    putc 'u';
-    putc 'e';
-  }else{
-    putc 'f';
-    putc 'a';
-    putc 'l';
-    putc 's';
-    putc 'e';
-  }
-};
-
-st :: struct {
-  p:()->void;
-};
-
-print :: ()->void{
-  print(true);
-};
+file :: @import("file.felan");
 
 main :: () -> void {
-  s : st = undefined;
-  s.p = print;
-  s.p();
+  file.test();
 };

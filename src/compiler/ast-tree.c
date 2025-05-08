@@ -5031,8 +5031,9 @@ bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper) {
     const size_t size = metadata->member.name.end - metadata->member.name.begin;
     const char *str = metadata->member.name.begin;
 
-    const char LENGTH_STR[] = "length";
-    const size_t LENGTH_STR_SIZE = strLength(LENGTH_STR);
+    static const char LENGTH_STR[] = "length";
+    static const size_t LENGTH_STR_SIZE =
+        sizeof(LENGTH_STR) / sizeof(*LENGTH_STR) - sizeof(*LENGTH_STR);
     if (LENGTH_STR_SIZE == size && strnEquals(LENGTH_STR, str, size)) {
       metadata->member.index = 0;
       tree->type = copyAstTree(&AST_TREE_U64_TYPE);
@@ -5060,9 +5061,13 @@ bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper) {
     printError(metadata->member.name.begin, metadata->member.name.end,
                "Member not found");
     return false;
+  } else if (typeIsEqual(metadata->object->type, &AST_TREE_CODE_TYPE)) {
+    printError(metadata->object->str_begin, metadata->object->str_end, "Here");
+    UNREACHABLE;
   } else {
     printError(metadata->object->str_begin, metadata->object->str_end,
-               "The object is not a struct");
+               "The object is not a struct %s",
+               AST_TREE_TOKEN_STRINGS[metadata->object->type->token]);
     return false;
   }
 }
@@ -5074,10 +5079,10 @@ bool setTypesBuiltinCast(AstTree *tree, AstTreeSetTypesHelper helper,
     AstTree *from = NULL;
     AstTree *to = NULL;
 
-    static char FROM_STR[] = "from";
+    static const char FROM_STR[] = "from";
     static const size_t FROM_STR_SIZE =
         sizeof(FROM_STR) / sizeof(*FROM_STR) - sizeof(*FROM_STR);
-    static char TO_STR[] = "to";
+    static const char TO_STR[] = "to";
     static const size_t TO_STR_SIZE =
         sizeof(TO_STR) / sizeof(*TO_STR) - sizeof(*TO_STR);
 
@@ -5153,7 +5158,7 @@ bool setTypesBuiltinTypeOf(AstTree *tree, AstTreeSetTypesHelper helper,
   if (functionCall->parameters_size == 1) {
     AstTree *variable = NULL;
 
-    static char VARIABLE_STR[] = "variable";
+    static const char VARIABLE_STR[] = "variable";
     static const size_t VARIABLE_STR_SIZE =
         sizeof(VARIABLE_STR) / sizeof(*VARIABLE_STR) - sizeof(*VARIABLE_STR);
 
@@ -5215,7 +5220,7 @@ bool setTypesBuiltinImport(AstTree *tree, AstTreeSetTypesHelper helper,
   if (functionCall->parameters_size == 1) {
     AstTree *file = NULL;
 
-    static char VARIABLE_STR[] = "variable";
+    static const char VARIABLE_STR[] = "variable";
     static const size_t VARIABLE_STR_SIZE =
         sizeof(VARIABLE_STR) / sizeof(*VARIABLE_STR) - sizeof(*VARIABLE_STR);
 

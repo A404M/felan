@@ -1,0 +1,5 @@
+test :: () -> void {
+  putc 'h';
+  putc 'e';
+  putc 'y';
+};
