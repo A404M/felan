@@ -925,7 +925,7 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
   case LEXER_TOKEN_SYMBOL_EOL:
     return parserEol(node, begin, parent);
   case LEXER_TOKEN_SYMBOL_CLOSE_PARENTHESIS:
-    return parserParenthesis(node, begin, parent);
+    return parserParenthesis(node, begin, parent, conti);
   case LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET:
     return parserCurlyBrackets(node, begin, parent);
   case LEXER_TOKEN_SYMBOL_CLOSE_BRACKET:
@@ -998,6 +998,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
   case LEXER_TOKEN_SYMBOL_ACCESS:
     return parserBinaryOperator(node, begin, end, parent,
                                 PARSER_TOKEN_OPERATOR_ACCESS);
+  case LEXER_TOKEN_SYMBOL_FUNCTION_CALL:
+    return parserFunctionCall(node, begin, parent);
   case LEXER_TOKEN_SYMBOL_LOGICAL_AND:
     return parserBinaryOperator(node, begin, end, parent,
                                 PARSER_TOKEN_OPERATOR_LOGICAL_AND);
@@ -1337,14 +1339,72 @@ ParserNode *parserComma(LexerNode *node, LexerNode *begin, ParserNode *parent) {
 }
 
 ParserNode *parserParenthesis(LexerNode *closing, LexerNode *begin,
-                              ParserNode *parent) {
+                              ParserNode *parent, bool *conti) {
+  LexerNode *opening = NULL;
+
+  for (LexerNode *iter = closing - 1; iter >= begin; --iter) {
+    if (iter->parserNode == NULL &&
+        iter->token == LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS) {
+      opening = iter;
+      break;
+    }
+  }
+
+  if (opening == NULL) {
+    printError(closing->str_begin, closing->str_end,
+               "No opening for parenthesis");
+    return NULL;
+  }
+
+  LexerNode *beforeNode = opening - 1;
+  ParserNode *before;
+  if (beforeNode >= begin && beforeNode->parserNode != NULL &&
+      (before = getUntilCommonParent(beforeNode->parserNode, parent)) != NULL &&
+      isExpression(before)) {
+    closing->token = LEXER_TOKEN_SYMBOL_FUNCTION_CALL;
+    *conti = true;
+    return NULL;
+  }
+
+  ParserNode *parserNode = a404m_malloc(sizeof(*parserNode));
+  parserNode->parent = parent;
+
+  for (LexerNode *iter = opening; iter < closing; ++iter) {
+    if (iter->parserNode != NULL) {
+      ParserNode *pNode =
+          getUntilCommonParents(iter->parserNode, parent, parserNode);
+      if (pNode == NULL) {
+        printLog(pNode->str_begin, pNode->str_end, "Bad node");
+        return NULL;
+      } else {
+        pNode->parent = parserNode;
+      }
+    }
+  }
+
+  opening->parserNode = parserNode;
+  closing->parserNode = parserNode;
+
+  parserNode->token = PARSER_TOKEN_SYMBOL_PARENTHESIS;
+  parserNode->str_begin = opening->str_begin;
+  parserNode->str_end = closing->str_end;
+
+  if (parserNodeArray(opening + 1, closing, parserNode)) {
+    return parserNode;
+  } else {
+    free(parserNode);
+    return NULL;
+  }
+}
+
+ParserNode *parserFunctionCall(LexerNode *closing, LexerNode *begin,
+                               ParserNode *parent) {
   ParserNode *parserNode = a404m_malloc(sizeof(*parserNode));
   parserNode->parent = parent;
 
   LexerNode *opening = NULL;
 
   for (LexerNode *iter = closing - 1; iter >= begin; --iter) {
-
     if (iter->parserNode != NULL) {
       ParserNode *pNode =
           getUntilCommonParents(iter->parserNode, parent, parserNode);
@@ -1373,37 +1433,24 @@ ParserNode *parserParenthesis(LexerNode *closing, LexerNode *begin,
   if (beforeNode < begin || beforeNode->parserNode == NULL ||
       (before = getUntilCommonParent(beforeNode->parserNode, parent)) == NULL ||
       !isExpression(before)) {
-    before = NULL;
-  } else {
-    before->parent = parserNode;
+    UNREACHABLE;
   }
 
-  if (before == NULL) {
-    parserNode->token = PARSER_TOKEN_SYMBOL_PARENTHESIS;
-    parserNode->str_begin = opening->str_begin;
-    parserNode->str_end = closing->str_end;
+  before->parent = parserNode;
 
-    if (parserNodeArray(opening + 1, closing, parserNode)) {
-      return parserNode;
-    } else {
-      free(parserNode);
-      return NULL;
-    }
+  parserNode->token = PARSER_TOKEN_FUNCTION_CALL;
+  parserNode->str_begin = before->str_begin;
+  parserNode->str_end = closing->str_end;
+
+  if (parserNodeArray(opening + 1, closing, parserNode)) {
+    ParserNodeFunctionCall *metadata = a404m_malloc(sizeof(*metadata));
+    metadata->function = before;
+    metadata->params = parserNode->metadata;
+    parserNode->metadata = metadata;
+    return parserNode;
   } else {
-    parserNode->token = PARSER_TOKEN_FUNCTION_CALL;
-    parserNode->str_begin = before->str_begin;
-    parserNode->str_end = closing->str_end;
-
-    if (parserNodeArray(opening + 1, closing, parserNode)) {
-      ParserNodeFunctionCall *metadata = a404m_malloc(sizeof(*metadata));
-      metadata->function = before;
-      metadata->params = parserNode->metadata;
-      parserNode->metadata = metadata;
-      return parserNode;
-    } else {
-      free(parserNode);
-      return NULL;
-    }
+    free(parserNode);
+    return NULL;
   }
 }
 
@@ -1830,7 +1877,8 @@ ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
   metadata->type = type;
 
   LexerNode *flagNode = nameNode - 1;
-  if (flagNode >= begin && flagNode->parserNode == NULL && flagNode->token == LEXER_TOKEN_KEYWORD_LAZY) {
+  if (flagNode >= begin && flagNode->parserNode == NULL &&
+      flagNode->token == LEXER_TOKEN_KEYWORD_LAZY) {
     metadata->isLazy = true;
     flagNode->parserNode = variableNode;
   } else {

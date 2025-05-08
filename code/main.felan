@@ -1,17 +1,31 @@
 @import("basic.felan");
+// @import("lib/print.felan");
 
-main :: () -> void {
-  a := false;
-  b :: true;
-  lazy c := a;
-  a = true;
-  if c {
-    putc 'a';
+print :: (a:bool) -> void {
+  if a {
+    putc 't';
+    putc 'r';
+    putc 'u';
+    putc 'e';
   }else{
-    putc 'b';
+    putc 'f';
+    putc 'a';
+    putc 'l';
+    putc 's';
+    putc 'e';
   }
 };
 
-__sum__ :: (left:i8,right:i8)->i8{
-  return @add(left,right);
+st :: struct {
+  p:()->void;
+};
+
+print :: ()->void{
+  print(true);
+};
+
+main :: () -> void {
+  s : st = undefined;
+  s.p = print;
+  s.p();
 };

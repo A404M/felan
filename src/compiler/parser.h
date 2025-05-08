@@ -231,7 +231,9 @@ ParserNode *parserBoolValue(LexerNode *node, ParserNode *parent);
 ParserNode *parserEol(LexerNode *node, LexerNode *begin, ParserNode *parent);
 ParserNode *parserComma(LexerNode *node, LexerNode *begin, ParserNode *parent);
 ParserNode *parserParenthesis(LexerNode *closing, LexerNode *begin,
-                              ParserNode *parent);
+                              ParserNode *parent, bool *conti);
+ParserNode *parserFunctionCall(LexerNode *closing, LexerNode *begin,
+                               ParserNode *parent);
 ParserNode *parserCurlyBrackets(LexerNode *closing, LexerNode *begin,
                                 ParserNode *parent);
 ParserNode *parserBracketsRight(LexerNode *closing, LexerNode *begin,
