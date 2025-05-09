@@ -56,6 +56,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_TYPE_F64",
     "PARSER_TOKEN_TYPE_F128",
     "PARSER_TOKEN_TYPE_CODE",
+    "PARSER_TOKEN_TYPE_NAMESPACE",
 
     "PARSER_TOKEN_KEYWORD_PUTC",
     "PARSER_TOKEN_KEYWORD_RETURN",
@@ -274,6 +275,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_TYPE_F64:
   case PARSER_TOKEN_TYPE_F128:
   case PARSER_TOKEN_TYPE_CODE:
+  case PARSER_TOKEN_TYPE_NAMESPACE:
   case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
     goto RETURN_SUCCESS;
@@ -575,6 +577,7 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_TYPE_F64:
   case PARSER_TOKEN_TYPE_F128:
   case PARSER_TOKEN_TYPE_CODE:
+  case PARSER_TOKEN_TYPE_NAMESPACE:
   case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
     goto RETURN_SUCCESS;
@@ -911,6 +914,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_F128);
   case LEXER_TOKEN_KEYWORD_CODE:
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_CODE);
+  case LEXER_TOKEN_KEYWORD_NAMESPACE:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_NAMESPACE);
   case LEXER_TOKEN_KEYWORD_NULL:
     return parserNoMetadata(node, parent, PARSER_TOKEN_KEYWORD_NULL);
   case LEXER_TOKEN_KEYWORD_UNDEFINED:
@@ -1050,6 +1055,7 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserComptime(node, end, parent);
   case LEXER_TOKEN_KEYWORD_STRUCT:
     return parserStruct(node, end, parent);
+  case LEXER_TOKEN_KEYWORD_LAZY:
   case LEXER_TOKEN_KEYWORD_ELSE:
   case LEXER_TOKEN_BUILTIN:
   case LEXER_TOKEN_SYMBOL:
@@ -1699,6 +1705,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_TYPE_F64:
       case PARSER_TOKEN_TYPE_F128:
       case PARSER_TOKEN_TYPE_CODE:
+      case PARSER_TOKEN_TYPE_NAMESPACE:
       case PARSER_TOKEN_KEYWORD_NULL:
       case PARSER_TOKEN_KEYWORD_UNDEFINED:
       case PARSER_TOKEN_KEYWORD_PUTC:
@@ -2224,6 +2231,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_TYPE_F64:
   case PARSER_TOKEN_TYPE_F128:
   case PARSER_TOKEN_TYPE_CODE:
+  case PARSER_TOKEN_TYPE_NAMESPACE:
   case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
   case PARSER_TOKEN_KEYWORD_STRUCT:
@@ -2258,6 +2266,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_TYPE_F64:
   case PARSER_TOKEN_TYPE_F128:
   case PARSER_TOKEN_TYPE_CODE:
+  case PARSER_TOKEN_TYPE_NAMESPACE:
   case PARSER_TOKEN_TYPE_BOOL:
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
@@ -2408,6 +2417,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_TYPE_F64:
   case PARSER_TOKEN_TYPE_F128:
   case PARSER_TOKEN_TYPE_CODE:
+  case PARSER_TOKEN_TYPE_NAMESPACE:
   case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
   case PARSER_TOKEN_KEYWORD_IF:

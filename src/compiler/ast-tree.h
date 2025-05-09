@@ -52,6 +52,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_TYPE_F64,
   AST_TREE_TOKEN_TYPE_F128,
   AST_TREE_TOKEN_TYPE_CODE,
+  AST_TREE_TOKEN_TYPE_NAMESPACE,
   AST_TREE_TOKEN_TYPE_BOOL,
   AST_TREE_TOKEN_VALUE_VOID,
   AST_TREE_TOKEN_STATIC_VARS_END = AST_TREE_TOKEN_VALUE_VOID,
@@ -61,6 +62,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_VARIABLE_DEFINE,
   AST_TREE_TOKEN_VALUE_NULL,
   AST_TREE_TOKEN_VALUE_UNDEFINED,
+  AST_TREE_TOKEN_VALUE_NAMESPACE,
   AST_TREE_TOKEN_VALUE_INT,
   AST_TREE_TOKEN_VALUE_FLOAT,
   AST_TREE_TOKEN_VALUE_BOOL,
@@ -122,6 +124,7 @@ extern AstTree AST_TREE_F32_TYPE;
 extern AstTree AST_TREE_F64_TYPE;
 extern AstTree AST_TREE_F128_TYPE;
 extern AstTree AST_TREE_CODE_TYPE;
+extern AstTree AST_TREE_NAMESPACE_TYPE;
 extern AstTree AST_TREE_VOID_VALUE;
 
 typedef struct AstTreeVariable {
@@ -148,7 +151,10 @@ typedef struct AstTreeRoot {
   char *filePath;
   AstTreeVariables variables;
   AstTrees trees;
-  struct AstTreeRoot **imports;
+  struct {
+    struct AstTreeRoot *root;
+    bool visible;
+  } *imports;
   size_t imports_size;
 } AstTreeRoot;
 
@@ -244,6 +250,7 @@ typedef struct AstTreeSetTypesHelper {
   AstTree *lookingType;
   AstTreeVariables dependencies;
   AstTreeVariables variables;
+  AstTreeRoot *root;
 } AstTreeSetTypesHelper;
 
 typedef struct AstTreeStruct {
@@ -268,6 +275,10 @@ typedef struct AstTreeBracket {
   AstTree *operand;
   AstTrees parameters;
 } AstTreeBracket;
+
+typedef struct AstTreeNamespace {
+  size_t importedIndex;
+} AstTreeNamespace;
 
 #ifdef PRINT_COMPILE_TREE
 void astTreePrint(const AstTree *tree, int indent);
