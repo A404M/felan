@@ -1,133 +1,14 @@
-/*
-@import("basic.felan");
+// @import("basic.felan");
 
-print :: (value:[]u8)->void{
-  i :u64 = 0;
-  while i < value.length {
-    putc value[i];
-    i += @cast(1,u64);
-  }
-};
-
-print :: (value:i64)->void{
-  value := value;
-  str : [20]u8 = undefined;
-  i :u64= 19;
-  while {
-    str[i] = @cast(value % 10,u8) + '0';
-    i -= @cast(1,u64);
-    value /= 10;
-    value != 0;
-  } {}
-
-  j :u64= i+@cast(1,u64);
-  while j < @cast(20,u64) {
-    putc str[j];
-    j += @cast(1,u64);
-  }
-};
-
-println :: (value:i64)->void{
-  print(value);
-  putc '\n';
-};
-
-println :: ()->void{
-  putc '\n';
+f :: (comptime t:type) -> type {
+  return struct {
+    a:t;
+  };
 };
 
 main :: () -> void {
-  stones := 6;
-  player := 1;
-  while stones != 0 {
-    c := choose_ai(stones);
-    print("player: ");
-    print(player);
-    print(" ---------\n");
-    println(stones);
-    println(c);
-
-    if (stones == 2 || stones == 1) && stones == c {
-      print("player: ");
-      print(player);
-      print(" won\n");
-    }
-
-    stones -= c;
-
-    player = (if (player == 1) 2 else 1);
-  }
+  a :: u8;
+  f(a);
 };
-
-choose_ai :: (stones_left:i64) -> i64 {
-  return (if (stones_left % 3 == 0) 1 else stones_left % 3);
-};
-*/
-@import("basic.felan");
-
-main :: () -> void {
-  stones := 6;
-  player := 1;
-  while stones > 0 {
-    r :res =minimax(stones,true);
-     stones -= r.move;
-     putc @cast(stones,u8) + '0';
-     putc '\n';
-     putc 'p';
-     putc @cast(player,u8) + '0';
-     putc '\n';
-     player = (if player == 2 1 else 2);
-  }
-};
-
-res :: struct {
-  move : i64;
-  score : i64;
-};
-
-minimax :: (currentStones:i64, isMaximizing:bool) -> res {
-  if currentStones <= 0 {
-    r : res = undefined;
-    r.move = 0;
-    r.score = (if isMaximizing {-1;} else {1;});
-    return r;
-  }
-
-  found := false;
-  bestMove : res = undefined;
-  score := (if isMaximizing {-1000000;} else {1000000;});
-  move := 1;
-
-  while move <= 2 {
-    if currentStones - move >= 0 {
-      found = true;
-      result := minimax(currentStones - move, !isMaximizing);
-        if isMaximizing {
-          if result.score > score {
-            bestMove.move = move;
-            bestMove.score = result.score;
-            score = result.score;
-          }
-        }else{
-          if result.score < score {
-            bestMove.move = move;
-            bestMove.score = result.score;
-            score = result.score;
-          }
-        }
-    }
-    move += 1;
-  }
-
-  if !found {
-    r : res = undefined;
-    r.move = 0;
-    r.score = (if isMaximizing {-1;} else {1;});
-    return r;
-  }
-
-  return bestMove;
-};
-
 
 

@@ -134,6 +134,7 @@ typedef struct ParserNodeVariableMetadata {
   ParserNode *type;
   ParserNode *value;
   bool isLazy;
+  bool isComptime;
 } ParserNodeVariableMetadata;
 
 typedef struct ParserNodeFunctionDefnitionMetadata {

@@ -183,6 +183,7 @@ typedef struct AstTreeTypeFunctionArgument {
   char const *name_begin;
   char const *name_end;
   AstTree *type;
+  bool isComptime;
 } AstTreeTypeFunctionArgument;
 
 typedef struct AstTreeTypeFunction {
@@ -312,15 +313,13 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
 AstTreeRoots makeAstTree(const char *filePath
 #ifdef PRINT_STATISTICS
                          ,
-                         Time *lexingTime,
-                         Time *parsingTime
+                         Time *lexingTime, Time *parsingTime
 #endif
 );
 AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
 #ifdef PRINT_STATISTICS
                             ,
-                            Time *lexingTime,
-                            Time *parsingTime
+                            Time *lexingTime, Time *parsingTime
 #endif
 );
 AstTreeRoot *makeAstRoot(const ParserNode *parsedRoot, char *filePath);
@@ -342,8 +341,7 @@ AstTree *astTreeParseValue(const ParserNode *parserNode, AstTreeToken token,
 AstTree *astTreeParseString(const ParserNode *parserNode,
                             AstTreeHelper *helper);
 AstTree *astTreeParseKeyword(const ParserNode *parserNode, AstTreeToken token);
-AstTree *astTreeParsePutc(const ParserNode *parserNode,
-                              AstTreeHelper *helper);
+AstTree *astTreeParsePutc(const ParserNode *parserNode, AstTreeHelper *helper);
 AstTree *astTreeParseReturn(const ParserNode *parserNode,
                             AstTreeHelper *helper);
 AstTree *astTreeParseBinaryOperator(const ParserNode *parserNode,
@@ -375,7 +373,7 @@ AstTree *astTreeParseBracket(const ParserNode *parserNode,
                              AstTreeHelper *helper, AstTreeToken token);
 
 bool isFunction(AstTree *value);
-bool isConst(AstTree *tree,bool byValue);
+bool isConst(AstTree *tree, bool byValue);
 AstTree *makeTypeOf(AstTree *value);
 bool typeIsEqual(AstTree *type0, AstTree *type1);
 bool typeIsEqualBack(const AstTree *type0, const AstTree *type1);

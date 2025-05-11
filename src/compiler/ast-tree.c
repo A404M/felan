@@ -1066,6 +1066,7 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
       new_metadata->arguments[i].name_end = arg.name_end;
       new_metadata->arguments[i].type =
           copyAstTreeBack(arg.type, oldVariables, newVariables, variables_size);
+      new_metadata->arguments[i].isComptime = arg.isComptime;
     }
     new_metadata->returnType = copyAstTreeBack(
         metadata->returnType, oldVariables, newVariables, variables_size);
@@ -1666,6 +1667,12 @@ AstTreeRoot *makeAstRoot(const ParserNode *parsedRoot, char *filePath) {
       variable->isConst = node->token == PARSER_TOKEN_CONSTANT;
       variable->isLazy = node_metadata->isLazy;
 
+      if (node_metadata->isComptime && !variable->isConst) {
+        printError(node->str_begin, node->str_end, "Bad comptime %s",
+                   PARSER_TOKEN_STRINGS[node->token]);
+        goto RETURN_ERROR;
+      }
+
       if (!pushVariable(&helper, &root->variables, variable)) {
         astTreeVariableDelete(variable);
         goto RETURN_ERROR;
@@ -2183,7 +2190,8 @@ AstTree *astTreeParseFunction(const ParserNode *parserNode,
     argument->type = type;
     argument->name_begin = arg_metadata->name->str_begin;
     argument->name_end = arg_metadata->name->str_end;
-    argument->isLazy = true; // all arguments are constants
+    argument->isConst = arg_metadata->isComptime;
+    argument->isLazy = arg_metadata->isLazy;
 
     if (!pushVariable(&helper, &function->arguments, argument)) {
       astTreeVariableDelete(argument);
@@ -2379,12 +2387,14 @@ AstTree *astTreeParseTypeFunction(const ParserNode *parserNode,
       if (argument.type == NULL) {
         return NULL;
       }
+      argument.isComptime = variable_metadata->isComptime;
     } else {
       argument.type = astTreeParse(node_argument, helper);
       if (argument.type == NULL) {
         return NULL;
       }
       argument.name_begin = argument.name_end = NULL;
+      argument.isComptime = false;
     }
 
     if (!typeIsEqual(argument.type->type, &AST_TREE_TYPE_TYPE)) {
@@ -2408,9 +2418,8 @@ AstTree *astTreeParseTypeFunction(const ParserNode *parserNode,
     goto RETURN_ERROR;
   }
 
-  return newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, typeFunction,
-                    &AST_TREE_TYPE_TYPE, parserNode->str_begin,
-                    parserNode->str_end);
+  return newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, typeFunction, NULL,
+                    parserNode->str_begin, parserNode->str_end);
 
 RETURN_ERROR:
   return NULL;
@@ -2491,7 +2500,8 @@ AstTree *astTreeParseString(const ParserNode *parserNode,
 
     metadata->variables.data[i] =
         a404m_malloc(sizeof(*metadata->variables.data[i]));
-    metadata->variables.data[i]->isLazy = true;
+    metadata->variables.data[i]->isConst = true;
+    metadata->variables.data[i]->isLazy = false;
     metadata->variables.data[i]->name_begin = NULL;
     metadata->variables.data[i]->name_end = NULL;
     metadata->variables.data[i]->type = copyAstTree(&AST_TREE_U8_TYPE);
@@ -2692,6 +2702,11 @@ RETURN_ERROR:
 AstTree *astTreeParseVariable(const ParserNode *parserNode,
                               AstTreeHelper *helper) {
   ParserNodeVariableMetadata *node_metadata = parserNode->metadata;
+
+  if (node_metadata->isComptime) {
+    printError(parserNode->str_begin, parserNode->str_end, "Bad comptime");
+    return NULL;
+  }
 
   if (node_metadata->value == NULL) {
     printError(parserNode->str_begin, parserNode->str_end,
@@ -3026,7 +3041,11 @@ AstTree *astTreeParseStruct(const ParserNode *parserNode,
       if (node_variable->value != NULL) {
         printError(node->str_begin, node->str_end, "Can't have default values");
         NOT_IMPLEMENTED;
+      } else if (node_variable->isComptime) {
+        printError(node->str_begin, node->str_end, "Bad comptime");
+        return NULL;
       }
+
       variable->value = NULL;
       variable->initValue = NULL;
       variable->isConst = false;
@@ -3296,7 +3315,10 @@ AstTree *makeTypeOf(AstTree *value) {
       AstTreeVariable *arg = function->arguments.data[i];
       type_metadata->arguments[i].name_begin = arg->name_begin;
       type_metadata->arguments[i].name_end = arg->name_end;
+      type_metadata->arguments[i].str_begin = arg->name_begin;
+      type_metadata->arguments[i].str_end = arg->name_end;
       type_metadata->arguments[i].type = copyAstTree(arg->type);
+      type_metadata->arguments[i].isComptime = arg->isConst;
     }
 
     return newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, type_metadata,
@@ -3549,7 +3571,7 @@ bool typeIsEqualBack(const AstTree *type0, const AstTree *type1) {
     for (size_t i = 0; i < type0_metadata->arguments_size; ++i) {
       AstTreeTypeFunctionArgument p0 = type0_metadata->arguments[i];
       AstTreeTypeFunctionArgument p1 = type1_metadata->arguments[i];
-      if (!typeIsEqual(p0.type, p1.type)) {
+      if (!typeIsEqual(p0.type, p1.type) && p0.isComptime == p1.isComptime) {
         return false;
       }
     }
@@ -4868,15 +4890,10 @@ bool setTypesAstVariable(AstTreeVariable *variable,
       return false;
     }
 
-    if (isConst(variable->type, true)) {
-      AstTree *type = variable->type;
-      variable->type = getValue(type);
-      if (variable->type == NULL) {
-        return false;
-      }
-      if (type != variable->type) {
-        astTreeDelete(type);
-      }
+    if (!isConst(variable->type, true)) {
+      printError(variable->name_begin, variable->name_end,
+                 "Type must be comptime");
+      return false;
     }
   }
 
@@ -4916,6 +4933,12 @@ bool setTypesAstVariable(AstTreeVariable *variable,
                  "Can't initialize constant with non constant value");
       return false;
     }
+  }
+
+  if (!typeIsEqual(variable->type->type, &AST_TREE_TYPE_TYPE)) {
+    printError(variable->name_begin, variable->name_end,
+               "Type must have type of `type`");
+    return false;
   }
 
   return true;
@@ -5188,6 +5211,7 @@ bool setTypesBuiltinCast(AstTree *tree, AstTreeSetTypesHelper helper,
         .name_end = FROM_STR + FROM_STR_SIZE,
         .str_begin = NULL,
         .str_end = NULL,
+        .isComptime = false,
     };
 
     type_metadata->arguments[1] = (AstTreeTypeFunctionArgument){
@@ -5196,6 +5220,7 @@ bool setTypesBuiltinCast(AstTree *tree, AstTreeSetTypesHelper helper,
         .name_end = TO_STR + TO_STR_SIZE,
         .str_begin = NULL,
         .str_end = NULL,
+        .isComptime = false,
     };
 
     tree->type = newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, type_metadata,
@@ -5257,6 +5282,7 @@ bool setTypesBuiltinTypeOf(AstTree *tree, AstTreeSetTypesHelper helper,
         .name_end = VARIABLE_STR + VARIABLE_STR_SIZE,
         .str_begin = NULL,
         .str_end = NULL,
+        .isComptime = false,
     };
 
     tree->type = newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, type_metadata,
@@ -5318,6 +5344,7 @@ bool setTypesBuiltinImport(AstTree *tree, AstTreeSetTypesHelper helper,
         .name_end = PATH_STR + PATH_STR_SIZE,
         .str_begin = NULL,
         .str_end = NULL,
+        .isComptime = false,
     };
 
     tree->type = newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, type_metadata,
@@ -5470,6 +5497,7 @@ AFTER_SWITCH:
       .name_end = VALUE_STR + VALUE_STR_SIZE,
       .str_begin = NULL,
       .str_end = NULL,
+      .isComptime = false,
   };
 
   tree->type = newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, type_metadata,
@@ -5539,6 +5567,7 @@ bool setTypesBuiltinBinary(AstTree *tree, AstTreeSetTypesHelper helper,
       .name_end = LEFT_STR + LEFT_STR_SIZE,
       .str_begin = NULL,
       .str_end = NULL,
+      .isComptime = false,
   };
 
   type_metadata->arguments[1] = (AstTreeTypeFunctionArgument){
@@ -5547,6 +5576,7 @@ bool setTypesBuiltinBinary(AstTree *tree, AstTreeSetTypesHelper helper,
       .name_end = RIGHT_STR + RIGHT_STR_SIZE,
       .str_begin = NULL,
       .str_end = NULL,
+      .isComptime = false,
   };
 
   tree->type = newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, type_metadata,
@@ -5617,6 +5647,7 @@ bool setTypesBuiltinBinaryWithRet(AstTree *tree, AstTreeSetTypesHelper helper,
       .name_end = LEFT_STR + LEFT_STR_SIZE,
       .str_begin = NULL,
       .str_end = NULL,
+      .isComptime = false,
   };
 
   type_metadata->arguments[1] = (AstTreeTypeFunctionArgument){
@@ -5625,6 +5656,7 @@ bool setTypesBuiltinBinaryWithRet(AstTree *tree, AstTreeSetTypesHelper helper,
       .name_end = RIGHT_STR + RIGHT_STR_SIZE,
       .str_begin = NULL,
       .str_end = NULL,
+      .isComptime = false,
   };
 
   tree->type = newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, type_metadata,
@@ -5794,7 +5826,8 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
             AstTreeTypeFunctionArgument arg = function->arguments[j];
             if ((size_t)(arg.name_end - arg.name_begin) == param_name_size &&
                 strnEquals(arg.name_begin, param.nameBegin, param_name_size)) {
-              if (!typeIsEqual(arg.type, param.value->type)) {
+              if (!typeIsEqual(arg.type, param.value->type) ||
+                  (arg.isComptime && !isConst(param.value, false))) {
                 goto CONTINUE_OUTER;
               }
               initedArguments[j] = param;
@@ -5812,7 +5845,8 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
           for (size_t j = 0; j < function->arguments_size; ++j) {
             AstTreeTypeFunctionArgument arg = function->arguments[j];
             if (initedArguments[j].value == NULL) {
-              if (!typeIsEqual(arg.type, param.value->type)) {
+              if (!typeIsEqual(arg.type, param.value->type) ||
+                  (arg.isComptime && !isConst(param.value, false))) {
                 goto CONTINUE_OUTER;
               }
               initedArguments[j] = param;

@@ -1881,15 +1881,25 @@ ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
   metadata->value = value;
   metadata->name = name;
   metadata->type = type;
+  metadata->isComptime = false;
+  metadata->isLazy = false;
 
   LexerNode *flagNode = nameNode - 1;
-  if (flagNode >= begin && flagNode->parserNode == NULL &&
-      flagNode->token == LEXER_TOKEN_KEYWORD_LAZY) {
-    metadata->isLazy = true;
+  while (flagNode >= begin && flagNode->parserNode == NULL) {
+    switch (flagNode->token) {
+    case LEXER_TOKEN_KEYWORD_LAZY:
+      metadata->isLazy = true;
+      break;
+    case LEXER_TOKEN_KEYWORD_COMPTIME:
+      metadata->isComptime = true;
+      break;
+    default:
+      goto AFTER_WHILE;
+    }
     flagNode->parserNode = variableNode;
-  } else {
-    metadata->isLazy = false;
+    flagNode -= 1;
   }
+AFTER_WHILE:
 
   variableNode->metadata = metadata;
 

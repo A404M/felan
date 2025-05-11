@@ -40,7 +40,7 @@ void filePush(const char *filePath, char *code) {
   fileCodes[fileCodes_length] = code;
   fileCodes_names[fileCodes_length] =
       a404m_malloc((filePath_length + 1) * sizeof(**fileCodes_names));
-  for (size_t i = 0; i < filePath_length; ++i) {
+  for (size_t i = 0; i < filePath_length + 1; ++i) {
     fileCodes_names[fileCodes_length][i] = filePath[i];
   }
   fileCodes_length += 1;
