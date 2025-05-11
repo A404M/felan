@@ -1,8 +1,8 @@
 #pragma once
 
 #include "compiler/lexer.h"
+#include "utils/time.h"
 #include "utils/type.h"
-#include <time.h>
 
 typedef enum ParserToken {
   PARSER_TOKEN_ROOT,
@@ -200,7 +200,7 @@ void parserNodeDelete(ParserNode *node);
 ParserNode *parserFromPath(const char *filePath
 #ifdef PRINT_STATISTICS
                            ,
-                           struct timespec *lexingTime
+                           Time *lexingTime
 #endif
 );
 ParserNode *parser(LexerNodeArray lexed);

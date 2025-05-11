@@ -3,8 +3,8 @@
 #include <stdio.h>
 
 #ifdef PRINT_STATISTICS
-struct timespec time_diff(struct timespec end, struct timespec start) {
-  struct timespec temp;
+Time time_diff(Time end, Time start) {
+  Time temp;
   if ((end.tv_nsec - start.tv_nsec) < 0) {
     temp.tv_sec = end.tv_sec - start.tv_sec - 1;
     temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
@@ -15,17 +15,23 @@ struct timespec time_diff(struct timespec end, struct timespec start) {
   return temp;
 }
 
-struct timespec time_add(struct timespec left, struct timespec right) {
-  struct timespec result;
+Time time_add(Time left, Time right) {
+  Time result;
   result.tv_nsec = left.tv_nsec + right.tv_nsec;
   result.tv_sec = (left.tv_sec + right.tv_sec) + result.tv_nsec / 1000000000;
   result.tv_nsec %= 1000000000;
   return result;
 }
 
-void time_print(struct timespec time) {
+void time_print(Time time) {
   printf("%02ld:%02ld.%06ldus", time.tv_sec / 60, time.tv_sec % 60,
          time.tv_nsec / 1000);
+}
+
+Time get_time(){
+  Time t;
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t);
+  return t;
 }
 #endif
 

@@ -2,6 +2,8 @@
 
 #include <time.h>
 
-struct timespec time_diff(struct timespec end, struct timespec start);
-struct timespec time_add(struct timespec left, struct timespec right);
-void time_print(struct timespec time);
+typedef struct timespec Time;
+Time time_diff(Time end, Time start);
+Time time_add(Time left, Time right);
+void time_print(Time time);
+Time get_time();

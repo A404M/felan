@@ -1395,8 +1395,7 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
 AstTreeRoots makeAstTree(const char *filePath
 #ifdef PRINT_STATISTICS
                          ,
-                         struct timespec *lexingTime,
-                         struct timespec *parsingTime
+                         Time *lexingTime, Time *parsingTime
 #endif
 ) {
   AstTreeRoots roots = {
@@ -1425,8 +1424,7 @@ RETURN_ERROR:
 AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
 #ifdef PRINT_STATISTICS
                             ,
-                            struct timespec *lexingTime,
-                            struct timespec *parsingTime
+                            Time *lexingTime, Time *parsingTime
 #endif
 ) {
   for (size_t i = 0; i < roots->size; ++i) {
@@ -1436,15 +1434,14 @@ AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
     }
   }
 
-  struct timespec start, end;
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+  Time start = get_time();
 
   ParserNode *parserNode = parserFromPath(filePath, lexingTime);
   if (parserNode == NULL) {
     goto RETURN_ERROR;
   }
 
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+  Time end = get_time();
   *parsingTime = time_add(*parsingTime, time_diff(end, start));
   AstTreeRoot *root = makeAstRoot(parserNode, filePath);
   parserNodeDelete(parserNode);
@@ -2016,7 +2013,7 @@ AstTree *astTreeParse(const ParserNode *parserNode, AstTreeHelper *helper) {
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
     return astTreeParseKeyword(parserNode, AST_TREE_TOKEN_VALUE_UNDEFINED);
   case PARSER_TOKEN_KEYWORD_PUTC:
-    return astTreeParsePrintU64(parserNode, helper);
+    return astTreeParsePutc(parserNode, helper);
   case PARSER_TOKEN_KEYWORD_RETURN:
     return astTreeParseReturn(parserNode, helper);
   case PARSER_TOKEN_OPERATOR_ASSIGN:
@@ -2528,8 +2525,7 @@ AstTree *astTreeParseKeyword(const ParserNode *parserNode, AstTreeToken token) {
                     parserNode->str_end);
 }
 
-AstTree *astTreeParsePrintU64(const ParserNode *parserNode,
-                              AstTreeHelper *helper) {
+AstTree *astTreeParsePutc(const ParserNode *parserNode, AstTreeHelper *helper) {
   ParserNodeSingleChildMetadata *node_metadata = parserNode->metadata;
 
   AstTree *operand = astTreeParse(node_metadata, helper);
@@ -4089,7 +4085,7 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
   case AST_TREE_TOKEN_FUNCTION:
     return setTypesFunction(tree, helper);
   case AST_TREE_TOKEN_KEYWORD_PUTC:
-    return setTypesPrintU64(tree, helper);
+    return setTypesPutc(tree, helper);
   case AST_TREE_TOKEN_KEYWORD_RETURN:
     return setTypesReturn(tree, helper, function);
   case AST_TREE_TOKEN_TYPE_FUNCTION:
@@ -4465,7 +4461,7 @@ bool setTypesFunction(AstTree *tree, AstTreeSetTypesHelper _helper) {
   return true;
 }
 
-bool setTypesPrintU64(AstTree *tree, AstTreeSetTypesHelper _helper) {
+bool setTypesPutc(AstTree *tree, AstTreeSetTypesHelper _helper) {
   AstTreeSingleChild *metadata = tree->metadata;
   AstTreeSetTypesHelper helper = {
       .lookingType = &AST_TREE_U8_TYPE,

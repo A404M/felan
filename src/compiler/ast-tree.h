@@ -1,7 +1,7 @@
 #pragma once
 
 #include "compiler/parser.h"
-#include <time.h>
+#include "utils/time.h"
 
 typedef enum AstTreeToken {
   AST_TREE_TOKEN_FUNCTION,
@@ -312,15 +312,15 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
 AstTreeRoots makeAstTree(const char *filePath
 #ifdef PRINT_STATISTICS
                          ,
-                         struct timespec *lexingTime,
-                         struct timespec *parsingTime
+                         Time *lexingTime,
+                         Time *parsingTime
 #endif
 );
 AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
 #ifdef PRINT_STATISTICS
                             ,
-                            struct timespec *lexingTime,
-                            struct timespec *parsingTime
+                            Time *lexingTime,
+                            Time *parsingTime
 #endif
 );
 AstTreeRoot *makeAstRoot(const ParserNode *parsedRoot, char *filePath);
@@ -342,7 +342,7 @@ AstTree *astTreeParseValue(const ParserNode *parserNode, AstTreeToken token,
 AstTree *astTreeParseString(const ParserNode *parserNode,
                             AstTreeHelper *helper);
 AstTree *astTreeParseKeyword(const ParserNode *parserNode, AstTreeToken token);
-AstTree *astTreeParsePrintU64(const ParserNode *parserNode,
+AstTree *astTreeParsePutc(const ParserNode *parserNode,
                               AstTreeHelper *helper);
 AstTree *astTreeParseReturn(const ParserNode *parserNode,
                             AstTreeHelper *helper);
@@ -396,7 +396,7 @@ bool setTypesValueNull(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesValueUndefined(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesValueObject(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesFunction(AstTree *tree, AstTreeSetTypesHelper helper);
-bool setTypesPrintU64(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesPutc(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper helper,
                     AstTreeFunction *function);
 bool setTypesTypeFunction(AstTree *tree, AstTreeSetTypesHelper helper);

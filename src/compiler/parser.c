@@ -731,11 +731,10 @@ ParserNode *newParserNode(ParserToken token, char const *str_begin,
 ParserNode *parserFromPath(const char *filePath
 #ifdef PRINT_STATISTICS
                            ,
-                           struct timespec *lexingTime
+                           Time *lexingTime
 #endif
 ) {
-  struct timespec start, end;
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+  Time start = get_time();
   char *code = readWholeFile(filePath);
   if (code == NULL) {
     return NULL;
@@ -745,7 +744,7 @@ ParserNode *parserFromPath(const char *filePath
   if (lexerNodeArrayIsError(lexed)) {
     return NULL;
   }
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+  Time end = get_time();
   *lexingTime = time_add(*lexingTime, time_diff(end, start));
 
   ParserNode *root = parser(lexed);

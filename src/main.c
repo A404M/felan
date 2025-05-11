@@ -10,20 +10,20 @@
 
 static int run(const char *filePath) {
 #ifdef PRINT_STATISTICS
-  struct timespec start, end;
-  struct timespec lexTime = {0};
-  struct timespec parseTime = {0};
-  struct timespec astTime;
-  struct timespec runTime;
-  struct timespec totalTime = {0};
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+  Time start, end;
+  Time lexTime = {0};
+  Time parseTime = {0};
+  Time astTime;
+  Time runTime;
+  Time totalTime = {0};
+  start = get_time();
 #endif
   AstTreeRoots astTrees = makeAstTree(filePath, &lexTime, &parseTime);
   if (astTrees.size == AST_TREE_ROOTS_ERROR.size) {
     return 1;
   }
 #ifdef PRINT_STATISTICS
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+  end = get_time();
   astTime = time_diff(end, start);
   totalTime = time_add(totalTime, astTime);
 #endif
@@ -33,7 +33,7 @@ static int run(const char *filePath) {
   }
 #endif
 #ifdef PRINT_STATISTICS
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+  start =get_time();
 #endif
 
   int ret;
@@ -44,7 +44,7 @@ static int run(const char *filePath) {
   }
   astTreeRootsDestroy(astTrees);
 #ifdef PRINT_STATISTICS
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+  end = get_time();
   runTime = time_diff(end, start);
   totalTime = time_add(totalTime, runTime);
 #endif
