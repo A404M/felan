@@ -1477,7 +1477,7 @@ AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
           goto RETURN_ERROR;
         }
         AstTree *parameter = tree_metadata->parameters[0].value;
-        if (!isConstByValue(parameter)) {
+        if (!isConst(parameter, true)) {
           printError(parameter->str_begin, parameter->str_end,
                      "Is not constant");
           goto RETURN_ERROR;
@@ -1552,7 +1552,7 @@ AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
           goto RETURN_ERROR;
         }
         AstTree *parameter = tree_metadata->parameters[0].value;
-        if (!isConstByValue(parameter)) {
+        if (!isConst(parameter, true)) {
           printError(parameter->str_begin, parameter->str_end,
                      "Is not constant");
           goto RETURN_ERROR;
@@ -3105,7 +3105,7 @@ bool isFunction(AstTree *value) {
   return value->type->token == AST_TREE_TOKEN_TYPE_FUNCTION;
 }
 
-bool isConst(AstTree *tree) {
+bool isConst(AstTree *tree, bool byValue) {
   if (tree->type == NULL) {
     UNREACHABLE;
   }
@@ -3163,8 +3163,8 @@ bool isConst(AstTree *tree) {
     AstTreeStruct *metadata = tree->metadata;
     for (size_t i = 0; i < metadata->variables.size; ++i) {
       AstTreeVariable *member = metadata->variables.data[i];
-      if (!isConst(member->type) ||
-          (member->value != NULL && !isConst(member->type))) {
+      if (!isConst(member->type, byValue) ||
+          (member->value != NULL && !isConst(member->type, byValue))) {
         return false;
       }
     }
@@ -3172,17 +3172,18 @@ bool isConst(AstTree *tree) {
   }
   case AST_TREE_TOKEN_KEYWORD_IF: {
     AstTreeIf *metadata = tree->metadata;
-    return isConst(metadata->condition) && isConst(metadata->ifBody) &&
-           (metadata->elseBody == NULL || isConst(metadata->elseBody));
+    return isConst(metadata->condition, byValue) &&
+           isConst(metadata->ifBody, byValue) &&
+           (metadata->elseBody == NULL || isConst(metadata->elseBody, byValue));
   }
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = tree->metadata;
     for (size_t i = 0; i < metadata->parameters_size; ++i) {
-      if (!isConst(metadata->parameters[i].value)) {
+      if (!isConst(metadata->parameters[i].value, byValue)) {
         return false;
       }
     }
-    return isConst(metadata->function);
+    return isConst(metadata->function, byValue);
   }
   case AST_TREE_TOKEN_FUNCTION: {
     return true;
@@ -3211,165 +3212,31 @@ bool isConst(AstTree *tree) {
     return false;
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *metadata = tree->metadata;
-    return metadata->isConst;
+    return metadata->isConst && (!byValue || metadata->value != NULL);
   }
   case AST_TREE_TOKEN_OPERATOR_DEREFERENCE:
   case AST_TREE_TOKEN_OPERATOR_ADDRESS:
   case AST_TREE_TOKEN_OPERATOR_POINTER: {
     AstTreeSingleChild *metadata = tree->metadata;
-    return isConst(metadata);
+    return isConst(metadata, byValue);
   }
   case AST_TREE_TOKEN_OPERATOR_ACCESS: {
     AstTreeAccess *metadata = tree->metadata;
-    return isConst(metadata->object);
+    return isConst(metadata->object, byValue);
   }
   case AST_TREE_TOKEN_TYPE_ARRAY:
   case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS: {
     AstTreeBracket *metadata = tree->metadata;
     for (size_t i = 0; i < metadata->parameters.size; ++i) {
-      if (!isConst(metadata->parameters.data[i])) {
+      if (!isConst(metadata->parameters.data[i], byValue)) {
         return false;
       }
     }
-    return isConst(metadata->operand);
+    return isConst(metadata->operand, byValue);
   }
   case AST_TREE_TOKEN_NONE:
   }
   printLog("Unknown token '%d'", tree->token);
-  UNREACHABLE;
-}
-
-bool isConstByValue(AstTree *tree) {
-  if (tree->type == NULL) {
-    UNREACHABLE;
-  }
-  switch (tree->token) {
-  case AST_TREE_TOKEN_BUILTIN_CAST:
-  case AST_TREE_TOKEN_BUILTIN_TYPE_OF:
-  case AST_TREE_TOKEN_BUILTIN_IMPORT:
-  case AST_TREE_TOKEN_BUILTIN_IS_COMPTIME:
-  case AST_TREE_TOKEN_BUILTIN_STACK_ALLOC:
-  case AST_TREE_TOKEN_BUILTIN_HEAP_ALLOC:
-  case AST_TREE_TOKEN_BUILTIN_NEG:
-  case AST_TREE_TOKEN_BUILTIN_ADD:
-  case AST_TREE_TOKEN_BUILTIN_SUB:
-  case AST_TREE_TOKEN_BUILTIN_MUL:
-  case AST_TREE_TOKEN_BUILTIN_DIV:
-  case AST_TREE_TOKEN_BUILTIN_MOD:
-  case AST_TREE_TOKEN_BUILTIN_EQUAL:
-  case AST_TREE_TOKEN_BUILTIN_NOT_EQUAL:
-  case AST_TREE_TOKEN_BUILTIN_GREATER:
-  case AST_TREE_TOKEN_BUILTIN_SMALLER:
-  case AST_TREE_TOKEN_BUILTIN_GREATER_OR_EQUAL:
-  case AST_TREE_TOKEN_BUILTIN_SMALLER_OR_EQUAL:
-  case AST_TREE_TOKEN_TYPE_TYPE:
-  case AST_TREE_TOKEN_TYPE_FUNCTION:
-  case AST_TREE_TOKEN_TYPE_VOID:
-  case AST_TREE_TOKEN_TYPE_I8:
-  case AST_TREE_TOKEN_TYPE_U8:
-  case AST_TREE_TOKEN_TYPE_I16:
-  case AST_TREE_TOKEN_TYPE_U16:
-  case AST_TREE_TOKEN_TYPE_I32:
-  case AST_TREE_TOKEN_TYPE_U32:
-  case AST_TREE_TOKEN_TYPE_I64:
-  case AST_TREE_TOKEN_TYPE_U64:
-#ifdef FLOAT_16_SUPPORT
-  case AST_TREE_TOKEN_TYPE_F16:
-#endif
-  case AST_TREE_TOKEN_TYPE_F32:
-  case AST_TREE_TOKEN_TYPE_F64:
-  case AST_TREE_TOKEN_TYPE_F128:
-  case AST_TREE_TOKEN_TYPE_CODE:
-  case AST_TREE_TOKEN_TYPE_NAMESPACE:
-  case AST_TREE_TOKEN_TYPE_BOOL:
-  case AST_TREE_TOKEN_VALUE_NULL:
-  case AST_TREE_TOKEN_VALUE_UNDEFINED:
-  case AST_TREE_TOKEN_VALUE_VOID:
-  case AST_TREE_TOKEN_VALUE_NAMESPACE:
-  case AST_TREE_TOKEN_VALUE_INT:
-  case AST_TREE_TOKEN_VALUE_FLOAT:
-  case AST_TREE_TOKEN_VALUE_BOOL:
-  case AST_TREE_TOKEN_VALUE_OBJECT:
-  case AST_TREE_TOKEN_KEYWORD_COMPTIME:
-  case AST_TREE_TOKEN_SCOPE:
-    return true;
-  case AST_TREE_TOKEN_KEYWORD_STRUCT: {
-    AstTreeStruct *metadata = tree->metadata;
-    for (size_t i = 0; i < metadata->variables.size; ++i) {
-      AstTreeVariable *member = metadata->variables.data[i];
-      if (!isConstByValue(member->type) ||
-          (member->value != NULL && !isConstByValue(member->type))) {
-        return false;
-      }
-    }
-    return true;
-  }
-  case AST_TREE_TOKEN_KEYWORD_IF: {
-    AstTreeIf *metadata = tree->metadata;
-    return isConstByValue(metadata->condition) &&
-           isConstByValue(metadata->ifBody) &&
-           (metadata->elseBody == NULL || isConstByValue(metadata->elseBody));
-  }
-  case AST_TREE_TOKEN_FUNCTION_CALL: {
-    AstTreeFunctionCall *metadata = tree->metadata;
-    for (size_t i = 0; i < metadata->parameters_size; ++i) {
-      if (!isConstByValue(metadata->parameters[i].value)) {
-        return false;
-      }
-    }
-    return isConstByValue(metadata->function);
-  }
-  case AST_TREE_TOKEN_FUNCTION: {
-    return true;
-  }
-  case AST_TREE_TOKEN_KEYWORD_WHILE:
-  case AST_TREE_TOKEN_KEYWORD_PUTC:
-  case AST_TREE_TOKEN_KEYWORD_RETURN:
-  case AST_TREE_TOKEN_VARIABLE_DEFINE:
-  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
-  case AST_TREE_TOKEN_OPERATOR_PLUS:
-  case AST_TREE_TOKEN_OPERATOR_MINUS:
-  case AST_TREE_TOKEN_OPERATOR_SUM:
-  case AST_TREE_TOKEN_OPERATOR_SUB:
-  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
-  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
-  case AST_TREE_TOKEN_OPERATOR_MODULO:
-  case AST_TREE_TOKEN_OPERATOR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_GREATER:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER:
-  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
-  case AST_TREE_TOKEN_OPERATOR_LOGICAL_AND:
-  case AST_TREE_TOKEN_OPERATOR_LOGICAL_OR:
-    return false;
-  case AST_TREE_TOKEN_VARIABLE: {
-    AstTreeVariable *metadata = tree->metadata;
-    return metadata->isConst && metadata->value != NULL;
-  }
-  case AST_TREE_TOKEN_OPERATOR_DEREFERENCE:
-  case AST_TREE_TOKEN_OPERATOR_ADDRESS:
-  case AST_TREE_TOKEN_OPERATOR_POINTER: {
-    AstTreeSingleChild *metadata = tree->metadata;
-    return isConstByValue(metadata);
-  }
-  case AST_TREE_TOKEN_OPERATOR_ACCESS: {
-    AstTreeAccess *metadata = tree->metadata;
-    return isConstByValue(metadata->object);
-  }
-  case AST_TREE_TOKEN_TYPE_ARRAY:
-  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS: {
-    AstTreeBracket *metadata = tree->metadata;
-    for (size_t i = 0; i < metadata->parameters.size; ++i) {
-      if (!isConstByValue(metadata->parameters.data[i])) {
-        return false;
-      }
-    }
-    return isConstByValue(metadata->operand);
-  }
-  case AST_TREE_TOKEN_NONE:
-  }
   UNREACHABLE;
 }
 
@@ -3716,7 +3583,7 @@ bool typeIsEqualBack(const AstTree *type0, const AstTree *type1) {
 }
 
 AstTree *getValue(AstTree *tree) {
-  if (!isConst(tree)) {
+  if (!isConst(tree, false)) {
     printError(tree->str_begin, tree->str_end,
                "Can't get value at compile time because it is not const");
     return NULL;
@@ -4795,7 +4662,7 @@ bool setTypesOperatorAssign(AstTree *tree, AstTreeSetTypesHelper helper) {
   } else if (!typeIsEqual(infix->left->type, infix->right->type)) {
     printError(tree->str_begin, tree->str_end, "Type mismatch");
     return false;
-  } else if (isConst(infix->left)) {
+  } else if (isConst(infix->left, false)) {
     printError(tree->str_begin, tree->str_end, "Constants can't be assigned");
     return false;
   } else {
@@ -4842,6 +4709,7 @@ bool setTypesOperatorInfix(AstTree *tree, AstTreeSetTypesHelper _helper,
   AstTreeVariable *variable =
       setTypesFindVariable(str, str + str_size, helper, &functionCall);
   if (variable == NULL) {
+    printError(tree->str_begin, tree->str_end, "Can't find operator");
     return false;
   }
 
@@ -4902,6 +4770,7 @@ bool setTypesOperatorUnary(AstTree *tree, AstTreeSetTypesHelper helper,
   AstTreeVariable *variable = setTypesFindVariable(
       funcStr, funcStr + funcStr_size, helper, &functionCall);
   if (variable == NULL) {
+    printError(tree->str_begin, tree->str_end, "Can't find operator");
     return false;
   }
 
@@ -5003,7 +4872,7 @@ bool setTypesAstVariable(AstTreeVariable *variable,
       return false;
     }
 
-    if (isConstByValue(variable->type)) {
+    if (isConst(variable->type, true)) {
       AstTree *type = variable->type;
       variable->type = getValue(type);
       if (variable->type == NULL) {
@@ -5046,7 +4915,7 @@ bool setTypesAstVariable(AstTreeVariable *variable,
                  AST_TREE_TOKEN_STRINGS[value->type->token],
                  AST_TREE_TOKEN_STRINGS[variable->type->token]);
       return false;
-    } else if (variable->isConst && !isConst(value)) {
+    } else if (variable->isConst && !isConst(value, false)) {
       printError(value->str_begin, value->str_end,
                  "Can't initialize constant with non constant value");
       return false;
