@@ -1316,6 +1316,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
   case AST_TREE_TOKEN_TYPE_F128:
   case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_NAMESPACE:
+  case AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER:
   case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_UNDEFINED:
   case AST_TREE_TOKEN_VALUE_VOID:
@@ -1431,7 +1432,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
         AstTreeObject *newMetadata = a404m_malloc(sizeof(*newMetadata));
 
         newMetadata->variables =
-            copyAstTreeVariables(struc->variables, NULL, NULL, 0);
+            copyAstTreeVariables(struc->variables, NULL, NULL, 0, false);
 
         for (size_t i = 0; i < newMetadata->variables.size; ++i) {
           AstTreeVariable *member = newMetadata->variables.data[i];

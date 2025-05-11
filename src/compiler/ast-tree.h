@@ -53,6 +53,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_TYPE_F128,
   AST_TREE_TOKEN_TYPE_CODE,
   AST_TREE_TOKEN_TYPE_NAMESPACE,
+  AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER,
   AST_TREE_TOKEN_TYPE_BOOL,
   AST_TREE_TOKEN_VALUE_VOID,
   AST_TREE_TOKEN_STATIC_VARS_END = AST_TREE_TOKEN_VALUE_VOID,
@@ -125,6 +126,7 @@ extern AstTree AST_TREE_F64_TYPE;
 extern AstTree AST_TREE_F128_TYPE;
 extern AstTree AST_TREE_CODE_TYPE;
 extern AstTree AST_TREE_NAMESPACE_TYPE;
+extern AstTree AST_TREE_SHAPE_SHIFTER_TYPE;
 extern AstTree AST_TREE_VOID_VALUE;
 
 typedef struct AstTreeVariable {
@@ -299,8 +301,8 @@ AstTree *newAstTree(AstTreeToken token, void *metadata, AstTree *type,
                     char const *str_begin, char const *str_end);
 AstTree *copyAstTree(AstTree *tree);
 AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
-                         AstTreeVariables newVariables[],
-                         size_t variables_size);
+                         AstTreeVariables newVariables[], size_t variables_size,
+                         bool safetyCheck);
 AstTreeVariable *copyAstTreeBackFindVariable(AstTreeVariable *variable,
                                              AstTreeVariables oldVariables[],
                                              AstTreeVariables newVariables[],
@@ -308,7 +310,7 @@ AstTreeVariable *copyAstTreeBackFindVariable(AstTreeVariable *variable,
 AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
                                       AstTreeVariables oldVariables[],
                                       AstTreeVariables newVariables[],
-                                      size_t variables_size);
+                                      size_t variables_size, bool safetyCheck);
 
 AstTreeRoots makeAstTree(const char *filePath
 #ifdef PRINT_STATISTICS
@@ -373,6 +375,7 @@ AstTree *astTreeParseBracket(const ParserNode *parserNode,
                              AstTreeHelper *helper, AstTreeToken token);
 
 bool isFunction(AstTree *value);
+bool isShapeShifter(AstTreeFunction *function);
 bool isConst(AstTree *tree);
 AstTree *makeTypeOf(AstTree *value);
 bool typeIsEqual(AstTree *type0, AstTree *type1);
