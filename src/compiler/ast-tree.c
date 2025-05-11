@@ -1475,7 +1475,7 @@ AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
           goto RETURN_ERROR;
         }
         AstTree *parameter = tree_metadata->parameters[0].value;
-        if (!isConst(parameter, true)) {
+        if (!isConst(parameter)) {
           printError(parameter->str_begin, parameter->str_end,
                      "Is not constant");
           goto RETURN_ERROR;
@@ -1550,7 +1550,7 @@ AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
           goto RETURN_ERROR;
         }
         AstTree *parameter = tree_metadata->parameters[0].value;
-        if (!isConst(parameter, true)) {
+        if (!isConst(parameter)) {
           printError(parameter->str_begin, parameter->str_end,
                      "Is not constant");
           goto RETURN_ERROR;
@@ -3120,7 +3120,7 @@ bool isFunction(AstTree *value) {
   return value->type->token == AST_TREE_TOKEN_TYPE_FUNCTION;
 }
 
-bool isConst(AstTree *tree, bool byValue) {
+bool isConst(AstTree *tree) {
   if (tree->type == NULL) {
     UNREACHABLE;
   }
@@ -3178,8 +3178,8 @@ bool isConst(AstTree *tree, bool byValue) {
     AstTreeStruct *metadata = tree->metadata;
     for (size_t i = 0; i < metadata->variables.size; ++i) {
       AstTreeVariable *member = metadata->variables.data[i];
-      if (!isConst(member->type, byValue) ||
-          (member->value != NULL && !isConst(member->type, byValue))) {
+      if (!isConst(member->type) ||
+          (member->value != NULL && !isConst(member->type))) {
         return false;
       }
     }
@@ -3187,18 +3187,18 @@ bool isConst(AstTree *tree, bool byValue) {
   }
   case AST_TREE_TOKEN_KEYWORD_IF: {
     AstTreeIf *metadata = tree->metadata;
-    return isConst(metadata->condition, byValue) &&
-           isConst(metadata->ifBody, byValue) &&
-           (metadata->elseBody == NULL || isConst(metadata->elseBody, byValue));
+    return isConst(metadata->condition) &&
+           isConst(metadata->ifBody) &&
+           (metadata->elseBody == NULL || isConst(metadata->elseBody));
   }
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = tree->metadata;
     for (size_t i = 0; i < metadata->parameters_size; ++i) {
-      if (!isConst(metadata->parameters[i].value, byValue)) {
+      if (!isConst(metadata->parameters[i].value)) {
         return false;
       }
     }
-    return isConst(metadata->function, byValue);
+    return isConst(metadata->function);
   }
   case AST_TREE_TOKEN_FUNCTION: {
     return true;
@@ -3227,27 +3227,27 @@ bool isConst(AstTree *tree, bool byValue) {
     return false;
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *metadata = tree->metadata;
-    return metadata->isConst && (!byValue || metadata->value != NULL);
+    return metadata->isConst && metadata->value != NULL;
   }
   case AST_TREE_TOKEN_OPERATOR_DEREFERENCE:
   case AST_TREE_TOKEN_OPERATOR_ADDRESS:
   case AST_TREE_TOKEN_OPERATOR_POINTER: {
     AstTreeSingleChild *metadata = tree->metadata;
-    return isConst(metadata, byValue);
+    return isConst(metadata);
   }
   case AST_TREE_TOKEN_OPERATOR_ACCESS: {
     AstTreeAccess *metadata = tree->metadata;
-    return isConst(metadata->object, byValue);
+    return isConst(metadata->object);
   }
   case AST_TREE_TOKEN_TYPE_ARRAY:
   case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS: {
     AstTreeBracket *metadata = tree->metadata;
     for (size_t i = 0; i < metadata->parameters.size; ++i) {
-      if (!isConst(metadata->parameters.data[i], byValue)) {
+      if (!isConst(metadata->parameters.data[i])) {
         return false;
       }
     }
-    return isConst(metadata->operand, byValue);
+    return isConst(metadata->operand);
   }
   case AST_TREE_TOKEN_NONE:
   }
@@ -3601,7 +3601,7 @@ bool typeIsEqualBack(const AstTree *type0, const AstTree *type1) {
 }
 
 AstTree *getValue(AstTree *tree) {
-  if (!isConst(tree, false)) {
+  if (!isConst(tree)) {
     printError(tree->str_begin, tree->str_end,
                "Can't get value at compile time because it is not const");
     return NULL;
@@ -4680,7 +4680,7 @@ bool setTypesOperatorAssign(AstTree *tree, AstTreeSetTypesHelper helper) {
   } else if (!typeIsEqual(infix->left->type, infix->right->type)) {
     printError(tree->str_begin, tree->str_end, "Type mismatch");
     return false;
-  } else if (isConst(infix->left, false)) {
+  } else if (isConst(infix->left)) {
     printError(tree->str_begin, tree->str_end, "Constants can't be assigned");
     return false;
   } else {
@@ -4890,7 +4890,7 @@ bool setTypesAstVariable(AstTreeVariable *variable,
       return false;
     }
 
-    if (!isConst(variable->type, true)) {
+    if (!isConst(variable->type)) {
       printError(variable->name_begin, variable->name_end,
                  "Type must be comptime");
       return false;
@@ -4928,7 +4928,7 @@ bool setTypesAstVariable(AstTreeVariable *variable,
                  AST_TREE_TOKEN_STRINGS[value->type->token],
                  AST_TREE_TOKEN_STRINGS[variable->type->token]);
       return false;
-    } else if (variable->isConst && !isConst(value, false)) {
+    } else if (variable->isConst && !isConst(value)) {
       printError(value->str_begin, value->str_end,
                  "Can't initialize constant with non constant value");
       return false;
@@ -5827,7 +5827,7 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
             if ((size_t)(arg.name_end - arg.name_begin) == param_name_size &&
                 strnEquals(arg.name_begin, param.nameBegin, param_name_size)) {
               if (!typeIsEqual(arg.type, param.value->type) ||
-                  (arg.isComptime && !isConst(param.value, false))) {
+                  (arg.isComptime && !isConst(param.value))) {
                 goto CONTINUE_OUTER;
               }
               initedArguments[j] = param;
@@ -5846,7 +5846,7 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
             AstTreeTypeFunctionArgument arg = function->arguments[j];
             if (initedArguments[j].value == NULL) {
               if (!typeIsEqual(arg.type, param.value->type) ||
-                  (arg.isComptime && !isConst(param.value, false))) {
+                  (arg.isComptime && !isConst(param.value))) {
                 goto CONTINUE_OUTER;
               }
               initedArguments[j] = param;

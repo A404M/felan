@@ -373,7 +373,7 @@ AstTree *astTreeParseBracket(const ParserNode *parserNode,
                              AstTreeHelper *helper, AstTreeToken token);
 
 bool isFunction(AstTree *value);
-bool isConst(AstTree *tree, bool byValue);
+bool isConst(AstTree *tree);
 AstTree *makeTypeOf(AstTree *value);
 bool typeIsEqual(AstTree *type0, AstTree *type1);
 bool typeIsEqualBack(const AstTree *type0, const AstTree *type1);
