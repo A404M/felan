@@ -1557,6 +1557,27 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
       return copyAstTree(var->value);
     }
   }
+  case AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER: {
+    UNREACHABLE;
+  }
+  case AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT: {
+    AstTreeShapeShifterElement *metadata = expr->metadata;
+
+    if (metadata->shapeShifter->token != AST_TREE_TOKEN_VARIABLE) {
+      UNREACHABLE;
+    }
+    AstTreeVariable *variable = metadata->shapeShifter->metadata;
+    if (variable->value->token != AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER) {
+      UNREACHABLE;
+    }
+
+    AstTreeShapeShifter *shapeShifter = variable->value->metadata;
+    AstTreeFunction *function =
+        shapeShifter->generateds.functions[metadata->index];
+
+    return newAstTree(AST_TREE_TOKEN_FUNCTION, function,
+                      copyAstTree(expr->type), expr->str_begin, expr->str_end);
+  }
   case AST_TREE_TOKEN_NONE:
   }
   UNREACHABLE;

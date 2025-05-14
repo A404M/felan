@@ -1,14 +1,13 @@
-// @import("basic.felan");
+@import("basic.felan");
 
-f :: (comptime t:type) -> type {
-  return struct {
-    a:t;
-  };
+f :: (comptime t:type,a:t) -> t {
+  putc a+'0';
+  return a;
 };
 
 main :: () -> void {
-  a :: u8;
-  f(a);
+  b:u8 = 2;
+  f(u8,b);
 };
 
 

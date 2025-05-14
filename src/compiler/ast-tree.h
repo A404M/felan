@@ -64,10 +64,13 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_VALUE_NULL,
   AST_TREE_TOKEN_VALUE_UNDEFINED,
   AST_TREE_TOKEN_VALUE_NAMESPACE,
+  AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER,
   AST_TREE_TOKEN_VALUE_INT,
   AST_TREE_TOKEN_VALUE_FLOAT,
   AST_TREE_TOKEN_VALUE_BOOL,
   AST_TREE_TOKEN_VALUE_OBJECT,
+
+  AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT,
 
   AST_TREE_TOKEN_OPERATOR_ASSIGN,
   AST_TREE_TOKEN_OPERATOR_PLUS,
@@ -283,12 +286,27 @@ typedef struct AstTreeNamespace {
   size_t importedIndex;
 } AstTreeNamespace;
 
+typedef struct AstTreeShapeShifter {
+  AstTreeFunction *function;
+  struct {
+    AstTreeFunctionCall **calls;
+    AstTreeFunction **functions;
+    size_t size;
+  } generateds;
+} AstTreeShapeShifter;
+
+typedef struct AstTreeShapeShifterElement {
+  AstTree *shapeShifter;
+  size_t index;
+} AstTreeShapeShifterElement;
+
 #ifdef PRINT_COMPILE_TREE
 void astTreePrint(const AstTree *tree, int indent);
 void astTreeVariablePrint(const AstTreeVariable *variable, int indent);
 void astTreeRootPrint(const AstTreeRoot *root);
 #endif
 
+void astTreeFunctionDestroy(AstTreeFunction function);
 void astTreeDestroy(AstTree tree);
 void astTreeVariableDestroy(AstTreeVariable variable);
 void astTreeVariableDelete(AstTreeVariable *variable);
@@ -300,6 +318,7 @@ void astTreeRootsDestroy(AstTreeRoots roots);
 AstTree *newAstTree(AstTreeToken token, void *metadata, AstTree *type,
                     char const *str_begin, char const *str_end);
 AstTree *copyAstTree(AstTree *tree);
+AstTree *copyAstTreeWithCheck(AstTree *tree);
 AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
                          AstTreeVariables newVariables[], size_t variables_size,
                          bool safetyCheck);
@@ -311,6 +330,10 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
                                       AstTreeVariables oldVariables[],
                                       AstTreeVariables newVariables[],
                                       size_t variables_size, bool safetyCheck);
+AstTreeFunction *copyAstTreeFunction(AstTreeFunction *function,
+                                     AstTreeVariables oldVariables[],
+                                     AstTreeVariables newVariables[],
+                                     size_t variables_size, bool safetyCheck);
 
 AstTreeRoots makeAstTree(const char *filePath
 #ifdef PRINT_STATISTICS
@@ -378,6 +401,8 @@ bool isFunction(AstTree *value);
 bool isShapeShifter(AstTreeFunction *function);
 bool isConst(AstTree *tree);
 AstTree *makeTypeOf(AstTree *value);
+AstTree *makeTypeOfFunction(AstTreeFunction *function, const char *str_begin,
+                            const char *str_end);
 bool typeIsEqual(AstTree *type0, AstTree *type1);
 bool typeIsEqualBack(const AstTree *type0, const AstTree *type1);
 AstTree *getValue(AstTree *tree);
@@ -447,6 +472,8 @@ bool setTypesBuiltinBinaryWithRet(AstTree *tree, AstTreeSetTypesHelper helper,
                                   AstTree *retType);
 bool setTypesTypeArray(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesArrayAccess(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesAstFunction(AstTreeFunction *function,
+                         AstTreeSetTypesHelper helper);
 
 bool setTypesAstVariable(AstTreeVariable *variable,
                          AstTreeSetTypesHelper helper);

@@ -33,7 +33,7 @@ static int run(const char *filePath) {
   }
 #endif
 #ifdef PRINT_STATISTICS
-  start =get_time();
+  start = get_time();
 #endif
 
   int ret;
