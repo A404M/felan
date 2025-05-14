@@ -1575,7 +1575,8 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
     AstTreeFunction *function =
         shapeShifter->generateds.functions[metadata->index];
 
-    return newAstTree(AST_TREE_TOKEN_FUNCTION, function,
+    return newAstTree(AST_TREE_TOKEN_FUNCTION,
+                      copyAstTreeFunction(function, NULL, NULL, 0, false),
                       copyAstTree(expr->type), expr->str_begin, expr->str_end);
   }
   case AST_TREE_TOKEN_NONE:

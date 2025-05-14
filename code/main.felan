@@ -1,7 +1,6 @@
-@import("basic.felan");
+// @import("basic.felan");
 
 f :: (comptime t:type,a:t) -> t {
-  putc a+'0';
   return a;
 };
 

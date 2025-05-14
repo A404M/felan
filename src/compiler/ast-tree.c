@@ -743,6 +743,7 @@ void astTreeDestroy(AstTree tree) {
       astTreeFunctionDestroy(*metadata->generateds.functions[i]);
       free(metadata->generateds.functions[i]);
     }
+    free(metadata->generateds.functions);
     free(metadata->generateds.calls);
     free(metadata);
     return;
@@ -900,6 +901,7 @@ void astTreeDestroy(AstTree tree) {
     return;
   case AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT: {
     AstTreeShapeShifterElement *metadata = tree.metadata;
+    astTreeDelete(metadata->shapeShifter);
     free(metadata);
   }
     return;
@@ -1045,24 +1047,25 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
   }
   case AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER: {
     AstTreeShapeShifter *metadata = tree->metadata;
-    AstTreeShapeShifter *newMetadata = a404m_malloc(sizeof(*newMetadata));
+    AstTreeShapeShifter *new_metadata = a404m_malloc(sizeof(*new_metadata));
 
-    newMetadata->function = copyAstTreeFunction(
+    new_metadata->function = copyAstTreeFunction(
         metadata->function, oldVariables, newVariables, variables_size, true);
 
-    newMetadata->generateds.size = metadata->generateds.size;
-    newMetadata->generateds.functions = a404m_malloc(
-        newMetadata->generateds.size * sizeof(*metadata->generateds.functions));
-    newMetadata->generateds.calls = a404m_malloc(
-        newMetadata->generateds.size * sizeof(*metadata->generateds.calls));
+    new_metadata->generateds.size = metadata->generateds.size;
+    new_metadata->generateds.functions =
+        a404m_malloc(new_metadata->generateds.size *
+                     sizeof(*metadata->generateds.functions));
+    new_metadata->generateds.calls = a404m_malloc(
+        new_metadata->generateds.size * sizeof(*metadata->generateds.calls));
     for (size_t i = 0; i < metadata->generateds.size; ++i) {
-      newMetadata->generateds.functions[i] =
+      new_metadata->generateds.functions[i] =
           copyAstTreeFunction(metadata->generateds.functions[i], oldVariables,
                               newVariables, variables_size, false);
-      newMetadata->generateds.calls[i] = metadata->generateds.calls[i];
+      new_metadata->generateds.calls[i] = metadata->generateds.calls[i];
     }
 
-    return newAstTree(tree->token, newMetadata,
+    return newAstTree(tree->token, new_metadata,
                       copyAstTreeBack(tree->type, oldVariables, newVariables,
                                       variables_size, safetyCheck),
                       tree->str_begin, tree->str_end);
@@ -6415,7 +6418,7 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
           if (initedArguments[i].value == NULL) {
             goto CONTINUE_OUTER1;
           }
-          astTreeVariableDestroy(*arguments.data[i]);
+          astTreeVariableDelete(arguments.data[i]);
         }
         free(arguments.data);
 
@@ -6428,7 +6431,7 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
         continue;
       CONTINUE_OUTER1:
         for (size_t i = 0; i < arguments.size; ++i) {
-          astTreeVariableDestroy(*arguments.data[i]);
+          astTreeVariableDelete(arguments.data[i]);
         }
         free(arguments.data);
       }
