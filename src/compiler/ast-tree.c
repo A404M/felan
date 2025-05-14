@@ -4973,6 +4973,37 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
       metadata->parameters[i] = initedArguments[i];
     }
 
+    AstTreeShapeShifterElement *element = a404m_malloc(sizeof(*element));
+    element->shapeShifter = metadata->function;
+
+    for (size_t i = 0; i < shapeShifter->generateds.size; ++i) {
+      AstTreeFunctionCall *call = shapeShifter->generateds.calls[i];
+      if (metadata->parameters_size != call->parameters_size)
+        continue;
+
+      for (size_t i = 0; i < metadata->parameters_size; ++i) {
+        AstTreeVariable *arg = shapeShifter->function->arguments.data[i];
+        if (!arg->isConst)
+          continue;
+
+        AstTreeFunctionCallParam p0 = call->parameters[i];
+        AstTreeFunctionCallParam p1 = call->parameters[i];
+        AstTree *v0 = getValue(p0.value);
+        AstTree *v1 = getValue(p1.value);
+        bool equals = isEqual(v0, v1);
+        astTreeDelete(v0);
+        astTreeDelete(v1);
+        if (!equals) {
+          goto SEARCH_LOOP_CONTINUE;
+        }
+      }
+      element->index = i;
+      astTreeFunctionDestroy(*newFunction);
+      free(newFunction);
+      goto END_OF_SHAPE_SHIFTER;
+    SEARCH_LOOP_CONTINUE:
+    }
+
     AstTreeSetTypesHelper newHelper = {
         .root = helper.root,
         .variables.data = variables,
@@ -5009,11 +5040,10 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
         newFunction;
     shapeShifter->generateds.calls[shapeShifter->generateds.size] = metadata;
 
-    AstTreeShapeShifterElement *element = a404m_malloc(sizeof(*element));
-    element->shapeShifter = metadata->function;
     element->index = shapeShifter->generateds.size;
-
     shapeShifter->generateds.size += 1;
+
+  END_OF_SHAPE_SHIFTER:
     metadata->function =
         newAstTree(AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT, element, NULL,
                    metadata->function->str_begin, metadata->function->str_end);
