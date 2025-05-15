@@ -5277,11 +5277,8 @@ bool setTypesAstVariable(AstTreeVariable *variable,
 
   AstTreeSetTypesHelper helper = {
       .lookingType = &AST_TREE_TYPE_TYPE,
-      .dependencies =
-          {
-              .data = deps,
-              .size = _helper.dependencies.size + 1,
-          },
+      .dependencies.data = deps,
+      .dependencies.size = _helper.dependencies.size + 1,
       .variables = _helper.variables,
       .root = _helper.root,
   };
@@ -5298,7 +5295,11 @@ bool setTypesAstVariable(AstTreeVariable *variable,
       return false;
     }
 
-    if (!isConst(variable->type)) {
+    if (isConst(variable->type)) {
+      AstTree *tmp = variable->type;
+      variable->type = getValue(variable->type);
+      astTreeDelete(tmp);
+    } else {
       printError(variable->name_begin, variable->name_end,
                  "Type must be comptime");
       return false;
