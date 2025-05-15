@@ -1494,18 +1494,17 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
   return result;
 }
 
-AstTreeFunction *copyAstTreeFunction(AstTreeFunction *function,
+AstTreeFunction *copyAstTreeFunction(AstTreeFunction *metadata,
                                      AstTreeVariables oldVariables[],
                                      AstTreeVariables newVariables[],
                                      size_t variables_size, bool safetyCheck) {
-  AstTreeFunction *metadata = function;
   AstTreeFunction *new_metadata = a404m_malloc(sizeof(*new_metadata));
 
   new_metadata->arguments =
       copyAstTreeVariables(metadata->arguments, oldVariables, newVariables,
                            variables_size, safetyCheck);
 
-  size_t new_variables_size = variables_size + 2;
+  const size_t new_variables_size = variables_size + 2;
   AstTreeVariables new_oldVariables[new_variables_size];
   AstTreeVariables new_newVariables[new_variables_size];
   for (size_t i = 0; i < variables_size; ++i) {
@@ -4899,18 +4898,6 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
     AstTreeFunction *newFunction =
         copyAstTreeFunction(shapeShifter->function, NULL, NULL, 0, true);
 
-    AstTreeVariable
-        *variables[helper.variables.size + newFunction->arguments.size];
-
-    for (size_t i = 0; i < helper.variables.size; ++i) {
-      variables[i] = helper.variables.data[i];
-    }
-
-    for (size_t i = 0; i < newFunction->arguments.size; ++i) {
-      variables[newFunction->arguments.size + i] =
-          newFunction->arguments.data[i];
-    }
-
     AstTreeFunctionCallParam initedArguments[newFunction->arguments.size];
     size_t initedArguments_size = newFunction->arguments.size;
 
@@ -4973,8 +4960,8 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
       metadata->parameters[i] = initedArguments[i];
     }
 
-    AstTreeShapeShifterElement *element = a404m_malloc(sizeof(*element));
-    element->shapeShifter = metadata->function;
+    bool found = false;
+    size_t element_index;
 
     for (size_t i = 0; i < shapeShifter->generateds.size; ++i) {
       AstTreeFunctionCall *call = shapeShifter->generateds.calls[i];
@@ -4982,11 +4969,10 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
         continue;
 
       for (size_t i = 0; i < metadata->parameters_size; ++i) {
-        AstTreeVariable *arg = shapeShifter->function->arguments.data[i];
-        if (!arg->isConst)
+        if (!shapeShifter->function->arguments.data[i]->isConst)
           continue;
 
-        AstTreeFunctionCallParam p0 = call->parameters[i];
+        AstTreeFunctionCallParam p0 = metadata->parameters[i];
         AstTreeFunctionCallParam p1 = call->parameters[i];
         AstTree *v0 = getValue(p0.value);
         AstTree *v1 = getValue(p1.value);
@@ -4997,53 +4983,69 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
           goto SEARCH_LOOP_CONTINUE;
         }
       }
-      element->index = i;
+      element_index = i;
       astTreeFunctionDestroy(*newFunction);
       free(newFunction);
-      goto END_OF_SHAPE_SHIFTER;
+      found = true;
+      break;
     SEARCH_LOOP_CONTINUE:
     }
 
-    AstTreeSetTypesHelper newHelper = {
-        .root = helper.root,
-        .variables.data = variables,
-        .variables.size = helper.variables.size,
-        .lookingType = NULL,
-        .dependencies = helper.dependencies,
-    };
+    if (!found) {
+      AstTreeVariable
+          *variables[helper.variables.size + newFunction->arguments.size];
 
-    for (size_t i = 0; i < newFunction->arguments.size; ++i) {
-      AstTreeVariable *var = newFunction->arguments.data[i];
-      if (!setTypesAstVariable(var, newHelper)) {
+      for (size_t i = 0; i < helper.variables.size; ++i) {
+        variables[i] = helper.variables.data[i];
+      }
+
+      for (size_t i = 0; i < newFunction->arguments.size; ++i) {
+        variables[helper.variables.size + i] = newFunction->arguments.data[i];
+      }
+
+      AstTreeSetTypesHelper newHelper = {
+          .root = helper.root,
+          .variables.data = variables,
+          .variables.size = helper.variables.size,
+          .lookingType = NULL,
+          .dependencies = helper.dependencies,
+      };
+
+      for (size_t i = 0; i < newFunction->arguments.size; ++i) {
+        AstTreeVariable *var = newFunction->arguments.data[i];
+        if (!setTypesAstVariable(var, newHelper)) {
+          return false;
+        }
+        newHelper.variables.size += 1;
+      }
+
+      if (!setTypesAstFunction(newFunction, helper)) {
         return false;
       }
-      newHelper.variables.size += 1;
+
+      size_t generateds_size =
+          a404m_malloc_usable_size(shapeShifter->generateds.functions) /
+          sizeof(*shapeShifter->generateds.functions);
+      if (generateds_size == shapeShifter->generateds.size) {
+        generateds_size += generateds_size / 2 + 1;
+        shapeShifter->generateds.functions = a404m_realloc(
+            shapeShifter->generateds.functions,
+            generateds_size * sizeof(*shapeShifter->generateds.functions));
+        shapeShifter->generateds.calls = a404m_realloc(
+            shapeShifter->generateds.calls,
+            generateds_size * sizeof(*shapeShifter->generateds.calls));
+      }
+      shapeShifter->generateds.functions[shapeShifter->generateds.size] =
+          newFunction;
+      shapeShifter->generateds.calls[shapeShifter->generateds.size] = metadata;
+
+      element_index = shapeShifter->generateds.size;
+      shapeShifter->generateds.size += 1;
     }
 
-    if (!setTypesAstFunction(newFunction, helper)) {
-      return false;
-    }
-
-    const size_t generateds_size =
-        a404m_malloc_usable_size(shapeShifter->generateds.functions);
-    if (generateds_size == shapeShifter->generateds.size) {
-      shapeShifter->generateds.functions =
-          a404m_realloc(shapeShifter->generateds.functions,
-                        (generateds_size + generateds_size / 2 + 1) +
-                            sizeof(shapeShifter->generateds.functions));
-      shapeShifter->generateds.calls =
-          a404m_realloc(shapeShifter->generateds.calls,
-                        (generateds_size + generateds_size / 2 + 1) +
-                            sizeof(shapeShifter->generateds.calls));
-    }
-    shapeShifter->generateds.functions[shapeShifter->generateds.size] =
-        newFunction;
-    shapeShifter->generateds.calls[shapeShifter->generateds.size] = metadata;
-
-    element->index = shapeShifter->generateds.size;
-    shapeShifter->generateds.size += 1;
-
-  END_OF_SHAPE_SHIFTER:
+    AstTreeShapeShifterElement *element = a404m_malloc(sizeof(*element));
+    element->shapeShifter = metadata->function;
+    element->index = element_index;
     metadata->function =
         newAstTree(AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT, element, NULL,
                    metadata->function->str_begin, metadata->function->str_end);
@@ -6358,8 +6360,8 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
         AstTreeVariables arguments =
             copyAstTreeVariables(function->arguments, NULL, NULL, 0, true);
 
-        AstTreeFunctionCallParam initedArguments[function->arguments.size];
-        size_t initedArguments_size = function->arguments.size;
+        AstTreeFunctionCallParam initedArguments[arguments.size];
+        size_t initedArguments_size = arguments.size;
 
         for (size_t i = 0; i < initedArguments_size; ++i) {
           initedArguments[i].value = NULL;

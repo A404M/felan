@@ -740,6 +740,9 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
       *(AstTreeBool *)ret->metadata =
           *(AstTreeBool *)left->metadata == *(AstTreeBool *)right->metadata;
       break;
+    case AST_TREE_TOKEN_TYPE_TYPE:
+      *(AstTreeBool *)ret->metadata = typeIsEqual(left, right);
+      break;
     default:
       UNREACHABLE;
     }
@@ -812,6 +815,9 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     case AST_TREE_TOKEN_TYPE_BOOL:
       *(AstTreeBool *)ret->metadata =
           *(AstTreeBool *)left->metadata == *(AstTreeBool *)right->metadata;
+      break;
+    case AST_TREE_TOKEN_TYPE_TYPE:
+      *(AstTreeBool *)ret->metadata = !typeIsEqual(left, right);
       break;
     default:
       UNREACHABLE;

@@ -514,6 +514,10 @@ __equal__ :: (left:bool,right:bool) -> bool {
   return @equal(left,right);
 };
 
+__equal__ :: (left:type,right:type) -> bool {
+  return @equal(left,right);
+};
+
 __not_equal__ :: (left:u8,right:u8) -> bool {
   return @notEqual(left,right);
 };
@@ -563,6 +567,10 @@ __not_equal__ :: (left:f128,right:f128) -> bool {
 };
 
 __not_equal__ :: (left:bool,right:bool) -> bool {
+  return @notEqual(left,right);
+};
+
+__not_equal__ :: (left:type,right:type) -> bool {
   return @notEqual(left,right);
 };
 

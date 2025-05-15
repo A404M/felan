@@ -1,13 +1,16 @@
-// @import("basic.felan");
+@import("basic.felan");
 
 f :: (comptime t:type,a:t) -> t {
+  if t == u8 putc 'a';
+  else putc 'b';
   return a;
 };
 
 main :: () -> void {
-  b:u8 = 2;
+  b:u8 = '1';
+  c:i64 = 69;
   f(u8,b);
-  f(u8,b);
+  f(i64,c);
 };
 
 
