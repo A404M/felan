@@ -99,6 +99,7 @@ const char *LEXER_TOKEN_STRINGS[] = {
 
     "LEXER_TOKEN_KEYWORD_RETURN",
     "LEXER_TOKEN_KEYWORD_PUTC",
+    "LEXER_TOKEN_KEYWORD_BREAK",
     "LEXER_TOKEN_KEYWORD_COMPTIME",
 
     "LEXER_TOKEN_SYMBOL_EOL",
@@ -170,7 +171,7 @@ static const char *LEXER_KEYWORD_STRINGS[] = {
     "f32",           "f64",    "f128",      "bool", "putc",  "return",
     "true",          "false",  "if",        "else", "while", "comptime",
     "null",          "struct", "undefined", "code", "lazy",  "namespace",
-    "shape_shifter",
+    "shape_shifter", "break",
 };
 static const LexerToken LEXER_KEYWORD_TOKENS[] = {
     LEXER_TOKEN_KEYWORD_TYPE,
@@ -205,6 +206,7 @@ static const LexerToken LEXER_KEYWORD_TOKENS[] = {
     LEXER_TOKEN_KEYWORD_LAZY,
     LEXER_TOKEN_KEYWORD_NAMESPACE,
     LEXER_TOKEN_KEYWORD_SHAPE_SHIFTER,
+    LEXER_TOKEN_KEYWORD_BREAK,
 };
 static const size_t LEXER_KEYWORD_SIZE =
     sizeof(LEXER_KEYWORD_TOKENS) / sizeof(*LEXER_KEYWORD_TOKENS);
@@ -518,6 +520,8 @@ lexerPushClear(LexerNodeArray *array, size_t *array_size, char const *iter,
   case LEXER_TOKEN_BUILTIN_SMALLER_OR_EQUAL:
   case LEXER_TOKEN_SYMBOL_CLOSE_BRACKET:
   case LEXER_TOKEN_SYMBOL_OPEN_BRACKET:
+  case LEXER_TOKEN_KEYWORD_SHAPE_SHIFTER:
+  case LEXER_TOKEN_KEYWORD_BREAK:
     if (*array_size == array->size) {
       *array_size += 1 + *array_size / 2;
       array->data =

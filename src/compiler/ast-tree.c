@@ -4765,9 +4765,7 @@ bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper _helper,
       astTreeDelete(helper.lookingType);
       return false;
     }
-    if (helper.lookingType != function->returnType) {
-      astTreeDelete(helper.lookingType);
-    }
+    astTreeDelete(helper.lookingType);
     if (!typeIsEqual(metadata->value->type, function->returnType)) {
       printError(tree->str_begin, tree->str_end, "Type mismatch");
       return false;
@@ -5530,7 +5528,7 @@ bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper) {
                "Member not found");
     return false;
   } else if (typeIsEqual(metadata->object->type, &AST_TREE_NAMESPACE_TYPE)) {
-    AstTree *value = getValue(metadata->object, false);
+    AstTree *value = getValue(metadata->object, true);
     AstTreeNamespace *namespace = value->metadata;
     AstTreeSetTypesHelper newHelper = {
         .root = helper.root->imports[namespace->importedIndex].root,
@@ -5539,6 +5537,7 @@ bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper) {
         .dependencies = helper.dependencies,
         .lookingType = helper.lookingType,
     };
+    astTreeDelete(value);
 
     AstTreeVariable *var =
         setTypesFindVariable(metadata->member.name.begin,

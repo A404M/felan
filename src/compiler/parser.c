@@ -60,6 +60,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_TYPE_SHAPE_SHIFTER",
 
     "PARSER_TOKEN_KEYWORD_PUTC",
+    "PARSER_TOKEN_KEYWORD_BREAK",
     "PARSER_TOKEN_KEYWORD_RETURN",
     "PARSER_TOKEN_KEYWORD_IF",
     "PARSER_TOKEN_KEYWORD_WHILE",
@@ -1443,6 +1444,7 @@ ParserNode *parserFunctionCall(LexerNode *closing, LexerNode *begin,
   if (beforeNode < begin || beforeNode->parserNode == NULL ||
       (before = getUntilCommonParent(beforeNode->parserNode, parent)) == NULL ||
       !isExpression(before)) {
+    printError(closing->str_begin, closing->str_end, "Bad function call");
     UNREACHABLE;
   }
 

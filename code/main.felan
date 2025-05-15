@@ -1,68 +1,25 @@
 @import("basic.felan");
+file :: @import("file.felan");
+
+foo :: () -> void {
+  putc 'b';
+};
 
 main :: () -> void {
-  stones := 6;
-  player := 1;
-  while stones > 0 {
-    r :res =minimax(stones,true);
-     stones -= r.move;
-     putc @cast(stones,u8) + '0';
-     putc '\n';
-     putc 'p';
-     putc @cast(player,u8) + '0';
-     putc '\n';
-     player = (if player == 2 1 else 2);
-  }
-};
-
-res :: struct {
-  move : i64;
-  score : i64;
-};
-
-minimax :: (currentStones:i64, isMaximizing:bool) -> res {
-  if currentStones <= 0 {
-    r : res = undefined;
-    r.move = 0;
-    r.score = (if isMaximizing {-1;} else {1;});
-    return r;
-  }
-
-  found := false;
-  bestMove : res = undefined;
-  score := (if isMaximizing {-1000000;} else {1000000;});
-  move := 1;
-
-  while move <= 2 {
-    if currentStones - move >= 0 {
-      found = true;
-      result : res = minimax(currentStones - move, !isMaximizing);
-        if isMaximizing {
-          if result.score > score {
-            bestMove.move = move;
-            bestMove.score = result.score;
-            score = result.score;
-          }
-        }else{
-          if result.score < score {
-            bestMove.move = move;
-            bestMove.score = result.score;
-            score = result.score;
-          }
-        }
-    }
-    move += 1;
-  }
-
-  if !found {
-    r : res = undefined;
-    r.move = 0;
-    r.score = (if isMaximizing {-1;} else {1;});
-    return r;
-  }
-
-  return bestMove;
+  file.foo();
+//  foo();
 };
 
 
+/*
+@import("basic.felan");
 
+main :: () -> void {
+  i := 0;
+  while i < 10 {
+    putc @cast(i,u8)+'0';
+    i += 1;
+//    break;
+  }
+};
+*/
