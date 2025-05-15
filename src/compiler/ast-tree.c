@@ -1629,7 +1629,7 @@ AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
                      "Is not constant");
           goto RETURN_ERROR;
         }
-        parameter = getValue(parameter);
+        parameter = getValue(parameter, true);
         if (parameter == NULL) {
           goto RETURN_ERROR;
         }
@@ -1704,7 +1704,7 @@ AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
                      "Is not constant");
           goto RETURN_ERROR;
         }
-        parameter = getValue(parameter);
+        parameter = getValue(parameter, true);
         if (parameter == NULL) {
           goto RETURN_ERROR;
         }
@@ -3630,8 +3630,8 @@ AstTree *makeTypeOfFunction(AstTreeFunction *function, const char *str_begin,
 }
 
 bool typeIsEqual(AstTree *type0, AstTree *type1) {
-  AstTree *left = getValue(type0);
-  AstTree *right = getValue(type1);
+  AstTree *left = getValue(type0, true);
+  AstTree *right = getValue(type1, true);
   if (left == NULL || right == NULL) {
     printLog("Can't check types");
     UNREACHABLE;
@@ -3810,7 +3810,7 @@ bool typeIsEqualBack(const AstTree *type0, const AstTree *type1) {
   UNREACHABLE;
 }
 
-AstTree *getValue(AstTree *tree) {
+AstTree *getValue(AstTree *tree, bool copy) {
   if (!isConst(tree)) {
     printError(tree->str_begin, tree->str_end,
                "Can't get value at compile time because it is not const");
@@ -3911,6 +3911,10 @@ AstTree *getValue(AstTree *tree) {
 
     AstTree *value = runExpression(tree, scope, &shouldRet, false, true);
 
+    if (!copy) {
+      astTreeDelete(tree);
+    }
+
     astTreeDestroy(scopeTree);
 
     if (value == NULL) {
@@ -3919,8 +3923,13 @@ AstTree *getValue(AstTree *tree) {
     return value;
   }
   case AST_TREE_TOKEN_KEYWORD_STRUCT:
-  case AST_TREE_TOKEN_FUNCTION: {
-    return tree;
+  case AST_TREE_TOKEN_FUNCTION:
+  case AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER: {
+    if (copy) {
+      return copyAstTree(tree);
+    } else {
+      return tree;
+    }
   }
   case AST_TREE_TOKEN_KEYWORD_PUTC:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
@@ -4427,6 +4436,7 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
     return setTypesTypeArray(tree, helper);
   case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS:
     return setTypesArrayAccess(tree, helper);
+  case AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER:
   case AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT:
   case AST_TREE_TOKEN_NONE:
   }
@@ -4743,7 +4753,7 @@ bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper _helper,
   AstTreeReturn *metadata = tree->metadata;
   if (metadata->value != NULL) {
     AstTreeSetTypesHelper helper = {
-        .lookingType = getValue(function->returnType),
+        .lookingType = getValue(function->returnType, true),
         .dependencies = _helper.dependencies,
         .variables = _helper.variables,
         .root = _helper.root,
@@ -4752,10 +4762,11 @@ bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper _helper,
       return false;
     }
     if (!setAllTypes(metadata->value, helper, NULL, NULL)) {
+      astTreeDelete(helper.lookingType);
       return false;
     }
     if (helper.lookingType != function->returnType) {
-      astTreeDelete(helper.lookingType); // TODO: change plan
+      astTreeDelete(helper.lookingType);
     }
     if (!typeIsEqual(metadata->value->type, function->returnType)) {
       printError(tree->str_begin, tree->str_end, "Type mismatch");
@@ -4914,7 +4925,7 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
           if ((size_t)(arg->name_end - arg->name_begin) == param_name_size &&
               strnEquals(arg->name_begin, param.nameBegin, param_name_size)) {
             if (arg->isConst) {
-              arg->value = copyAstTree(param.value);
+              arg->value = getValue(param.value, true);
             }
             initedArguments[j] = param;
             goto END_OF_NAMED_FOR1;
@@ -4934,7 +4945,7 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
           AstTreeVariable *arg = newFunction->arguments.data[j];
           if (initedArguments[j].value == NULL) {
             if (arg->isConst) {
-              arg->value = copyAstTree(param.value);
+              arg->value = getValue(param.value, true);
             }
             initedArguments[j] = param;
             goto END_OF_UNNAMED_FOR1;
@@ -4974,12 +4985,9 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
 
         AstTreeFunctionCallParam p0 = metadata->parameters[i];
         AstTreeFunctionCallParam p1 = call->parameters[i];
-        AstTree *v0 = getValue(p0.value);
-        AstTree *v1 = getValue(p1.value);
-        bool equals = isEqual(v0, v1);
-        astTreeDelete(v0);
-        astTreeDelete(v1);
-        if (!equals) {
+        AstTree *v0 = getValue(p0.value, false);
+        AstTree *v1 = getValue(p1.value, false);
+        if (isEqual(v0, v1)) {
           goto SEARCH_LOOP_CONTINUE;
         }
       }
@@ -5296,9 +5304,7 @@ bool setTypesAstVariable(AstTreeVariable *variable,
     }
 
     if (isConst(variable->type)) {
-      AstTree *tmp = variable->type;
-      variable->type = getValue(variable->type);
-      astTreeDelete(tmp);
+      variable->type = getValue(variable->type, false);
     } else {
       printError(variable->name_begin, variable->name_end,
                  "Type must be comptime");
@@ -5337,10 +5343,14 @@ bool setTypesAstVariable(AstTreeVariable *variable,
                  AST_TREE_TOKEN_STRINGS[value->type->token],
                  AST_TREE_TOKEN_STRINGS[variable->type->token]);
       return false;
-    } else if (variable->isConst && !isConst(value)) {
-      printError(value->str_begin, value->str_end,
-                 "Can't initialize constant with non constant value");
-      return false;
+    } else if (variable->isConst) {
+      if (isConst(value)) {
+        variable->value = getValue(value, false);
+      } else {
+        printError(value->str_begin, value->str_end,
+                   "Can't initialize constant with non constant value");
+        return false;
+      }
     }
   }
 
@@ -5458,15 +5468,11 @@ bool setTypesComptime(AstTree *tree, AstTreeSetTypesHelper helper) {
     return false;
   }
 
-  AstTree *newTree = getValue(operand);
-  if (newTree == NULL) {
+  operand = getValue(operand, false);
+  if (operand == NULL) {
     return false;
   }
 
-  if (operand != newTree) {
-    astTreeDelete(operand);
-    operand = newTree;
-  }
   tree->metadata = operand;
   tree->type = copyAstTree(operand->type);
 
@@ -5524,7 +5530,7 @@ bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper) {
                "Member not found");
     return false;
   } else if (typeIsEqual(metadata->object->type, &AST_TREE_NAMESPACE_TYPE)) {
-    AstTree *value = getValue(metadata->object);
+    AstTree *value = getValue(metadata->object, false);
     AstTreeNamespace *namespace = value->metadata;
     AstTreeSetTypesHelper newHelper = {
         .root = helper.root->imports[namespace->importedIndex].root,
@@ -5533,7 +5539,6 @@ bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper) {
         .dependencies = helper.dependencies,
         .lookingType = helper.lookingType,
     };
-    astTreeDelete(value);
 
     AstTreeVariable *var =
         setTypesFindVariable(metadata->member.name.begin,

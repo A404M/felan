@@ -405,7 +405,7 @@ AstTree *makeTypeOfFunction(AstTreeFunction *function, const char *str_begin,
                             const char *str_end);
 bool typeIsEqual(AstTree *type0, AstTree *type1);
 bool typeIsEqualBack(const AstTree *type0, const AstTree *type1);
-AstTree *getValue(AstTree *tree);
+AstTree *getValue(AstTree *tree,bool copy);
 bool isIntType(AstTree *type);
 bool isEqual(AstTree *left, AstTree *right);
 bool isEqualVariable(AstTreeVariable *left, AstTreeVariable *right);
