@@ -7,13 +7,11 @@ print :: (v:u8)->void{
 main :: () -> void {
   i := 0;
   while i < 10 {
+    i += 1;
     if i == 7
       break;
-    else if i % 2 == 0 {
-      i += 1;
+    else if i % 2 == 0
       continue;
-    }
     print(@cast(i,u8)+'0');
-    i += 1;
   }
 };
