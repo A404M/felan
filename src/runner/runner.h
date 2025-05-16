@@ -13,8 +13,7 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
                             size_t arguments_size, bool isComptime);
 
 AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
-                           AstTree **arguments, size_t arguments_size,
-                           bool isComptime);
+                           AstTree **arguments);
 
 AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                        bool isLeft, bool isComptime, u32 *breakCount,
@@ -24,4 +23,4 @@ AstTree *getForVariable(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                         bool isLeft, bool isComptime, u32 *breakCount,
                         bool *shouldContinue, bool isLazy);
 
-bool discontinue(bool *shouldRet, u32 *breakCount);
+bool discontinue(bool shouldRet, u32 breakCount);
