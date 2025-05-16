@@ -1,5 +1,9 @@
 @import("basic.felan");
 
+print :: (v:u8)->void{
+  putc v;
+};
+
 main :: () -> void {
   i := 0;
   while i < 10 {
@@ -9,7 +13,7 @@ main :: () -> void {
       i += 1;
       continue;
     }
-    putc @cast(i,u8)+'0';
+    print(@cast(i,u8)+'0');
     i += 1;
   }
 };

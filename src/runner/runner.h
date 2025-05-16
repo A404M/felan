@@ -9,12 +9,19 @@ AstTree *runnerVariableGetValue(AstTreeVariable *variable);
 
 bool runAstTree(AstTreeRoots roots);
 
-AstTree *runAstTreeFunction(AstTree *tree, AstTreeFunctionCallParam *arguments,
+AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
                             size_t arguments_size, bool isComptime);
 
 AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
-                           AstTreeFunctionCallParam *arguments,
-                           size_t arguments_size, bool isComptime);
+                           AstTree **arguments, size_t arguments_size,
+                           bool isComptime);
 
 AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
-                       bool isLeft, bool isComptime, u32 *breakCount,bool *shouldContinue);
+                       bool isLeft, bool isComptime, u32 *breakCount,
+                       bool *shouldContinue);
+
+AstTree *getForVariable(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
+                        bool isLeft, bool isComptime, u32 *breakCount,
+                        bool *shouldContinue, bool isLazy);
+
+bool discontinue(bool *shouldRet, u32 *breakCount);
