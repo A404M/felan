@@ -17,4 +17,4 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
                            size_t arguments_size, bool isComptime);
 
 AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
-                       bool isLeft, bool isComptime);
+                       bool isLeft, bool isComptime, u32 *breakCount);

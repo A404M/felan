@@ -1,25 +1,10 @@
 @import("basic.felan");
-file :: @import("file.felan");
-
-foo :: () -> void {
-  putc 'b';
-};
-
-main :: () -> void {
-  file.foo();
-//  foo();
-};
-
-
-/*
-@import("basic.felan");
 
 main :: () -> void {
   i := 0;
   while i < 10 {
     putc @cast(i,u8)+'0';
     i += 1;
-//    break;
+    break;
   }
 };
-*/
