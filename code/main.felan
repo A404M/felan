@@ -3,8 +3,13 @@
 main :: () -> void {
   i := 0;
   while i < 10 {
+    if i == 7
+      break;
+    else if i % 2 == 0 {
+      i += 1;
+      continue;
+    }
     putc @cast(i,u8)+'0';
     i += 1;
-    break;
   }
 };

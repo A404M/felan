@@ -28,6 +28,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_KEYWORD_PUTC,
   AST_TREE_TOKEN_KEYWORD_RETURN,
   AST_TREE_TOKEN_KEYWORD_BREAK,
+  AST_TREE_TOKEN_KEYWORD_CONTINUE,
   AST_TREE_TOKEN_KEYWORD_IF,
   AST_TREE_TOKEN_KEYWORD_WHILE,
   AST_TREE_TOKEN_KEYWORD_COMPTIME,
@@ -298,6 +299,10 @@ typedef struct AstTreeShapeShifterElement {
   size_t index;
 } AstTreeShapeShifterElement;
 
+typedef struct AstTreeLoopControl {
+  u32 count;
+} AstTreeLoopControl;
+
 #ifdef PRINT_COMPILE_TREE
 void astTreePrint(const AstTree *tree, int indent);
 void astTreeVariablePrint(const AstTreeVariable *variable, int indent);
@@ -358,6 +363,8 @@ AstTree *astTreeParseValue(const ParserNode *parserNode, AstTreeToken token,
                            size_t metadata_size, AstTree *type);
 AstTree *astTreeParseString(const ParserNode *parserNode);
 AstTree *astTreeParseKeyword(const ParserNode *parserNode, AstTreeToken token);
+AstTree *astTreeParseLoopControl(const ParserNode *parserNode,
+                                 AstTreeToken token);
 AstTree *astTreeParsePutc(const ParserNode *parserNode);
 AstTree *astTreeParseReturn(const ParserNode *parserNode);
 AstTree *astTreeParseBinaryOperator(const ParserNode *parserNode,
@@ -411,6 +418,7 @@ bool setTypesPutc(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper helper,
                     AstTreeFunction *function);
 bool setTypesBreak(AstTree *tree, AstTreeSetTypesHelper helper);
+bool setTypesContinue(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesTypeFunction(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper,

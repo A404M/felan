@@ -61,6 +61,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
 
     "PARSER_TOKEN_KEYWORD_PUTC",
     "PARSER_TOKEN_KEYWORD_BREAK",
+    "PARSER_TOKEN_KEYWORD_CONTINUE",
     "PARSER_TOKEN_KEYWORD_RETURN",
     "PARSER_TOKEN_KEYWORD_IF",
     "PARSER_TOKEN_KEYWORD_WHILE",
@@ -282,6 +283,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
   case PARSER_TOKEN_KEYWORD_BREAK:
+  case PARSER_TOKEN_KEYWORD_CONTINUE:
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_VALUE_INT: {
     ParserNodeIntMetadata *metadata = node->metadata;
@@ -586,6 +588,7 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
   case PARSER_TOKEN_KEYWORD_BREAK:
+  case PARSER_TOKEN_KEYWORD_CONTINUE:
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_VALUE_BOOL: {
     ParserNodeBoolMetadata *metadata = node->metadata;
@@ -929,6 +932,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserNoMetadata(node, parent, PARSER_TOKEN_KEYWORD_UNDEFINED);
   case LEXER_TOKEN_KEYWORD_BREAK:
     return parserNoMetadata(node, parent, PARSER_TOKEN_KEYWORD_BREAK);
+  case LEXER_TOKEN_KEYWORD_CONTINUE:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_KEYWORD_CONTINUE);
   case LEXER_TOKEN_KEYWORD_PUTC:
     return parserPutc(node, end, parent);
   case LEXER_TOKEN_KEYWORD_RETURN:
@@ -1720,6 +1725,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_KEYWORD_NULL:
       case PARSER_TOKEN_KEYWORD_UNDEFINED:
       case PARSER_TOKEN_KEYWORD_BREAK:
+      case PARSER_TOKEN_KEYWORD_CONTINUE:
       case PARSER_TOKEN_KEYWORD_PUTC:
       case PARSER_TOKEN_KEYWORD_RETURN:
       case PARSER_TOKEN_KEYWORD_STRUCT:
@@ -2258,6 +2264,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
   case PARSER_TOKEN_KEYWORD_BREAK:
+  case PARSER_TOKEN_KEYWORD_CONTINUE:
   case PARSER_TOKEN_KEYWORD_STRUCT:
     return true;
   case PARSER_TOKEN_ROOT:
@@ -2340,6 +2347,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_KEYWORD_PUTC:
   case PARSER_TOKEN_KEYWORD_RETURN:
   case PARSER_TOKEN_KEYWORD_BREAK:
+  case PARSER_TOKEN_KEYWORD_CONTINUE:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUB_ASSIGN:
@@ -2463,6 +2471,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_KEYWORD_PUTC:
   case PARSER_TOKEN_KEYWORD_RETURN:
   case PARSER_TOKEN_KEYWORD_BREAK:
+  case PARSER_TOKEN_KEYWORD_CONTINUE:
   case PARSER_TOKEN_KEYWORD_WHILE:
     return false;
   case PARSER_TOKEN_NONE:
