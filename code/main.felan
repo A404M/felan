@@ -7,7 +7,7 @@ print :: (comptime t:type,v:t)->void{
 
 main :: () -> void {
   i := 0;
-  while i < 10 {
+  while true {
     i += 1;
     if i == 7
       return;
@@ -16,6 +16,6 @@ main :: () -> void {
     else if i == 8
       break;
     print(u8,@cast(i,u8)+'0');
-    print(u16,@cast(i,u16));
+    print(u16,@cast(@cast(i,u8) + '0',u16));
   }
 };

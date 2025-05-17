@@ -1096,19 +1096,26 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                function->token <= AST_TREE_TOKEN_BUILTIN_END) {
       for (size_t i = 0; i < args_size; ++i) {
         AstTreeFunctionCallParam param = metadata->parameters[i];
-        args[i] = getForVariable(param.value, scope, shouldRet, false,
-                                 isComptime, breakCount, shouldContinue, false);
-        if (discontinue(*shouldRet, *breakCount)) {
-          astTreeDelete(function);
-          for (size_t j = 0; j < i; ++j) {
-            astTreeDelete(args[i]);
+        if (function->token != AST_TREE_TOKEN_BUILTIN_TYPE_OF) {
+          args[i] =
+              getForVariable(param.value, scope, shouldRet, false, isComptime,
+                             breakCount, shouldContinue, false);
+          if (discontinue(*shouldRet, *breakCount)) {
+            astTreeDelete(function);
+            for (size_t j = 0; j < i; ++j) {
+              astTreeDelete(args[i]);
+            }
+            return args[i];
           }
-          return args[i];
+        } else {
+          args[i] = param.value;
         }
       }
       result = runAstTreeBuiltin(function, scope, args);
-      for (size_t i = 0; i < args_size; ++i) {
-        astTreeDelete(args[i]);
+      if (function->token != AST_TREE_TOKEN_BUILTIN_TYPE_OF) {
+        for (size_t i = 0; i < args_size; ++i) {
+          astTreeDelete(args[i]);
+        }
       }
     } else {
       UNREACHABLE;

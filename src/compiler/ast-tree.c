@@ -14,66 +14,88 @@ AstTree AST_TREE_TYPE_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_TYPE,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 AstTree AST_TREE_VOID_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_VOID,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 AstTree AST_TREE_BOOL_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_BOOL,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 AstTree AST_TREE_I8_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_I8,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 AstTree AST_TREE_U8_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_U8,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 AstTree AST_TREE_I16_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_I16,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 AstTree AST_TREE_U16_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_U16,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 AstTree AST_TREE_I32_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_I32,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 AstTree AST_TREE_U32_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_U32,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 AstTree AST_TREE_I64_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_I64,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 AstTree AST_TREE_U64_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_U64,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 #ifdef FLOAT_16_SUPPORT
@@ -81,6 +103,8 @@ AstTree AST_TREE_F16_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_F16,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 #endif
 
@@ -88,42 +112,56 @@ AstTree AST_TREE_F32_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_F32,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 AstTree AST_TREE_F64_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_F64,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 AstTree AST_TREE_F128_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_F128,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 AstTree AST_TREE_CODE_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_CODE,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 AstTree AST_TREE_NAMESPACE_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_NAMESPACE,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 AstTree AST_TREE_SHAPE_SHIFTER_TYPE = {
     .token = AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER,
     .metadata = NULL,
     .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 AstTree AST_TREE_VOID_VALUE = {
     .token = AST_TREE_TOKEN_VALUE_VOID,
     .metadata = NULL,
     .type = &AST_TREE_VOID_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
 };
 
 const char *AST_TREE_TOKEN_STRINGS[] = {
@@ -952,8 +990,19 @@ void astTreeDelete(AstTree *tree) {
 }
 
 bool astTreeShouldDelete(AstTree *tree) {
-  return AST_TREE_TOKEN_STATIC_VARS_BEGIN > tree->token ||
-         tree->token > AST_TREE_TOKEN_STATIC_VARS_END;
+  return tree != &AST_TREE_TYPE_TYPE && tree != &AST_TREE_VOID_TYPE &&
+         tree != &AST_TREE_BOOL_TYPE && tree != &AST_TREE_I8_TYPE &&
+         tree != &AST_TREE_U8_TYPE && tree != &AST_TREE_I16_TYPE &&
+         tree != &AST_TREE_U16_TYPE && tree != &AST_TREE_I32_TYPE &&
+         tree != &AST_TREE_U32_TYPE && tree != &AST_TREE_I64_TYPE &&
+         tree != &AST_TREE_U64_TYPE &&
+#ifdef FLOAT_16_SUPPORT
+         tree != &AST_TREE_F16_TYPE &&
+#endif
+         tree != &AST_TREE_F32_TYPE && tree != &AST_TREE_F64_TYPE &&
+         tree != &AST_TREE_F128_TYPE && tree != &AST_TREE_CODE_TYPE &&
+         tree != &AST_TREE_NAMESPACE_TYPE &&
+         tree != &AST_TREE_SHAPE_SHIFTER_TYPE && tree != &AST_TREE_VOID_VALUE;
 }
 
 void astTreeRootDelete(AstTreeRoot *root) {
@@ -1025,8 +1074,12 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
   case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_NAMESPACE:
   case AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER:
-  case AST_TREE_TOKEN_VALUE_VOID:
     return tree;
+  case AST_TREE_TOKEN_VALUE_VOID:
+    if (tree == &AST_TREE_VOID_VALUE) {
+      return tree;
+    }
+    // fall through
   case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_UNDEFINED:
   case AST_TREE_TOKEN_BUILTIN_CAST:
@@ -3343,6 +3396,11 @@ bool isConst(AstTree *tree) {
   }
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = tree->metadata;
+
+    if (metadata->function->token == AST_TREE_TOKEN_BUILTIN_TYPE_OF) {
+      return true;
+    }
+
     for (size_t i = 0; i < metadata->parameters_size; ++i) {
       if (!isConst(metadata->parameters[i].value)) {
         return false;
@@ -3362,8 +3420,13 @@ bool isConst(AstTree *tree) {
   case AST_TREE_TOKEN_KEYWORD_CONTINUE:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
+    return false;
   case AST_TREE_TOKEN_OPERATOR_PLUS:
   case AST_TREE_TOKEN_OPERATOR_MINUS:
+  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT: {
+    AstTreeUnary *metadata = tree->metadata;
+    return metadata->function->isConst && isConst(metadata->operand);
+  }
   case AST_TREE_TOKEN_OPERATOR_SUM:
   case AST_TREE_TOKEN_OPERATOR_SUB:
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
@@ -3375,10 +3438,12 @@ bool isConst(AstTree *tree) {
   case AST_TREE_TOKEN_OPERATOR_SMALLER:
   case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
   case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_AND:
-  case AST_TREE_TOKEN_OPERATOR_LOGICAL_OR:
-    return false;
+  case AST_TREE_TOKEN_OPERATOR_LOGICAL_OR: {
+    AstTreeInfix *metadata = tree->metadata;
+    return metadata->function->isConst && isConst(metadata->left) &&
+           isConst(metadata->right);
+  }
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *metadata = tree->metadata;
     return metadata->isConst && metadata->value != NULL;
@@ -5029,7 +5094,7 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
         AstTreeFunctionCallParam p1 = call->parameters[i];
         AstTree *v0 = getValue(p0.value, false);
         AstTree *v1 = getValue(p1.value, false);
-        if (isEqual(v0, v1)) {
+        if (!isEqual(v0, v1)) {
           goto SEARCH_LOOP_CONTINUE;
         }
       }
@@ -5429,7 +5494,9 @@ bool setTypesIf(AstTree *tree, AstTreeSetTypesHelper helper,
   if (isConst(metadata->condition)) {
     AstTree *condition = getValue(metadata->condition, true);
     AstTree *result;
-    if (*(AstTreeBool *)condition->metadata) {
+    bool condi = *(AstTreeBool *)condition->metadata;
+    astTreeDelete(condition);
+    if (condi) {
       if (!setAllTypes(metadata->ifBody, helper, function, NULL)) {
         return false;
       }
@@ -5442,21 +5509,23 @@ bool setTypesIf(AstTree *tree, AstTreeSetTypesHelper helper,
     } else {
       result = copyAstTree(&AST_TREE_VOID_VALUE);
     }
-    astTreeDelete(condition);
     astTreeDestroy(*tree);
     *tree = *result;
-  }
-
-  if (!setAllTypes(metadata->ifBody, helper, function, NULL) ||
-      (metadata->elseBody != NULL &&
-       !setAllTypes(metadata->elseBody, helper, function, NULL))) {
-  }
-
-  if (metadata->elseBody != NULL &&
-      typeIsEqual(metadata->ifBody->type, metadata->elseBody->type)) {
-    tree->type = copyAstTree(metadata->ifBody->type);
+    if (astTreeShouldDelete(result)) {
+      free(result);
+    }
   } else {
-    tree->type = &AST_TREE_VOID_TYPE;
+    if (!setAllTypes(metadata->ifBody, helper, function, NULL) ||
+        (metadata->elseBody != NULL &&
+         !setAllTypes(metadata->elseBody, helper, function, NULL))) {
+    }
+
+    if (metadata->elseBody != NULL &&
+        typeIsEqual(metadata->ifBody->type, metadata->elseBody->type)) {
+      tree->type = copyAstTree(metadata->ifBody->type);
+    } else {
+      tree->type = &AST_TREE_VOID_TYPE;
+    }
   }
 
   return true;
@@ -5483,8 +5552,7 @@ bool setTypesWhile(AstTree *tree, AstTreeSetTypesHelper _helper,
       .loops_size = loops_size,
   };
 
-  if (!setAllTypes(metadata->condition, helper, function, NULL) ||
-      !setAllTypes(metadata->body, helper, function, NULL)) {
+  if (!setAllTypes(metadata->condition, helper, function, NULL)) {
     return false;
   }
 
@@ -5494,6 +5562,19 @@ bool setTypesWhile(AstTree *tree, AstTreeSetTypesHelper _helper,
     return false;
   }
 
+  if (isConst(metadata->condition)) {
+    AstTree *condition = getValue(metadata->condition, true);
+    bool condi = *(AstTreeBool *)condition->metadata;
+    astTreeDelete(condition);
+    if (!condi) {
+      astTreeDestroy(*tree);
+      *tree = AST_TREE_VOID_VALUE;
+      return true;
+    }
+  }
+  if (!setAllTypes(metadata->body, helper, function, NULL)) {
+    return false;
+  }
   tree->type = &AST_TREE_VOID_TYPE;
   return true;
 }
