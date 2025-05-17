@@ -5416,10 +5416,7 @@ bool setTypesIf(AstTree *tree, AstTreeSetTypesHelper helper,
                 AstTreeFunction *function) {
   AstTreeIf *metadata = tree->metadata;
 
-  if (!setAllTypes(metadata->condition, helper, function, NULL) ||
-      !setAllTypes(metadata->ifBody, helper, function, NULL) ||
-      (metadata->elseBody != NULL &&
-       !setAllTypes(metadata->elseBody, helper, function, NULL))) {
+  if (!setAllTypes(metadata->condition, helper, function, NULL)) {
     return false;
   }
 
@@ -5427,6 +5424,32 @@ bool setTypesIf(AstTree *tree, AstTreeSetTypesHelper helper,
     printError(metadata->condition->str_begin, metadata->condition->str_end,
                "If condition must be boolean");
     return false;
+  }
+
+  if (isConst(metadata->condition)) {
+    AstTree *condition = getValue(metadata->condition, true);
+    AstTree *result;
+    if (*(AstTreeBool *)condition->metadata) {
+      if (!setAllTypes(metadata->ifBody, helper, function, NULL)) {
+        return false;
+      }
+      result = copyAstTree(metadata->ifBody);
+    } else if (metadata->elseBody != NULL) {
+      if (!setAllTypes(metadata->elseBody, helper, function, NULL)) {
+        return false;
+      }
+      result = copyAstTree(metadata->elseBody);
+    } else {
+      result = copyAstTree(&AST_TREE_VOID_VALUE);
+    }
+    astTreeDelete(condition);
+    astTreeDestroy(*tree);
+    *tree = *result;
+  }
+
+  if (!setAllTypes(metadata->ifBody, helper, function, NULL) ||
+      (metadata->elseBody != NULL &&
+       !setAllTypes(metadata->elseBody, helper, function, NULL))) {
   }
 
   if (metadata->elseBody != NULL &&
@@ -6594,4 +6617,117 @@ AstTree *makeStringType() {
 
   return newAstTree(AST_TREE_TOKEN_TYPE_ARRAY, type_metadata,
                     &AST_TREE_TYPE_TYPE, NULL, NULL);
+}
+
+size_t getSizeOfType(AstTree *type) {
+  switch (type->token) {
+  case AST_TREE_TOKEN_TYPE_VOID:
+    return 0;
+  case AST_TREE_TOKEN_TYPE_BOOL:
+  case AST_TREE_TOKEN_TYPE_I8:
+  case AST_TREE_TOKEN_TYPE_U8:
+    return 1;
+  case AST_TREE_TOKEN_TYPE_I16:
+  case AST_TREE_TOKEN_TYPE_U16:
+  case AST_TREE_TOKEN_TYPE_F16:
+    return 2;
+  case AST_TREE_TOKEN_TYPE_I32:
+  case AST_TREE_TOKEN_TYPE_U32:
+  case AST_TREE_TOKEN_TYPE_F32:
+    return 4;
+  case AST_TREE_TOKEN_TYPE_TYPE:
+  case AST_TREE_TOKEN_TYPE_FUNCTION:
+  case AST_TREE_TOKEN_TYPE_I64:
+  case AST_TREE_TOKEN_TYPE_U64:
+  case AST_TREE_TOKEN_TYPE_F64:
+    return 8;
+  case AST_TREE_TOKEN_TYPE_F128:
+    return 16;
+  case AST_TREE_TOKEN_KEYWORD_STRUCT: {
+    AstTreeStruct *metadata = type->metadata;
+    size_t size = 0;
+
+    for (size_t i = 0; i < metadata->variables.size; ++i) {
+      size += getSizeOfType(metadata->variables.data[i]->type);
+    }
+
+    return size;
+  }
+  case AST_TREE_TOKEN_TYPE_ARRAY: {
+    AstTreeBracket *metadata = type->metadata;
+    if (metadata->parameters.size == 1 &&
+        isIntType(metadata->parameters.data[0]->type)) {
+      return *(AstTreeInt *)metadata->parameters.data[0]->metadata;
+    } else {
+      UNREACHABLE;
+    }
+  }
+  case AST_TREE_TOKEN_TYPE_CODE:
+  case AST_TREE_TOKEN_TYPE_NAMESPACE:
+  case AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER:
+  case AST_TREE_TOKEN_FUNCTION:
+  case AST_TREE_TOKEN_BUILTIN_CAST:
+  case AST_TREE_TOKEN_BUILTIN_TYPE_OF:
+  case AST_TREE_TOKEN_BUILTIN_IMPORT:
+  case AST_TREE_TOKEN_BUILTIN_IS_COMPTIME:
+  case AST_TREE_TOKEN_BUILTIN_STACK_ALLOC:
+  case AST_TREE_TOKEN_BUILTIN_HEAP_ALLOC:
+  case AST_TREE_TOKEN_BUILTIN_NEG:
+  case AST_TREE_TOKEN_BUILTIN_ADD:
+  case AST_TREE_TOKEN_BUILTIN_SUB:
+  case AST_TREE_TOKEN_BUILTIN_MUL:
+  case AST_TREE_TOKEN_BUILTIN_DIV:
+  case AST_TREE_TOKEN_BUILTIN_MOD:
+  case AST_TREE_TOKEN_BUILTIN_EQUAL:
+  case AST_TREE_TOKEN_BUILTIN_NOT_EQUAL:
+  case AST_TREE_TOKEN_BUILTIN_GREATER:
+  case AST_TREE_TOKEN_BUILTIN_SMALLER:
+  case AST_TREE_TOKEN_BUILTIN_GREATER_OR_EQUAL:
+  case AST_TREE_TOKEN_BUILTIN_SMALLER_OR_EQUAL:
+  case AST_TREE_TOKEN_KEYWORD_PUTC:
+  case AST_TREE_TOKEN_KEYWORD_RETURN:
+  case AST_TREE_TOKEN_KEYWORD_BREAK:
+  case AST_TREE_TOKEN_KEYWORD_CONTINUE:
+  case AST_TREE_TOKEN_KEYWORD_IF:
+  case AST_TREE_TOKEN_KEYWORD_WHILE:
+  case AST_TREE_TOKEN_KEYWORD_COMPTIME:
+  case AST_TREE_TOKEN_VALUE_VOID:
+  case AST_TREE_TOKEN_FUNCTION_CALL:
+  case AST_TREE_TOKEN_VARIABLE:
+  case AST_TREE_TOKEN_VARIABLE_DEFINE:
+  case AST_TREE_TOKEN_VALUE_NULL:
+  case AST_TREE_TOKEN_VALUE_UNDEFINED:
+  case AST_TREE_TOKEN_VALUE_NAMESPACE:
+  case AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER:
+  case AST_TREE_TOKEN_VALUE_INT:
+  case AST_TREE_TOKEN_VALUE_FLOAT:
+  case AST_TREE_TOKEN_VALUE_BOOL:
+  case AST_TREE_TOKEN_VALUE_OBJECT:
+  case AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT:
+  case AST_TREE_TOKEN_OPERATOR_ASSIGN:
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
+  case AST_TREE_TOKEN_OPERATOR_SUM:
+  case AST_TREE_TOKEN_OPERATOR_SUB:
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
+  case AST_TREE_TOKEN_OPERATOR_MODULO:
+  case AST_TREE_TOKEN_OPERATOR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_GREATER:
+  case AST_TREE_TOKEN_OPERATOR_SMALLER:
+  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_POINTER:
+  case AST_TREE_TOKEN_OPERATOR_ADDRESS:
+  case AST_TREE_TOKEN_OPERATOR_DEREFERENCE:
+  case AST_TREE_TOKEN_OPERATOR_ACCESS:
+  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
+  case AST_TREE_TOKEN_OPERATOR_LOGICAL_AND:
+  case AST_TREE_TOKEN_OPERATOR_LOGICAL_OR:
+  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS:
+  case AST_TREE_TOKEN_SCOPE:
+  case AST_TREE_TOKEN_NONE:
+  }
+  UNREACHABLE;
 }

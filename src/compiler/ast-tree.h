@@ -483,3 +483,5 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
 char *u8ArrayToCString(AstTree *tree);
 
 AstTree *makeStringType();
+
+size_t getSizeOfType(AstTree *type);

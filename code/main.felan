@@ -1,7 +1,8 @@
 @import("basic.felan");
 
-print :: (v:u8)->void{
-  putc v;
+print :: (comptime t:type,v:t)->void{
+  if @typeOf(v) == u8
+    putc v;
 };
 
 main :: () -> void {
@@ -9,9 +10,12 @@ main :: () -> void {
   while i < 10 {
     i += 1;
     if i == 7
-      break;
+      return;
     else if i % 2 == 0
       continue;
-    print(@cast(i,u8)+'0');
+    else if i == 8
+      break;
+    print(u8,@cast(i,u8)+'0');
+    print(u16,@cast(i,u16));
   }
 };
