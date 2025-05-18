@@ -1040,6 +1040,10 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     }
     return ret;
   }
+  case AST_TREE_TOKEN_BUILTIN_PUTC: {
+    putchar((u8) * (AstTreeInt *)arguments[0]->metadata);
+    return copyAstTree(&AST_TREE_VOID_VALUE);
+  }
   case AST_TREE_TOKEN_BUILTIN_IMPORT:
   default:
   }
@@ -1050,17 +1054,6 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                        bool isLeft, bool isComptime, u32 *breakCount,
                        bool *shouldContinue) {
   switch (expr->token) {
-  case AST_TREE_TOKEN_KEYWORD_PUTC: {
-    AstTreeSingleChild *metadata = expr->metadata;
-    AstTree *tree = runExpression(metadata, scope, shouldRet, false, isComptime,
-                                  breakCount, shouldContinue);
-    if (discontinue(*shouldRet, *breakCount)) {
-      return tree;
-    }
-    putchar((u8) * (AstTreeInt *)tree->metadata);
-    astTreeDelete(tree);
-    return &AST_TREE_VOID_VALUE;
-  }
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = expr->metadata;
     AstTree *function =
@@ -1374,6 +1367,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
   case AST_TREE_TOKEN_BUILTIN_SMALLER:
   case AST_TREE_TOKEN_BUILTIN_GREATER_OR_EQUAL:
   case AST_TREE_TOKEN_BUILTIN_SMALLER_OR_EQUAL:
+  case AST_TREE_TOKEN_BUILTIN_PUTC:
     return copyAstTree(expr);
   case AST_TREE_TOKEN_BUILTIN_IS_COMPTIME: {
     AstTreeBool *metadata = a404m_malloc(sizeof(*metadata));

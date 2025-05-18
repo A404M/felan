@@ -27,6 +27,7 @@ typedef enum ParserToken {
   PARSER_TOKEN_BUILTIN_SMALLER,
   PARSER_TOKEN_BUILTIN_GREATER_OR_EQUAL,
   PARSER_TOKEN_BUILTIN_SMALLER_OR_EQUAL,
+  PARSER_TOKEN_BUILTIN_PUTC,
 
   PARSER_TOKEN_VALUE_INT,
   PARSER_TOKEN_VALUE_FLOAT,
@@ -56,7 +57,6 @@ typedef enum ParserToken {
   PARSER_TOKEN_TYPE_NAMESPACE,
   PARSER_TOKEN_TYPE_SHAPE_SHIFTER,
 
-  PARSER_TOKEN_KEYWORD_PUTC,
   PARSER_TOKEN_KEYWORD_BREAK,
   PARSER_TOKEN_KEYWORD_CONTINUE,
   PARSER_TOKEN_KEYWORD_RETURN,
@@ -227,7 +227,6 @@ LexerNode *getNextLexerNodeUsingCommonParent(LexerNode *node, LexerNode *end,
 
 ParserNode *parserNoMetadata(LexerNode *node, ParserNode *parent,
                              ParserToken token);
-ParserNode *parserPutc(LexerNode *node, LexerNode *end, ParserNode *parent);
 ParserNode *parserReturn(LexerNode *node, LexerNode *end, ParserNode *parent);
 ParserNode *parserNumber(LexerNode *node, ParserNode *parent);
 ParserNode *parserChar(LexerNode *node, ParserNode *parent);

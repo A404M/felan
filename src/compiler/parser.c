@@ -30,6 +30,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_BUILTIN_SMALLER",
     "PARSER_TOKEN_BUILTIN_GREATER_OR_EQUAL",
     "PARSER_TOKEN_BUILTIN_SMALLER_OR_EQUAL",
+    "PARSER_TOKEN_BUILTIN_PUTC",
 
     "PARSER_TOKEN_VALUE_INT",
     "PARSER_TOKEN_VALUE_FLOAT",
@@ -59,7 +60,6 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_TYPE_NAMESPACE",
     "PARSER_TOKEN_TYPE_SHAPE_SHIFTER",
 
-    "PARSER_TOKEN_KEYWORD_PUTC",
     "PARSER_TOKEN_KEYWORD_BREAK",
     "PARSER_TOKEN_KEYWORD_CONTINUE",
     "PARSER_TOKEN_KEYWORD_RETURN",
@@ -260,6 +260,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_BUILTIN_SMALLER:
   case PARSER_TOKEN_BUILTIN_GREATER_OR_EQUAL:
   case PARSER_TOKEN_BUILTIN_SMALLER_OR_EQUAL:
+  case PARSER_TOKEN_BUILTIN_PUTC:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_BOOL:
@@ -341,7 +342,6 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_OPERATOR_DEREFERENCE:
   case PARSER_TOKEN_OPERATOR_PLUS:
   case PARSER_TOKEN_OPERATOR_MINUS:
-  case PARSER_TOKEN_KEYWORD_PUTC:
   case PARSER_TOKEN_KEYWORD_COMPTIME:
   case PARSER_TOKEN_SYMBOL_COMMA:
   case PARSER_TOKEN_SYMBOL_EOL: {
@@ -565,6 +565,7 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_BUILTIN_SMALLER:
   case PARSER_TOKEN_BUILTIN_GREATER_OR_EQUAL:
   case PARSER_TOKEN_BUILTIN_SMALLER_OR_EQUAL:
+  case PARSER_TOKEN_BUILTIN_PUTC:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_BOOL:
@@ -632,7 +633,6 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_DEREFERENCE:
   case PARSER_TOKEN_OPERATOR_PLUS:
   case PARSER_TOKEN_OPERATOR_MINUS:
-  case PARSER_TOKEN_KEYWORD_PUTC:
   case PARSER_TOKEN_KEYWORD_COMPTIME:
   case PARSER_TOKEN_SYMBOL_COMMA:
   case PARSER_TOKEN_SYMBOL_EOL: {
@@ -888,6 +888,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
   case LEXER_TOKEN_BUILTIN_SMALLER_OR_EQUAL:
     return parserNoMetadata(node, parent,
                             PARSER_TOKEN_BUILTIN_SMALLER_OR_EQUAL);
+  case LEXER_TOKEN_BUILTIN_PUTC:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_BUILTIN_PUTC);
   case LEXER_TOKEN_KEYWORD_TYPE:
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_TYPE);
   case LEXER_TOKEN_KEYWORD_VOID:
@@ -934,8 +936,6 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserNoMetadata(node, parent, PARSER_TOKEN_KEYWORD_BREAK);
   case LEXER_TOKEN_KEYWORD_CONTINUE:
     return parserNoMetadata(node, parent, PARSER_TOKEN_KEYWORD_CONTINUE);
-  case LEXER_TOKEN_KEYWORD_PUTC:
-    return parserPutc(node, end, parent);
   case LEXER_TOKEN_KEYWORD_RETURN:
     return parserReturn(node, end, parent);
   case LEXER_TOKEN_KEYWORD_TRUE:
@@ -1156,27 +1156,6 @@ ParserNode *parserNoMetadata(LexerNode *node, ParserNode *parent,
                              ParserToken token) {
   return node->parserNode =
              newParserNode(token, node->str_begin, node->str_end, NULL, parent);
-}
-
-ParserNode *parserPutc(LexerNode *node, LexerNode *end, ParserNode *parent) {
-  LexerNode *afterNode = node + 1;
-  if (afterNode >= end) {
-    printError(node->str_begin, node->str_end, "No param");
-    return NULL;
-  } else if (afterNode->parserNode == NULL) {
-    printError(node->str_begin, node->str_end, "Bad param");
-    return NULL;
-  }
-
-  ParserNode *operand = getUntilCommonParent(afterNode->parserNode, parent);
-  if (operand == NULL) {
-    printError(node->str_begin, node->str_end, "Bad param");
-    return NULL;
-  }
-
-  return operand->parent = node->parserNode = newParserNode(
-             PARSER_TOKEN_KEYWORD_PUTC, node->str_begin, node->str_end,
-             (ParserNodeSingleChildMetadata *)operand, parent);
 }
 
 ParserNode *parserReturn(LexerNode *node, LexerNode *end, ParserNode *parent) {
@@ -1696,6 +1675,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_BUILTIN_SMALLER:
       case PARSER_TOKEN_BUILTIN_GREATER_OR_EQUAL:
       case PARSER_TOKEN_BUILTIN_SMALLER_OR_EQUAL:
+      case PARSER_TOKEN_BUILTIN_PUTC:
       case PARSER_TOKEN_VALUE_INT:
       case PARSER_TOKEN_VALUE_FLOAT:
       case PARSER_TOKEN_VALUE_BOOL:
@@ -1726,7 +1706,6 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_KEYWORD_UNDEFINED:
       case PARSER_TOKEN_KEYWORD_BREAK:
       case PARSER_TOKEN_KEYWORD_CONTINUE:
-      case PARSER_TOKEN_KEYWORD_PUTC:
       case PARSER_TOKEN_KEYWORD_RETURN:
       case PARSER_TOKEN_KEYWORD_STRUCT:
       case PARSER_TOKEN_CONSTANT:
@@ -2197,6 +2176,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_BUILTIN_SMALLER:
   case PARSER_TOKEN_BUILTIN_GREATER_OR_EQUAL:
   case PARSER_TOKEN_BUILTIN_SMALLER_OR_EQUAL:
+  case PARSER_TOKEN_BUILTIN_PUTC:
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_VARIABLE:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
@@ -2204,7 +2184,6 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_SYMBOL_BRACKET_RIGHT:
   case PARSER_TOKEN_FUNCTION_DEFINITION:
   case PARSER_TOKEN_FUNCTION_CALL:
-  case PARSER_TOKEN_KEYWORD_PUTC:
   case PARSER_TOKEN_KEYWORD_RETURN:
   case PARSER_TOKEN_OPERATOR_ACCESS:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
@@ -2330,6 +2309,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_BUILTIN_SMALLER:
   case PARSER_TOKEN_BUILTIN_GREATER_OR_EQUAL:
   case PARSER_TOKEN_BUILTIN_SMALLER_OR_EQUAL:
+  case PARSER_TOKEN_BUILTIN_PUTC:
   case PARSER_TOKEN_OPERATOR_ADDRESS:
   case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
@@ -2344,7 +2324,6 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_VALUE_BOOL:
   case PARSER_TOKEN_VALUE_CHAR:
   case PARSER_TOKEN_VALUE_STRING:
-  case PARSER_TOKEN_KEYWORD_PUTC:
   case PARSER_TOKEN_KEYWORD_RETURN:
   case PARSER_TOKEN_KEYWORD_BREAK:
   case PARSER_TOKEN_KEYWORD_CONTINUE:
@@ -2406,6 +2385,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_BUILTIN_SMALLER:
   case PARSER_TOKEN_BUILTIN_GREATER_OR_EQUAL:
   case PARSER_TOKEN_BUILTIN_SMALLER_OR_EQUAL:
+  case PARSER_TOKEN_BUILTIN_PUTC:
   case PARSER_TOKEN_OPERATOR_ACCESS:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:
@@ -2468,7 +2448,6 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_SYMBOL_EOL:
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
   case PARSER_TOKEN_SYMBOL_COMMA:
-  case PARSER_TOKEN_KEYWORD_PUTC:
   case PARSER_TOKEN_KEYWORD_RETURN:
   case PARSER_TOKEN_KEYWORD_BREAK:
   case PARSER_TOKEN_KEYWORD_CONTINUE:

@@ -2,7 +2,9 @@
 
 print :: (comptime t:type,v:t)->void{
   if @typeOf(v) == u8
-    putc v;
+    @putc(v);
+  else
+    @putc('n');
 };
 
 main :: () -> void {
