@@ -24,3 +24,7 @@ AstTree *getForVariable(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                         bool *shouldContinue, bool isLazy);
 
 bool discontinue(bool shouldRet, u32 breakCount);
+
+AstTree *toRawValue(AstTree *value);
+
+AstTree *castTo(AstTree *value,AstTree *to);

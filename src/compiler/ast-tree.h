@@ -73,6 +73,8 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_VALUE_FLOAT,
   AST_TREE_TOKEN_VALUE_BOOL,
   AST_TREE_TOKEN_VALUE_OBJECT,
+  AST_TREE_TOKEN_RAW_VALUE,
+  AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED,
 
   AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT,
 
@@ -305,6 +307,9 @@ typedef struct AstTreeLoopControl {
   u32 count;
 } AstTreeLoopControl;
 
+typedef struct AstTreeRawValue {
+} AstTreeRawValue;
+
 #ifdef PRINT_COMPILE_TREE
 void astTreePrint(const AstTree *tree, int indent);
 void astTreeVariablePrint(const AstTreeVariable *variable, int indent);
@@ -400,6 +405,7 @@ bool typeIsEqual(AstTree *type0, AstTree *type1);
 bool typeIsEqualBack(const AstTree *type0, const AstTree *type1);
 AstTree *getValue(AstTree *tree, bool copy);
 bool isIntType(AstTree *type);
+bool isFloatType(AstTree *type);
 bool isEqual(AstTree *left, AstTree *right);
 bool isEqualVariable(AstTreeVariable *left, AstTreeVariable *right);
 

@@ -7,7 +7,7 @@ print :: (comptime t:type,v:t)->void{
     @putc('n');
 };
 
-main :: () -> void {
+fun0 :: () -> void {
   i := 0;
   while true {
     i += 1;
@@ -20,4 +20,36 @@ main :: () -> void {
     print(u8,@cast(i,u8)+'0');
     print(u16,@cast(@cast(i,u8) + '0',u16));
   }
+};
+
+fun1 :: ()->void{
+  a :[20]u8 = undefined;
+  a[0] = '2';
+  @putc(a[0]);
+};
+
+fun2 :: ()->void{
+  b := '2';
+  c := &b;
+  d := &c;
+  d.*.* = '6';
+  @putc(b);
+  @putc(c.*);
+  @putc(d.*.*);
+};
+
+fun3 :: ()->void{
+  st :: struct{
+    a : i64;
+  };
+  a : st = undefined;
+  a.a = 2;
+  @putc(@cast(a.a,u8)+'0');
+};
+
+main :: ()->void{
+  fun0();
+  fun1();
+  fun2();
+  fun3();
 };
