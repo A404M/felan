@@ -922,7 +922,7 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     return ret;
   }
   case AST_TREE_TOKEN_BUILTIN_PUTC: {
-    putchar((u8) * (AstTreeInt *)arguments[0]->metadata);
+    putchar(*(u8*)arguments[0]->metadata);
     return copyAstTree(&AST_TREE_VOID_VALUE);
   }
   case AST_TREE_TOKEN_BUILTIN_IMPORT:

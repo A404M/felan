@@ -30,6 +30,8 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_BUILTIN_GREATER_OR_EQUAL",
     "LEXER_TOKEN_BUILTIN_SMALLER_OR_EQUAL",
     "LEXER_TOKEN_BUILTIN_PUTC",
+    "LEXER_TOKEN_BUILTIN_C_LIBRARY",
+    "LEXER_TOKEN_BUILTIN_C_FUNCTION",
     "LEXER_TOKEN_KEYWORD_TYPE",
     "LEXER_TOKEN_KEYWORD_VOID",
     "LEXER_TOKEN_KEYWORD_I8",
@@ -199,11 +201,11 @@ static const size_t LEXER_KEYWORD_SIZE =
 
 static const char *LEXER_BUILTIN_STRINGS[] = {
     "cast",
-    "typeOf",
+    "type_of",
     "import",
-    "isComptime",
-    "stackAlloc",
-    "heapAlloc",
+    "is_comptime",
+    "stack_alloc",
+    "heap_alloc",
     "neg",
     "add",
     "sub",
@@ -211,12 +213,14 @@ static const char *LEXER_BUILTIN_STRINGS[] = {
     "div",
     "mod",
     "equal",
-    "notEqual",
+    "not_equal",
     "greater",
     "smaller",
-    "greaterOrEqual",
-    "smallerOrEqual",
+    "greater_or_equal",
+    "smaller_or_equal",
     "putc",
+    "c_library",
+    "c_function",
 };
 static const LexerToken LEXER_BUILTIN_TOKENS[] = {
     LEXER_TOKEN_BUILTIN_CAST,
@@ -238,6 +242,8 @@ static const LexerToken LEXER_BUILTIN_TOKENS[] = {
     LEXER_TOKEN_BUILTIN_GREATER_OR_EQUAL,
     LEXER_TOKEN_BUILTIN_SMALLER_OR_EQUAL,
     LEXER_TOKEN_BUILTIN_PUTC,
+    LEXER_TOKEN_BUILTIN_C_LIBRARY,
+    LEXER_TOKEN_BUILTIN_C_FUNCTION,
 };
 static const size_t LEXER_BUILTIN_SIZE =
     sizeof(LEXER_BUILTIN_TOKENS) / sizeof(*LEXER_BUILTIN_TOKENS);

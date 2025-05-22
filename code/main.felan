@@ -1,7 +1,7 @@
 @import("basic.felan");
 
 print :: (comptime t:type,v:t)->void{
-  if @typeOf(v) == u8
+  if @type_of(v) == u8
     @putc(v);
   else
     @putc('n');
@@ -25,7 +25,9 @@ fun0 :: () -> void {
 fun1 :: ()->void{
   a :[20]u8 = undefined;
   a[0] = '2';
+  b := a;
   @putc(a[0]);
+  @putc(b[0]);
 };
 
 fun2 :: ()->void{
@@ -47,9 +49,15 @@ fun3 :: ()->void{
   @putc(@cast(a.a,u8)+'0');
 };
 
+/*
+libc :: @c_lib("/lib/libc.so");
+
+putchar : (i8)->void : @c_function(libc,"putchar");
+*/
+
 main :: ()->void{
-  fun0();
+  // fun0();
   fun1();
-  fun2();
-  fun3();
+  // fun2();
+  //fun3();
 };

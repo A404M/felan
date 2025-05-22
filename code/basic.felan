@@ -367,99 +367,99 @@ __smaller__ :: (left:f128,right:f128) -> bool {
 };
 
 __greater_or_equal__ :: (left:u8,right:u8) -> bool {
-  return @greaterOrEqual(left,right);
+  return @greater_or_equal(left,right);
 };
 
 __greater_or_equal__ :: (left:i8,right:i8) -> bool {
-  return @greaterOrEqual(left,right);
+  return @greater_or_equal(left,right);
 };
 
 __greater_or_equal__ :: (left:u16,right:u16) -> bool {
-  return @greaterOrEqual(left,right);
+  return @greater_or_equal(left,right);
 };
 
 __greater_or_equal__ :: (left:i16,right:i16) -> bool {
-  return @greaterOrEqual(left,right);
+  return @greater_or_equal(left,right);
 };
 
 __greater_or_equal__ :: (left:u32,right:u32) -> bool {
-  return @greaterOrEqual(left,right);
+  return @greater_or_equal(left,right);
 };
 
 __greater_or_equal__ :: (left:i32,right:i32) -> bool {
-  return @greaterOrEqual(left,right);
+  return @greater_or_equal(left,right);
 };
 
 __greater_or_equal__ :: (left:u64,right:u64) -> bool {
-  return @greaterOrEqual(left,right);
+  return @greater_or_equal(left,right);
 };
 
 __greater_or_equal__ :: (left:i64,right:i64) -> bool {
-  return @greaterOrEqual(left,right);
+  return @greater_or_equal(left,right);
 };
 
 __greater_or_equal__ :: (left:f16,right:f16) -> bool {
-  return @greaterOrEqual(left,right);
+  return @greater_or_equal(left,right);
 };
 
 __greater_or_equal__ :: (left:f32,right:f32) -> bool {
-  return @greaterOrEqual(left,right);
+  return @greater_or_equal(left,right);
 };
 
 __greater_or_equal__ :: (left:f64,right:f64) -> bool {
-  return @greaterOrEqual(left,right);
+  return @greater_or_equal(left,right);
 };
 
 __greater_or_equal__ :: (left:f128,right:f128) -> bool {
-  return @greaterOrEqual(left,right);
+  return @greater_or_equal(left,right);
 };
 
 __smaller_or_equal__ :: (left:u8,right:u8) -> bool {
-  return @smallerOrEqual(left,right);
+  return @smaller_or_equal(left,right);
 };
 
 __smaller_or_equal__ :: (left:i8,right:i8) -> bool {
-  return @smallerOrEqual(left,right);
+  return @smaller_or_equal(left,right);
 };
 
 __smaller_or_equal__ :: (left:u16,right:u16) -> bool {
-  return @smallerOrEqual(left,right);
+  return @smaller_or_equal(left,right);
 };
 
 __smaller_or_equal__ :: (left:i16,right:i16) -> bool {
-  return @smallerOrEqual(left,right);
+  return @smaller_or_equal(left,right);
 };
 
 __smaller_or_equal__ :: (left:u32,right:u32) -> bool {
-  return @smallerOrEqual(left,right);
+  return @smaller_or_equal(left,right);
 };
 
 __smaller_or_equal__ :: (left:i32,right:i32) -> bool {
-  return @smallerOrEqual(left,right);
+  return @smaller_or_equal(left,right);
 };
 
 __smaller_or_equal__ :: (left:u64,right:u64) -> bool {
-  return @smallerOrEqual(left,right);
+  return @smaller_or_equal(left,right);
 };
 
 __smaller_or_equal__ :: (left:i64,right:i64) -> bool {
-  return @smallerOrEqual(left,right);
+  return @smaller_or_equal(left,right);
 };
 
 __smaller_or_equal__ :: (left:f16,right:f16) -> bool {
-  return @smallerOrEqual(left,right);
+  return @smaller_or_equal(left,right);
 };
 
 __smaller_or_equal__ :: (left:f32,right:f32) -> bool {
-  return @smallerOrEqual(left,right);
+  return @smaller_or_equal(left,right);
 };
 
 __smaller_or_equal__ :: (left:f64,right:f64) -> bool {
-  return @smallerOrEqual(left,right);
+  return @smaller_or_equal(left,right);
 };
 
 __smaller_or_equal__ :: (left:f128,right:f128) -> bool {
-  return @smallerOrEqual(left,right);
+  return @smaller_or_equal(left,right);
 };
 
 __equal__ :: (left:u8,right:u8) -> bool {
@@ -519,59 +519,59 @@ __equal__ :: (left:type,right:type) -> bool {
 };
 
 __not_equal__ :: (left:u8,right:u8) -> bool {
-  return @notEqual(left,right);
+  return @not_equal(left,right);
 };
 
 __not_equal__ :: (left:i8,right:i8) -> bool {
-  return @notEqual(left,right);
+  return @not_equal(left,right);
 };
 
 __not_equal__ :: (left:u16,right:u16) -> bool {
-  return @notEqual(left,right);
+  return @not_equal(left,right);
 };
 
 __not_equal__ :: (left:i16,right:i16) -> bool {
-  return @notEqual(left,right);
+  return @not_equal(left,right);
 };
 
 __not_equal__ :: (left:u32,right:u32) -> bool {
-  return @notEqual(left,right);
+  return @not_equal(left,right);
 };
 
 __not_equal__ :: (left:i32,right:i32) -> bool {
-  return @notEqual(left,right);
+  return @not_equal(left,right);
 };
 
 __not_equal__ :: (left:u64,right:u64) -> bool {
-  return @notEqual(left,right);
+  return @not_equal(left,right);
 };
 
 __not_equal__ :: (left:i64,right:i64) -> bool {
-  return @notEqual(left,right);
+  return @not_equal(left,right);
 };
 
 __not_equal__ :: (left:f16,right:f16) -> bool {
-  return @notEqual(left,right);
+  return @not_equal(left,right);
 };
 
 __not_equal__ :: (left:f32,right:f32) -> bool {
-  return @notEqual(left,right);
+  return @not_equal(left,right);
 };
 
 __not_equal__ :: (left:f64,right:f64) -> bool {
-  return @notEqual(left,right);
+  return @not_equal(left,right);
 };
 
 __not_equal__ :: (left:f128,right:f128) -> bool {
-  return @notEqual(left,right);
+  return @not_equal(left,right);
 };
 
 __not_equal__ :: (left:bool,right:bool) -> bool {
-  return @notEqual(left,right);
+  return @not_equal(left,right);
 };
 
 __not_equal__ :: (left:type,right:type) -> bool {
-  return @notEqual(left,right);
+  return @not_equal(left,right);
 };
 
 __logical_not__ :: (value:bool) -> bool {
