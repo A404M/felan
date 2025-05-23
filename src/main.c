@@ -1,5 +1,6 @@
 #include "compiler/ast-tree.h"
 #include "runner/runner.h"
+#include "utils/dl.h"
 #include "utils/file.h"
 #include "utils/log.h"
 #include <stdio.h>
@@ -70,6 +71,7 @@ static int run(const char *filePath) {
 
 int main(int argc, char *argv[]) {
   fileInit();
+  dynamicLibraryInit();
 
   if (argc < 2) {
     // compileRun("test/main.felan", "build/out", false);
@@ -79,6 +81,7 @@ int main(int argc, char *argv[]) {
   }
 
   const int ret = run(argv[1]);
+  dynamicLibraryDestroy();
   fileDelete();
   return ret;
 }

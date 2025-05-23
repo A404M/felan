@@ -157,6 +157,14 @@ AstTree AST_TREE_SHAPE_SHIFTER_TYPE = {
     .str_end = NULL,
 };
 
+AstTree AST_TREE_C_LIBRARY_TYPE = {
+    .token = AST_TREE_TOKEN_TYPE_C_LIBRARY,
+    .metadata = NULL,
+    .type = &AST_TREE_TYPE_TYPE,
+    .str_begin = NULL,
+    .str_end = NULL,
+};
+
 AstTree AST_TREE_VOID_VALUE = {
     .token = AST_TREE_TOKEN_VALUE_VOID,
     .metadata = NULL,
@@ -220,6 +228,8 @@ const char *AST_TREE_TOKEN_STRINGS[] = {
     "AST_TREE_TOKEN_TYPE_CODE",
     "AST_TREE_TOKEN_TYPE_NAMESPACE",
     "AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER",
+    "AST_TREE_TOKEN_TYPE_C_LIBRARY",
+    "AST_TREE_TOKEN_TYPE_C_FUNCTION",
     "AST_TREE_TOKEN_TYPE_BOOL",
     "AST_TREE_TOKEN_VALUE_VOID",
 
@@ -230,6 +240,8 @@ const char *AST_TREE_TOKEN_STRINGS[] = {
     "AST_TREE_TOKEN_VALUE_UNDEFINED",
     "AST_TREE_TOKEN_VALUE_NAMESPACE",
     "AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER",
+    "AST_TREE_TOKEN_VALUE_C_LIBRARY",
+    "AST_TREE_TOKEN_VALUE_C_FUNCTION",
     "AST_TREE_TOKEN_VALUE_INT",
     "AST_TREE_TOKEN_VALUE_FLOAT",
     "AST_TREE_TOKEN_VALUE_BOOL",
@@ -356,6 +368,7 @@ void astTreePrint(const AstTree *tree, int indent) {
   case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_NAMESPACE:
   case AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER:
+  case AST_TREE_TOKEN_TYPE_C_LIBRARY:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_NULL:
@@ -363,6 +376,8 @@ void astTreePrint(const AstTree *tree, int indent) {
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED:
     goto RETURN_SUCCESS;
+  case AST_TREE_TOKEN_TYPE_C_FUNCTION:
+    NOT_IMPLEMENTED;
   case AST_TREE_TOKEN_KEYWORD_BREAK:
   case AST_TREE_TOKEN_KEYWORD_CONTINUE: {
     AstTreeLoopControl *meatadata = tree->metadata;
@@ -791,6 +806,7 @@ void astTreeDestroy(AstTree tree) {
   case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_NAMESPACE:
   case AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER:
+  case AST_TREE_TOKEN_TYPE_C_LIBRARY:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_UNDEFINED:
@@ -983,6 +999,25 @@ void astTreeDestroy(AstTree tree) {
     free(metadata);
   }
     return;
+  case AST_TREE_TOKEN_TYPE_C_FUNCTION: {
+    AstTreeCFunctionType *metadata = tree.metadata;
+    astTreeDelete(metadata->funcType);
+    free(metadata);
+  }
+    return;
+  case AST_TREE_TOKEN_VALUE_C_LIBRARY: {
+    AstTreeCLibrary *metadata = tree.metadata;
+    free(metadata);
+  }
+    return;
+  case AST_TREE_TOKEN_VALUE_C_FUNCTION: {
+    AstTreeCFunction *metadata = tree.metadata;
+    astTreeDelete(metadata->library);
+    astTreeDelete(metadata->name);
+    astTreeDelete(metadata->funcType);
+    free(metadata);
+  }
+    return;
   case AST_TREE_TOKEN_NONE:
   }
   printLog("token = %d", tree.token);
@@ -1026,7 +1061,8 @@ bool astTreeShouldDelete(AstTree *tree) {
          tree != &AST_TREE_F32_TYPE && tree != &AST_TREE_F64_TYPE &&
          tree != &AST_TREE_F128_TYPE && tree != &AST_TREE_CODE_TYPE &&
          tree != &AST_TREE_NAMESPACE_TYPE &&
-         tree != &AST_TREE_SHAPE_SHIFTER_TYPE && tree != &AST_TREE_VOID_VALUE;
+         tree != &AST_TREE_SHAPE_SHIFTER_TYPE &&
+         tree != &AST_TREE_C_LIBRARY_TYPE && tree != &AST_TREE_VOID_VALUE;
 }
 
 void astTreeRootDelete(AstTreeRoot *root) {
@@ -1098,6 +1134,7 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
   case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_NAMESPACE:
   case AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER:
+  case AST_TREE_TOKEN_TYPE_C_LIBRARY:
     return tree;
   case AST_TREE_TOKEN_VALUE_VOID:
     if (tree == &AST_TREE_VOID_VALUE) {
@@ -1549,6 +1586,49 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
         copyAstTreeBack(metadata->shapeShifter, oldVariables, newVariables,
                         variables_size, safetyCheck);
     new_metadata->index = metadata->index;
+    return newAstTree(tree->token, new_metadata,
+                      copyAstTreeBack(tree->type, oldVariables, newVariables,
+                                      variables_size, safetyCheck),
+                      tree->str_begin, tree->str_end);
+  }
+  case AST_TREE_TOKEN_TYPE_C_FUNCTION: {
+    AstTreeCFunctionType *metadata = tree->metadata;
+    AstTreeCFunctionType *new_metadata = a404m_malloc(sizeof(*new_metadata));
+
+    new_metadata->funcType =
+        copyAstTreeBack(metadata->funcType, oldVariables, newVariables,
+                        variables_size, safetyCheck);
+
+    return newAstTree(tree->token, new_metadata,
+                      copyAstTreeBack(tree->type, oldVariables, newVariables,
+                                      variables_size, safetyCheck),
+                      tree->str_begin, tree->str_end);
+  }
+  case AST_TREE_TOKEN_VALUE_C_LIBRARY: {
+    AstTreeCLibrary *metadata = tree->metadata;
+    AstTreeCLibrary *new_metadata = a404m_malloc(sizeof(*new_metadata));
+
+    new_metadata->dl = metadata->dl;
+
+    return newAstTree(tree->token, new_metadata,
+                      copyAstTreeBack(tree->type, oldVariables, newVariables,
+                                      variables_size, safetyCheck),
+                      tree->str_begin, tree->str_end);
+  }
+  case AST_TREE_TOKEN_VALUE_C_FUNCTION: {
+    AstTreeCFunction *metadata = tree->metadata;
+    AstTreeCFunction *new_metadata = a404m_malloc(sizeof(*new_metadata));
+
+    new_metadata->library =
+        copyAstTreeBack(metadata->library, oldVariables, newVariables,
+                        variables_size, safetyCheck);
+    new_metadata->name =
+        copyAstTreeBack(metadata->name, oldVariables, newVariables,
+                        variables_size, safetyCheck);
+    new_metadata->funcType =
+        copyAstTreeBack(metadata->funcType, oldVariables, newVariables,
+                        variables_size, safetyCheck);
+
     return newAstTree(tree->token, new_metadata,
                       copyAstTreeBack(tree->type, oldVariables, newVariables,
                                       variables_size, safetyCheck),
@@ -2074,6 +2154,8 @@ AstTreeRoot *makeAstRoot(const ParserNode *parsedRoot, char *filePath) {
       case PARSER_TOKEN_TYPE_CODE:
       case PARSER_TOKEN_TYPE_NAMESPACE:
       case PARSER_TOKEN_TYPE_SHAPE_SHIFTER:
+      case PARSER_TOKEN_TYPE_C_LIBRARY:
+      case PARSER_TOKEN_TYPE_C_FUNCTION:
       case PARSER_TOKEN_TYPE_BOOL:
       case PARSER_TOKEN_OPERATOR_POINTER:
       case PARSER_TOKEN_OPERATOR_ADDRESS:
@@ -2268,6 +2350,10 @@ AstTree *astTreeParse(const ParserNode *parserNode) {
     return &AST_TREE_NAMESPACE_TYPE;
   case PARSER_TOKEN_TYPE_SHAPE_SHIFTER:
     return &AST_TREE_SHAPE_SHIFTER_TYPE;
+  case PARSER_TOKEN_TYPE_C_LIBRARY:
+    return &AST_TREE_C_LIBRARY_TYPE;
+  case PARSER_TOKEN_TYPE_C_FUNCTION:
+    NOT_IMPLEMENTED;
   case PARSER_TOKEN_TYPE_BOOL:
     return &AST_TREE_BOOL_TYPE;
   case PARSER_TOKEN_FUNCTION_CALL:
@@ -2364,8 +2450,8 @@ AstTree *astTreeParse(const ParserNode *parserNode) {
   case PARSER_TOKEN_OPERATOR_MINUS:
     return astTreeParseUnaryOperator(parserNode, AST_TREE_TOKEN_OPERATOR_MINUS);
   case PARSER_TOKEN_OPERATOR_POINTER:
-    return astTreeParseUnaryOperator(parserNode,
-                                     AST_TREE_TOKEN_OPERATOR_POINTER);
+    return astTreeParseUnaryOperatorSingleChild(
+        parserNode, AST_TREE_TOKEN_OPERATOR_POINTER);
   case PARSER_TOKEN_OPERATOR_ADDRESS:
     return astTreeParseUnaryOperatorSingleChild(
         parserNode, AST_TREE_TOKEN_OPERATOR_ADDRESS);
@@ -2495,6 +2581,8 @@ AstTree *astTreeParseFunction(const ParserNode *parserNode) {
     case PARSER_TOKEN_TYPE_CODE:
     case PARSER_TOKEN_TYPE_NAMESPACE:
     case PARSER_TOKEN_TYPE_SHAPE_SHIFTER:
+    case PARSER_TOKEN_TYPE_C_LIBRARY:
+    case PARSER_TOKEN_TYPE_C_FUNCTION:
     case PARSER_TOKEN_TYPE_BOOL:
     case PARSER_TOKEN_KEYWORD_RETURN:
     case PARSER_TOKEN_KEYWORD_BREAK:
@@ -2662,10 +2750,12 @@ AstTree *astTreeParseTypeFunction(const ParserNode *parserNode) {
       argument.isComptime = false;
     }
 
-    if (!typeIsEqual(argument.type->type, &AST_TREE_TYPE_TYPE)) {
-      printError(argument.str_begin, argument.str_end, "Type is incorrenct");
-      return NULL;
-    }
+    /*
+if (!typeIsEqual(argument.type->type, &AST_TREE_TYPE_TYPE)) {
+ printError(argument.str_begin, argument.str_end, "Type is incorrenct");
+ return NULL;
+}
+    */
 
     if (typeFunction->arguments_size == arguments_size) {
       arguments_size += arguments_size / 2 + 1;
@@ -2745,43 +2835,25 @@ AstTree *astTreeParseValue(const ParserNode *parserNode, AstTreeToken token,
 AstTree *astTreeParseString(const ParserNode *parserNode) {
   ParserNodeStringMetadata *node_metadata = parserNode->metadata;
 
-  AstTreeObject *metadata = a404m_malloc(sizeof(*metadata));
-
-  metadata->variables.size = node_metadata->end - node_metadata->begin;
-  metadata->variables.data = a404m_malloc(metadata->variables.size *
-                                          sizeof(*metadata->variables.data));
-
-  for (size_t i = 0; i < metadata->variables.size; ++i) {
-    AstTreeInt *cellMetadata = a404m_malloc(sizeof(*cellMetadata));
-    *cellMetadata = node_metadata->begin[i];
-
-    metadata->variables.data[i] =
-        a404m_malloc(sizeof(*metadata->variables.data[i]));
-    metadata->variables.data[i]->isConst = true;
-    metadata->variables.data[i]->isLazy = false;
-    metadata->variables.data[i]->name_begin = NULL;
-    metadata->variables.data[i]->name_end = NULL;
-    metadata->variables.data[i]->type = copyAstTree(&AST_TREE_U8_TYPE);
-    metadata->variables.data[i]->value =
-        newAstTree(AST_TREE_TOKEN_VALUE_INT, cellMetadata,
-                   copyAstTree(&AST_TREE_U8_TYPE), NULL, NULL);
-    metadata->variables.data[i]->initValue = NULL;
-  }
+  const size_t size = node_metadata->end - node_metadata->begin;
+  AstTreeRawValue *metadata = a404m_malloc(size * sizeof(u8));
+  memcpy(metadata, node_metadata->begin, size);
 
   AstTreeBracket *type_metadata = a404m_malloc(sizeof(*type_metadata));
   type_metadata->operand = &AST_TREE_U8_TYPE;
 
-  AstTreeInt *parameter_metadata = a404m_malloc(sizeof(*parameter_metadata));
-  *parameter_metadata = metadata->variables.size;
-  AstTree *parameter = newAstTree(AST_TREE_TOKEN_VALUE_INT, parameter_metadata,
-                                  &AST_TREE_I64_TYPE, NULL, NULL);
+  AstTreeRawValue *parameter_metadata =
+      a404m_malloc(getSizeOfType(&AST_TREE_U64_TYPE));
+  *(u64 *)parameter_metadata = size;
+  AstTree *parameter = newAstTree(AST_TREE_TOKEN_RAW_VALUE, parameter_metadata,
+                                  &AST_TREE_U64_TYPE, NULL, NULL);
 
   type_metadata->parameters.size = 1;
   type_metadata->parameters.data = a404m_malloc(
       type_metadata->parameters.size * sizeof(*type_metadata->parameters.data));
   type_metadata->parameters.data[0] = parameter;
 
-  return newAstTree(AST_TREE_TOKEN_VALUE_OBJECT, metadata,
+  return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata,
                     newAstTree(AST_TREE_TOKEN_TYPE_ARRAY, type_metadata,
                                &AST_TREE_TYPE_TYPE, NULL, NULL),
                     parserNode->str_begin, parserNode->str_end);
@@ -3111,6 +3183,8 @@ AstTree *astTreeParseCurlyBracket(const ParserNode *parserNode) {
     case PARSER_TOKEN_TYPE_CODE:
     case PARSER_TOKEN_TYPE_NAMESPACE:
     case PARSER_TOKEN_TYPE_SHAPE_SHIFTER:
+    case PARSER_TOKEN_TYPE_C_LIBRARY:
+    case PARSER_TOKEN_TYPE_C_FUNCTION:
     case PARSER_TOKEN_TYPE_BOOL:
     case PARSER_TOKEN_KEYWORD_RETURN:
     case PARSER_TOKEN_KEYWORD_BREAK:
@@ -3359,7 +3433,8 @@ AstTree *astTreeParseBracket(const ParserNode *parserNode, AstTreeToken token) {
 
 bool isFunction(AstTree *value) {
   return value->type->token == AST_TREE_TOKEN_TYPE_FUNCTION ||
-         value->type->token == AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER;
+         value->type->token == AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER ||
+         value->type->token == AST_TREE_TOKEN_TYPE_C_FUNCTION;
 }
 
 bool isShapeShifter(AstTreeFunction *function) {
@@ -3418,6 +3493,8 @@ bool isConst(AstTree *tree) {
   case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_NAMESPACE:
   case AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER:
+  case AST_TREE_TOKEN_TYPE_C_LIBRARY:
+  case AST_TREE_TOKEN_TYPE_C_FUNCTION:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_UNDEFINED:
@@ -3550,6 +3627,8 @@ AstTree *makeTypeOf(AstTree *value) {
   case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_NAMESPACE:
   case AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER:
+  case AST_TREE_TOKEN_TYPE_C_LIBRARY:
+  case AST_TREE_TOKEN_TYPE_C_FUNCTION:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_OPERATOR_POINTER:
   case AST_TREE_TOKEN_KEYWORD_STRUCT:
@@ -3852,7 +3931,17 @@ bool typeIsEqualBack(const AstTree *type0, const AstTree *type1) {
   case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_NAMESPACE:
   case AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER:
+  case AST_TREE_TOKEN_TYPE_C_LIBRARY:
     return type1->token == type0->token;
+  case AST_TREE_TOKEN_TYPE_C_FUNCTION: {
+    if (type1->token != type0->token) {
+      return false;
+    }
+    AstTreeCFunctionType *type0_metadata = type0->metadata;
+    AstTreeCFunctionType *type1_metadata = type1->metadata;
+
+    return typeIsEqualBack(type0_metadata->funcType, type1_metadata->funcType);
+  }
   case AST_TREE_TOKEN_OPERATOR_POINTER: {
     if (type1->token != type0->token) {
       return false;
@@ -3980,6 +4069,8 @@ AstTree *getValue(AstTree *tree, bool copy) {
   case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_NAMESPACE:
   case AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER:
+  case AST_TREE_TOKEN_TYPE_C_LIBRARY:
+  case AST_TREE_TOKEN_TYPE_C_FUNCTION:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_UNDEFINED:
@@ -4124,6 +4215,8 @@ bool isIntType(AstTree *type) {
   case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_NAMESPACE:
   case AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER:
+  case AST_TREE_TOKEN_TYPE_C_LIBRARY:
+  case AST_TREE_TOKEN_TYPE_C_FUNCTION:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_NAMESPACE:
@@ -4223,6 +4316,8 @@ bool isFloatType(AstTree *type) {
   case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_NAMESPACE:
   case AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER:
+  case AST_TREE_TOKEN_TYPE_C_LIBRARY:
+  case AST_TREE_TOKEN_TYPE_C_FUNCTION:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_NAMESPACE:
@@ -4292,11 +4387,15 @@ bool isEqual(AstTree *left, AstTree *right) {
   case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_NAMESPACE:
   case AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER:
+  case AST_TREE_TOKEN_TYPE_C_LIBRARY:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_UNDEFINED:
     return true;
+  case AST_TREE_TOKEN_TYPE_C_FUNCTION: {
+    NOT_IMPLEMENTED;
+  }
   case AST_TREE_TOKEN_VALUE_NAMESPACE: {
     AstTreeNamespace *left_metadata = left->metadata;
     AstTreeNamespace *right_metadata = right->metadata;
@@ -4568,8 +4667,11 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
   case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_NAMESPACE:
   case AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER:
+  case AST_TREE_TOKEN_TYPE_C_LIBRARY:
   case AST_TREE_TOKEN_VALUE_VOID:
     return true;
+  case AST_TREE_TOKEN_TYPE_C_FUNCTION:
+    NOT_IMPLEMENTED;
   case AST_TREE_TOKEN_VALUE_NAMESPACE:
     NOT_IMPLEMENTED;
   case AST_TREE_TOKEN_VALUE_BOOL:
@@ -4691,9 +4793,9 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
   case AST_TREE_TOKEN_BUILTIN_PUTC:
     return setTypesBuiltinPutc(tree, helper, functionCall);
   case AST_TREE_TOKEN_BUILTIN_C_LIBRARY:
-    NOT_IMPLEMENTED;
+    return setTypesBuiltinCLibrary(tree, helper, functionCall);
   case AST_TREE_TOKEN_BUILTIN_C_FUNCTION:
-    NOT_IMPLEMENTED;
+    return setTypesBuiltinCFunction(tree, helper, functionCall);
   case AST_TREE_TOKEN_TYPE_ARRAY:
     return setTypesTypeArray(tree, helper);
   case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS:
@@ -5355,6 +5457,77 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
     AstTreeTypeFunction *function = metadata->function->type->metadata;
 
     tree->type = copyAstTree(function->returnType);
+  } else if (metadata->function->type->token ==
+             AST_TREE_TOKEN_TYPE_C_FUNCTION) {
+    AstTreeCFunctionType *cFunction = metadata->function->type->metadata;
+    AstTreeTypeFunction *function = cFunction->funcType->metadata;
+    if (function == NULL) {
+      printError(tree->str_begin, tree->str_end, "Bad function");
+      return NULL;
+    } else if (function->arguments_size != metadata->parameters_size) {
+      printError(tree->str_begin, tree->str_end,
+                 "Arguments doesn't match %ld != %ld", function->arguments_size,
+                 metadata->parameters_size);
+      return NULL;
+    }
+
+    AstTreeFunctionCallParam initedArguments[function->arguments_size];
+    size_t initedArguments_size = function->arguments_size;
+
+    for (size_t i = 0; i < initedArguments_size; ++i) {
+      initedArguments[i].value = NULL;
+    }
+
+    for (size_t i = 0; i < metadata->parameters_size; ++i) {
+      AstTreeFunctionCallParam param = metadata->parameters[i];
+      if (param.nameBegin != param.nameEnd) {
+        const size_t param_name_size = param.nameEnd - param.nameBegin;
+        for (size_t j = 0; j < function->arguments_size; ++j) {
+          AstTreeTypeFunctionArgument arg = function->arguments[j];
+          if ((size_t)(arg.name_end - arg.name_begin) == param_name_size &&
+              strnEquals(arg.name_begin, param.nameBegin, param_name_size)) {
+            initedArguments[j] = param;
+            goto END_OF_NAMED_FOR2;
+          }
+        }
+        printError(param.value->str_begin, param.value->str_end,
+                   "Argument not found");
+        return false;
+      }
+    END_OF_NAMED_FOR2:
+    }
+
+    for (size_t i = 0; i < metadata->parameters_size; ++i) {
+      AstTreeFunctionCallParam param = metadata->parameters[i];
+      if (param.nameBegin == param.nameEnd) {
+        for (size_t j = 0; j < function->arguments_size; ++j) {
+          // AstTreeTypeFunctionArgument arg = function->arguments[j];
+          if (initedArguments[j].value == NULL) {
+            initedArguments[j] = param;
+            goto END_OF_UNNAMED_FOR2;
+          }
+        }
+        printError(param.value->str_begin, param.value->str_end,
+                   "Too many arguments");
+        return false;
+      }
+    END_OF_UNNAMED_FOR2:
+    }
+
+    for (size_t i = 0; i < function->arguments_size; ++i) {
+      AstTreeTypeFunctionArgument arg = function->arguments[i];
+      if (initedArguments[i].value == NULL) {
+        printError(arg.str_begin, arg.str_end, "Argument is not initialized");
+        return false;
+      }
+    }
+
+    for (size_t i = 0; i < initedArguments_size; ++i) {
+      metadata->parameters[i] = initedArguments[i];
+    }
+    tree->type = copyAstTree(function->returnType);
+  } else {
+    UNREACHABLE;
   }
 
   return true;
@@ -5527,12 +5700,6 @@ bool setTypesOperatorPointer(AstTree *tree, AstTreeSetTypesHelper helper) {
 bool setTypesOperatorAddress(AstTree *tree, AstTreeSetTypesHelper helper) {
   AstTreeSingleChild *metadata = tree->metadata;
   if (!setAllTypes(metadata, helper, NULL, NULL)) {
-    return false;
-  }
-
-  if (metadata->token != AST_TREE_TOKEN_VARIABLE) {
-    printError(tree->str_begin, tree->str_end,
-               "Can only get address of a variable (for now)");
     return false;
   }
 
@@ -6102,7 +6269,7 @@ bool setTypesBuiltinSizeOf(AstTree *tree, AstTreeSetTypesHelper helper,
 
     if (type == NULL) {
       return false;
-    } else if (!typeIsEqual(type, &AST_TREE_TYPE_TYPE)) {
+    } else if (!typeIsEqual(type->type, &AST_TREE_TYPE_TYPE)) {
       printError(type->str_begin, type->str_end,
                  "Type missmatch, the argument should be `type`");
       return false;
@@ -6204,10 +6371,70 @@ bool setTypesBuiltinIsComptime(AstTree *tree, AstTreeSetTypesHelper helper) {
 
 bool setTypesBuiltinStackAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
                                AstTreeFunctionCall *functionCall) {
-  (void)tree;
   (void)helper;
-  (void)functionCall;
-  NOT_IMPLEMENTED;
+  if (functionCall->parameters_size == 1) {
+    AstTree *size = NULL;
+
+    static const char SIZE_STR[] = "size";
+    static const size_t SIZE_STR_SIZE =
+        sizeof(SIZE_STR) / sizeof(*SIZE_STR) - sizeof(*SIZE_STR);
+
+    for (size_t i = 0; i < functionCall->parameters_size; ++i) {
+      AstTreeFunctionCallParam param = functionCall->parameters[i];
+      const size_t param_name_size = param.nameEnd - param.nameBegin;
+
+      if (param_name_size == 0) {
+        if (size == NULL) {
+          size = param.value;
+        } else {
+          printError(param.value->str_begin, param.value->str_end,
+                     "Bad paramter");
+          return false;
+        }
+      } else if (param_name_size == SIZE_STR_SIZE &&
+                 strnEquals(param.nameBegin, SIZE_STR, SIZE_STR_SIZE) &&
+                 size == NULL) {
+        size = param.value;
+      } else {
+        printError(param.value->str_begin, param.value->str_end,
+                   "Bad paramter");
+        return false;
+      }
+    }
+
+    if (size == NULL) {
+      return false;
+    } else if (!typeIsEqual(size->type, &AST_TREE_U64_TYPE)) {
+      printError(size->str_begin, size->str_end,
+                 "Type missmatch, the argument should be `u64`");
+      return false;
+    }
+
+    AstTreeTypeFunction *type_metadata = a404m_malloc(sizeof(*type_metadata));
+    type_metadata->arguments_size = 1;
+    type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
+                                            sizeof(*type_metadata->arguments));
+
+    type_metadata->returnType =
+        newAstTree(AST_TREE_TOKEN_OPERATOR_POINTER, &AST_TREE_VOID_TYPE,
+                   &AST_TREE_TYPE_TYPE, NULL, NULL);
+
+    type_metadata->arguments[0] = (AstTreeTypeFunctionArgument){
+        .type = copyAstTree(&AST_TREE_TYPE_TYPE),
+        .name_begin = SIZE_STR,
+        .name_end = SIZE_STR + SIZE_STR_SIZE,
+        .str_begin = NULL,
+        .str_end = NULL,
+        .isComptime = false,
+    };
+
+    tree->type = newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, type_metadata,
+                            &AST_TREE_TYPE_TYPE, NULL, NULL);
+    return true;
+  } else {
+    printError(tree->str_begin, tree->str_end, "Too many or too few arguments");
+    return false;
+  }
 }
 
 bool setTypesBuiltinHeapAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
@@ -6294,6 +6521,8 @@ bool setTypesBuiltinUnary(AstTree *tree, AstTreeSetTypesHelper helper,
   case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_NAMESPACE:
   case AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER:
+  case AST_TREE_TOKEN_TYPE_C_LIBRARY:
+  case AST_TREE_TOKEN_TYPE_C_FUNCTION:
   case AST_TREE_TOKEN_TYPE_BOOL:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_NAMESPACE:
@@ -6561,6 +6790,194 @@ bool setTypesBuiltinPutc(AstTree *tree, AstTreeSetTypesHelper helper,
       .type = copyAstTree(&AST_TREE_U8_TYPE),
       .name_begin = VALUE_STR,
       .name_end = VALUE_STR + VALUE_STR_SIZE,
+      .str_begin = NULL,
+      .str_end = NULL,
+      .isComptime = false,
+  };
+
+  tree->type = newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, type_metadata,
+                          &AST_TREE_TYPE_TYPE, NULL, NULL);
+  return true;
+}
+
+bool setTypesBuiltinCLibrary(AstTree *tree, AstTreeSetTypesHelper helper,
+                             AstTreeFunctionCall *functionCall) {
+  (void)helper;
+  if (functionCall->parameters_size == 1) {
+    AstTree *path = NULL;
+
+    static const char PATH_STR[] = "path";
+    static const size_t PATH_STR_SIZE =
+        sizeof(PATH_STR) / sizeof(*PATH_STR) - sizeof(*PATH_STR);
+
+    for (size_t i = 0; i < functionCall->parameters_size; ++i) {
+      AstTreeFunctionCallParam param = functionCall->parameters[i];
+      const size_t param_name_size = param.nameEnd - param.nameBegin;
+
+      if (param_name_size == 0) {
+        if (path == NULL) {
+          path = param.value;
+        } else {
+          printError(param.value->str_begin, param.value->str_end,
+                     "Bad paramter");
+          return false;
+        }
+      } else if (param_name_size == PATH_STR_SIZE &&
+                 strnEquals(param.nameBegin, PATH_STR, PATH_STR_SIZE) &&
+                 path == NULL) {
+        path = param.value;
+      } else {
+        printError(param.value->str_begin, param.value->str_end,
+                   "Bad paramter");
+        return false;
+      }
+    }
+
+    AstTree *path_type = makeStringType();
+
+    if (path == NULL) {
+      return false;
+    } else if (!typeIsEqual(path->type, path_type)) {
+      astTreeDelete(path_type);
+      printError(path->str_begin, path->str_end,
+                 "Type missmatch, the argument should be `type`");
+      return false;
+    }
+
+    AstTreeTypeFunction *type_metadata = a404m_malloc(sizeof(*type_metadata));
+    type_metadata->arguments_size = 1;
+    type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
+                                            sizeof(*type_metadata->arguments));
+
+    type_metadata->returnType = copyAstTree(&AST_TREE_C_LIBRARY_TYPE);
+
+    type_metadata->arguments[0] = (AstTreeTypeFunctionArgument){
+        .type = path_type,
+        .name_begin = PATH_STR,
+        .name_end = PATH_STR + PATH_STR_SIZE,
+        .str_begin = NULL,
+        .str_end = NULL,
+        .isComptime = false,
+    };
+
+    tree->type = newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, type_metadata,
+                            &AST_TREE_TYPE_TYPE, NULL, NULL);
+    return true;
+  } else {
+    printError(tree->str_begin, tree->str_end, "Too many or too few arguments");
+    return false;
+  }
+}
+
+bool setTypesBuiltinCFunction(AstTree *tree, AstTreeSetTypesHelper helper,
+                              AstTreeFunctionCall *functionCall) {
+  (void)helper;
+  if (functionCall->parameters_size != 3) {
+    printError(tree->str_begin, tree->str_end, "Too many or too few arguments");
+    return false;
+  }
+  AstTree *library = NULL;
+  AstTree *name = NULL;
+  AstTree *funcType = NULL;
+
+  static char LIBRARY_STR[] = "library";
+  static const size_t LIBRARY_STR_SIZE =
+      sizeof(LIBRARY_STR) / sizeof(*LIBRARY_STR) - sizeof(*LIBRARY_STR);
+  static char NAME_STR[] = "name";
+  static const size_t NAME_STR_SIZE =
+      sizeof(NAME_STR) / sizeof(*NAME_STR) - sizeof(*NAME_STR);
+  static char FUNC_TYPE_STR[] = "func_type";
+  static const size_t FUNC_TYPE_STR_SIZE =
+      sizeof(FUNC_TYPE_STR) / sizeof(*FUNC_TYPE_STR) - sizeof(*FUNC_TYPE_STR);
+
+  for (size_t i = 0; i < functionCall->parameters_size; ++i) {
+    AstTreeFunctionCallParam param = functionCall->parameters[i];
+    const size_t param_name_size = param.nameEnd - param.nameBegin;
+
+    if (param_name_size == 0) {
+      if (library == NULL) {
+        library = param.value;
+      } else if (name == NULL) {
+        name = param.value;
+      } else if (funcType == NULL) {
+        funcType = param.value;
+      } else {
+        printError(param.value->str_begin, param.value->str_end,
+                   "Bad paramter");
+        return false;
+      }
+    } else if (param_name_size == LIBRARY_STR_SIZE &&
+               strnEquals(param.nameBegin, LIBRARY_STR, LIBRARY_STR_SIZE) &&
+               library == NULL) {
+      library = param.value;
+    } else if (param_name_size == NAME_STR_SIZE &&
+               strnEquals(param.nameBegin, NAME_STR, NAME_STR_SIZE) &&
+               name == NULL) {
+      name = param.value;
+    } else if (param_name_size == FUNC_TYPE_STR_SIZE &&
+               strnEquals(param.nameBegin, FUNC_TYPE_STR, FUNC_TYPE_STR_SIZE) &&
+               library == NULL) {
+      funcType = param.value;
+    } else {
+      printError(param.value->str_begin, param.value->str_end, "Bad paramter");
+      return false;
+    }
+  }
+
+  AstTree *str_type = makeStringType();
+
+  if (library == NULL || name == NULL || funcType == NULL) {
+    return false;
+  } else if (!typeIsEqual(library->type, &AST_TREE_C_LIBRARY_TYPE)) {
+    printError(library->str_begin, library->str_end,
+               "library must have a type of `c_library`");
+    return false;
+  } else if (!typeIsEqual(name->type, str_type)) {
+    astTreeDelete(str_type);
+    printError(name->str_begin, name->str_end,
+               "name must have a type of `[]u8`");
+    return false;
+  } else if (funcType->token != AST_TREE_TOKEN_TYPE_FUNCTION) {
+    astTreeDelete(str_type);
+    printError(funcType->str_begin, funcType->str_end,
+               "func_type must have a type of `function type`");
+    return false;
+  }
+  astTreeDelete(str_type);
+
+  AstTreeTypeFunction *type_metadata = a404m_malloc(sizeof(*type_metadata));
+  type_metadata->arguments_size = 3;
+  type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
+                                          sizeof(*type_metadata->arguments));
+
+  AstTreeCFunctionType *retType = a404m_malloc(sizeof(*retType));
+  retType->funcType = copyAstTree(funcType);
+
+  type_metadata->returnType = newAstTree(
+      AST_TREE_TOKEN_TYPE_C_FUNCTION, retType, &AST_TREE_TYPE_TYPE, NULL, NULL);
+
+  type_metadata->arguments[0] = (AstTreeTypeFunctionArgument){
+      .type = copyAstTree(library->type),
+      .name_begin = LIBRARY_STR,
+      .name_end = LIBRARY_STR + LIBRARY_STR_SIZE,
+      .str_begin = NULL,
+      .str_end = NULL,
+      .isComptime = false,
+  };
+
+  type_metadata->arguments[1] = (AstTreeTypeFunctionArgument){
+      .type = copyAstTree(name->type),
+      .name_begin = NAME_STR,
+      .name_end = NAME_STR + NAME_STR_SIZE,
+      .str_begin = NULL,
+      .str_end = NULL,
+      .isComptime = false,
+  };
+
+  type_metadata->arguments[2] = (AstTreeTypeFunctionArgument){
+      .type = copyAstTree(funcType->type),
+      .name_begin = FUNC_TYPE_STR,
+      .name_end = FUNC_TYPE_STR + FUNC_TYPE_STR_SIZE,
       .str_begin = NULL,
       .str_end = NULL,
       .isComptime = false,
@@ -6972,6 +7389,73 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
           astTreeVariableDelete(arguments.data[i]);
         }
         free(arguments.data);
+      } else if (var->type->token == AST_TREE_TOKEN_TYPE_C_FUNCTION) {
+        AstTreeCFunctionType *cFunction = var->type->metadata;
+        AstTreeTypeFunction *function = cFunction->funcType->metadata;
+
+        if (function->arguments_size != functionCall->parameters_size) {
+          continue;
+        }
+
+        AstTreeFunctionCallParam initedArguments[function->arguments_size];
+        size_t initedArguments_size = function->arguments_size;
+
+        for (size_t i = 0; i < initedArguments_size; ++i) {
+          initedArguments[i].value = NULL;
+        }
+
+        for (size_t i = 0; i < functionCall->parameters_size; ++i) {
+          AstTreeFunctionCallParam param = functionCall->parameters[i];
+          if (param.nameBegin != param.nameEnd) {
+            const size_t param_name_size = param.nameEnd - param.nameBegin;
+            for (size_t j = 0; j < function->arguments_size; ++j) {
+              AstTreeTypeFunctionArgument arg = function->arguments[j];
+              if ((size_t)(arg.name_end - arg.name_begin) == param_name_size &&
+                  strnEquals(arg.name_begin, param.nameBegin,
+                             param_name_size)) {
+                if (!typeIsEqual(arg.type, param.value->type) ||
+                    (arg.isComptime && !isConst(param.value))) {
+                  goto CONTINUE_OUTER;
+                }
+                initedArguments[j] = param;
+                goto END_OF_NAMED_FOR2;
+              }
+            }
+            goto CONTINUE_OUTER;
+          }
+        END_OF_NAMED_FOR2:
+        }
+
+        for (size_t i = 0; i < functionCall->parameters_size; ++i) {
+          AstTreeFunctionCallParam param = functionCall->parameters[i];
+          if (param.nameBegin == param.nameEnd) {
+            for (size_t j = 0; j < function->arguments_size; ++j) {
+              AstTreeTypeFunctionArgument arg = function->arguments[j];
+              if (initedArguments[j].value == NULL) {
+                if (!typeIsEqual(arg.type, param.value->type) ||
+                    (arg.isComptime && !isConst(param.value))) {
+                  goto CONTINUE_OUTER;
+                }
+                initedArguments[j] = param;
+                goto END_OF_UNNAMED_FOR2;
+              }
+            }
+            goto CONTINUE_OUTER;
+          }
+        END_OF_UNNAMED_FOR2:
+        }
+
+        for (size_t i = 0; i < function->arguments_size; ++i) {
+          if (initedArguments[i].value == NULL) {
+            goto CONTINUE_OUTER;
+          }
+        }
+        if (variable != NULL) {
+          printError(name_begin, name_end, "Multiple candidates found for %.*s",
+                     (int)(name_end - name_begin), name_begin);
+          return NULL;
+        }
+        variable = var;
       }
     CONTINUE_OUTER:
     }
@@ -6986,13 +7470,26 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
 }
 
 char *u8ArrayToCString(AstTree *tree) {
-  AstTreeObject *object = tree->metadata;
-  char *str = a404m_malloc((object->variables.size + 1) * sizeof(*str));
-  for (size_t i = 0; i < object->variables.size; ++i) {
-    str[i] = *(AstTreeInt *)object->variables.data[i]->value->metadata;
+  if (tree->token == AST_TREE_TOKEN_RAW_VALUE ||
+      tree->token == AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED) {
+    AstTreeRawValue *value = tree->metadata;
+    const size_t size = getSizeOfType(tree->type);
+
+    char *newValue = a404m_malloc((size + 1) * sizeof(*newValue));
+    memcpy(newValue, value, size);
+    newValue[size] = '\0';
+
+    return newValue;
+  } else if (tree->token == AST_TREE_TOKEN_VALUE_OBJECT) {
+    AstTreeObject *object = tree->metadata;
+    char *str = a404m_malloc((object->variables.size + 1) * sizeof(*str));
+    for (size_t i = 0; i < object->variables.size; ++i) {
+      str[i] = *(AstTreeInt *)object->variables.data[i]->value->metadata;
+    }
+    str[object->variables.size] = '\0';
+    return str;
   }
-  str[object->variables.size] = '\0';
-  return str;
+  UNREACHABLE;
 }
 
 AstTree *makeStringType() {
@@ -7055,6 +7552,8 @@ size_t getSizeOfType(AstTree *type) {
   case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_NAMESPACE:
   case AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER:
+  case AST_TREE_TOKEN_TYPE_C_LIBRARY:
+  case AST_TREE_TOKEN_TYPE_C_FUNCTION:
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_BUILTIN_CAST:
   case AST_TREE_TOKEN_BUILTIN_TYPE_OF:

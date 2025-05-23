@@ -62,6 +62,8 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_TYPE_CODE",
     "PARSER_TOKEN_TYPE_NAMESPACE",
     "PARSER_TOKEN_TYPE_SHAPE_SHIFTER",
+    "PARSER_TOKEN_TYPE_C_LIBRARY",
+    "PARSER_TOKEN_TYPE_C_FUNCTION",
 
     "PARSER_TOKEN_KEYWORD_BREAK",
     "PARSER_TOKEN_KEYWORD_CONTINUE",
@@ -287,6 +289,8 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_TYPE_CODE:
   case PARSER_TOKEN_TYPE_NAMESPACE:
   case PARSER_TOKEN_TYPE_SHAPE_SHIFTER:
+  case PARSER_TOKEN_TYPE_C_LIBRARY:
+  case PARSER_TOKEN_TYPE_C_FUNCTION:
   case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
   case PARSER_TOKEN_KEYWORD_BREAK:
@@ -595,6 +599,8 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_TYPE_CODE:
   case PARSER_TOKEN_TYPE_NAMESPACE:
   case PARSER_TOKEN_TYPE_SHAPE_SHIFTER:
+  case PARSER_TOKEN_TYPE_C_LIBRARY:
+  case PARSER_TOKEN_TYPE_C_FUNCTION:
   case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
   case PARSER_TOKEN_KEYWORD_BREAK:
@@ -943,6 +949,10 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_NAMESPACE);
   case LEXER_TOKEN_KEYWORD_SHAPE_SHIFTER:
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_SHAPE_SHIFTER);
+  case LEXER_TOKEN_KEYWORD_C_LIBRARY:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_C_LIBRARY);
+  case LEXER_TOKEN_KEYWORD_C_FUNCTION:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_C_FUNCTION);
   case LEXER_TOKEN_KEYWORD_NULL:
     return parserNoMetadata(node, parent, PARSER_TOKEN_KEYWORD_NULL);
   case LEXER_TOKEN_KEYWORD_UNDEFINED:
@@ -1720,6 +1730,8 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_TYPE_CODE:
       case PARSER_TOKEN_TYPE_NAMESPACE:
       case PARSER_TOKEN_TYPE_SHAPE_SHIFTER:
+      case PARSER_TOKEN_TYPE_C_LIBRARY:
+      case PARSER_TOKEN_TYPE_C_FUNCTION:
       case PARSER_TOKEN_KEYWORD_NULL:
       case PARSER_TOKEN_KEYWORD_UNDEFINED:
       case PARSER_TOKEN_KEYWORD_BREAK:
@@ -2261,6 +2273,8 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_TYPE_CODE:
   case PARSER_TOKEN_TYPE_NAMESPACE:
   case PARSER_TOKEN_TYPE_SHAPE_SHIFTER:
+  case PARSER_TOKEN_TYPE_C_LIBRARY:
+  case PARSER_TOKEN_TYPE_C_FUNCTION:
   case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
   case PARSER_TOKEN_KEYWORD_BREAK:
@@ -2299,6 +2313,8 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_TYPE_CODE:
   case PARSER_TOKEN_TYPE_NAMESPACE:
   case PARSER_TOKEN_TYPE_SHAPE_SHIFTER:
+  case PARSER_TOKEN_TYPE_C_LIBRARY:
+  case PARSER_TOKEN_TYPE_C_FUNCTION:
   case PARSER_TOKEN_TYPE_BOOL:
   case PARSER_TOKEN_IDENTIFIER:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
@@ -2460,6 +2476,8 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_TYPE_CODE:
   case PARSER_TOKEN_TYPE_NAMESPACE:
   case PARSER_TOKEN_TYPE_SHAPE_SHIFTER:
+  case PARSER_TOKEN_TYPE_C_LIBRARY:
+  case PARSER_TOKEN_TYPE_C_FUNCTION:
   case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
   case PARSER_TOKEN_KEYWORD_IF:
@@ -2521,6 +2539,9 @@ char escapeChar(char const *begin, char const *end, bool *success) {
   case '"':
     *success = true;
     return '\"';
+  case '0':
+    *success = true;
+    return '\0';
   default:
     *success = false;
     return 0;

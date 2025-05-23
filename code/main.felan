@@ -1,69 +1,11 @@
-@import("basic.felan");
-
-print :: (comptime t:type,v:t)->void{
-  if @type_of(v) == u8
-    @putc(v);
-  else
-    @putc('n');
-};
-
-fun0 :: () -> void {
-  i := 0;
-  while true {
-    i += 1;
-    if i == 7
-      return;
-    else if i % 2 == 0
-      continue;
-    else if i == 8
-      break;
-    print(u8,@cast(i,u8)+'0');
-    print(u16,@cast(@cast(i,u8) + '0',u16));
-  }
-};
-
-fun1 :: ()->void{
-  a :[20]u8 = undefined;
-  a[0] = '2';
-  b := a;
-  @putc(a[0]);
-  @putc(b[0]);
-};
-
-fun2 :: ()->void{
-  b := '2';
-  c := &b;
-  d := &c;
-  d.*.* = '6';
-  @putc(b);
-  @putc(c.*);
-  @putc(d.*.*);
-};
-
-fun3 :: ()->void{
-  st :: struct{
-    a : i64;
-  };
-  a : st = undefined;
-  a.a = 2;
-  @putc(@cast(a.a,u8)+'0');
-};
-
-fun4 :: ()->void{
-  p := @size_of(123);
-  @putc(@cast(p,u8)+'0');
-};
-
-/*
-libc :: @c_library("/lib/libc.so");
-
-putchar : (i8)->void : @c_function(libc,"putchar");
-*/
+libc :: @c_library("/lib/libc.so.6");
+putchar :: @c_function(libc,"putchar",(i32)->i32);
+puts :: @c_function(libc,"puts",(*u8)->i32);
 
 main :: ()->void{
-  // fun0();
-  // fun1();
-  // fun2();
-  // fun3();
-  fun4();
+  a :i32= 97;
+  a = putchar(a);
+  putchar(a);
+  b := "hello\0";
+  puts(&(b[0]));
 };
