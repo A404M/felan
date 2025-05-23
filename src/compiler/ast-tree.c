@@ -5842,7 +5842,7 @@ bool setTypesIf(AstTree *tree, AstTreeSetTypesHelper helper,
     return false;
   }
 
-  if (isConst(metadata->condition)) {
+  if (metadata->condition->token == AST_TREE_TOKEN_KEYWORD_COMPTIME) {
     AstTree *condition = getValue(metadata->condition, true);
     AstTree *result;
     bool condi = *(AstTreeBool *)condition->metadata;
@@ -5913,7 +5913,7 @@ bool setTypesWhile(AstTree *tree, AstTreeSetTypesHelper _helper,
     return false;
   }
 
-  if (isConst(metadata->condition)) {
+  if (metadata->condition->token == AST_TREE_TOKEN_KEYWORD_COMPTIME) {
     AstTree *condition = getValue(metadata->condition, true);
     bool condi = *(AstTreeBool *)condition->metadata;
     astTreeDelete(condition);

@@ -991,14 +991,12 @@ AstTree *runAstTreeCFunction(AstTree *tree, AstTree **arguments,
     UNREACHABLE;
   }
 
-  ffi_cif cif;
-  ffi_type *args[arguments_size];
-  void *values[arguments_size];
-  ffi_arg rc;
-
   if (funcType->arguments_size != arguments_size) {
     UNREACHABLE;
   }
+
+  ffi_type *args[arguments_size];
+  void *values[arguments_size];
 
   for (size_t i = 0; i < arguments_size; ++i) {
     AstTreeTypeFunctionArgument arg = funcType->arguments[i];
@@ -1014,13 +1012,15 @@ AstTree *runAstTreeCFunction(AstTree *tree, AstTree **arguments,
     values[i] = arguments[i]->metadata;
   }
 
+  ffi_cif cif;
   if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arguments_size,
                    toFFIType(funcType->returnType), args) == FFI_OK) {
+    ffi_arg rc;
     ffi_call(&cif, fun, &rc, values);
     if (typeIsEqual(funcType->returnType, &AST_TREE_VOID_TYPE)) {
       return &AST_TREE_VOID_TYPE;
     } else {
-      size_t size = getSizeOfType(funcType->returnType);
+      const size_t size = getSizeOfType(funcType->returnType);
       AstTreeRawValue *value = a404m_malloc(size);
       memcpy(value, &rc, size);
       return newAstTree(AST_TREE_TOKEN_RAW_VALUE, value,

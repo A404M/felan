@@ -1,9 +1,8 @@
 @import("basic.felan");
 
 libc :: @c_library("/lib/libc.so.6");
-putchar :: @c_function(libc,"putchar",(i32)->i32);
 puts :: @c_function(libc,"puts",(*u8)->i32);
-sleep :: @c_function(libc,"sleep",(i32)->void);
+sleep :: @c_function(libc,"sleep",(i32)->i32);
 
 raylib :: @c_library("/lib/libraylib.so.5.5.0");
 InitWindow :: @c_function(raylib,"InitWindow",(i32,i32,*u8)->void);
@@ -14,21 +13,15 @@ CloseWindow :: @c_function(raylib,"CloseWindow",()->void);
 ClearBackground :: @c_function(raylib,"ClearBackground",(color:u32)->void);
 
 main :: ()->void{
-  a :i32= 97;
-  a = putchar(a);
-  putchar(a);
   b := "hello\0";
-  str := &(b[0]);
-  puts(str);
+  str := &b[0];
   screenWidth :i32: 800;
   screenHeight :i32: 450;
   InitWindow(screenWidth,screenHeight,str);
-  test := WindowShouldClose();
-  while test == false {
+  while WindowShouldClose() == false {
     BeginDrawing();
     ClearBackground(@cast(4294967295,u32));
     EndDrawing();
-    test = WindowShouldClose();
   }
   CloseWindow();
 };
