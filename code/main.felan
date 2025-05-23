@@ -49,15 +49,21 @@ fun3 :: ()->void{
   @putc(@cast(a.a,u8)+'0');
 };
 
+fun4 :: ()->void{
+  p := @size_of(123);
+  @putc(@cast(p,u8)+'0');
+};
+
 /*
-libc :: @c_lib("/lib/libc.so");
+libc :: @c_library("/lib/libc.so");
 
 putchar : (i8)->void : @c_function(libc,"putchar");
 */
 
 main :: ()->void{
   // fun0();
-  fun1();
+  // fun1();
   // fun2();
-  //fun3();
+  // fun3();
+  fun4();
 };

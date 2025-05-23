@@ -231,6 +231,13 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     AstTree *variable = arguments[0];
     return copyAstTree(variable->type);
   }
+  case AST_TREE_TOKEN_BUILTIN_SIZE_OF: {
+    AstTree *type = arguments[0];
+    AstTreeRawValue *value = a404m_malloc(getSizeOfType(&AST_TREE_U64_TYPE));
+    *(u64 *)value = getSizeOfType(type);
+    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, value, &AST_TREE_U64_TYPE, NULL,
+                      NULL);
+  }
   case AST_TREE_TOKEN_BUILTIN_NEG: {
     AstTree *left = arguments[0];
     AstTreeRawValue *ret = a404m_malloc(getSizeOfType(left->type));
@@ -922,7 +929,7 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     return ret;
   }
   case AST_TREE_TOKEN_BUILTIN_PUTC: {
-    putchar(*(u8*)arguments[0]->metadata);
+    putchar(*(u8 *)arguments[0]->metadata);
     return copyAstTree(&AST_TREE_VOID_VALUE);
   }
   case AST_TREE_TOKEN_BUILTIN_IMPORT:
@@ -1250,6 +1257,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
   case AST_TREE_TOKEN_TYPE_ARRAY:
   case AST_TREE_TOKEN_BUILTIN_CAST:
   case AST_TREE_TOKEN_BUILTIN_TYPE_OF:
+  case AST_TREE_TOKEN_BUILTIN_SIZE_OF:
   case AST_TREE_TOKEN_BUILTIN_IMPORT:
   case AST_TREE_TOKEN_BUILTIN_STACK_ALLOC:
   case AST_TREE_TOKEN_BUILTIN_HEAP_ALLOC:
@@ -1266,6 +1274,8 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
   case AST_TREE_TOKEN_BUILTIN_GREATER_OR_EQUAL:
   case AST_TREE_TOKEN_BUILTIN_SMALLER_OR_EQUAL:
   case AST_TREE_TOKEN_BUILTIN_PUTC:
+  case AST_TREE_TOKEN_BUILTIN_C_LIBRARY:
+  case AST_TREE_TOKEN_BUILTIN_C_FUNCTION:
     return copyAstTree(expr);
   case AST_TREE_TOKEN_BUILTIN_IS_COMPTIME: {
     AstTreeBool *metadata = a404m_malloc(sizeof(*metadata));
@@ -1615,6 +1625,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
   }
   case AST_TREE_TOKEN_NONE:
   }
+  printLog("%s", AST_TREE_TOKEN_STRINGS[expr->token]);
   UNREACHABLE;
 }
 
@@ -1666,12 +1677,16 @@ AstTree *toRawValue(AstTree *value) {
     switch (value->token) {
     case AST_TREE_TOKEN_TYPE_F16:
       *(f16 *)rawValue = *(f128 *)value->metadata;
+      break;
     case AST_TREE_TOKEN_TYPE_F32:
       *(f32 *)rawValue = *(f128 *)value->metadata;
+      break;
     case AST_TREE_TOKEN_TYPE_F64:
       *(f64 *)rawValue = *(f128 *)value->metadata;
+      break;
     case AST_TREE_TOKEN_TYPE_F128:
       *(f128 *)rawValue = *(f128 *)value->metadata;
+      break;
     default:
       UNREACHABLE;
     }

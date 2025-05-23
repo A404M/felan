@@ -9,6 +9,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_BUILTIN_CAST,
   AST_TREE_TOKEN_BUILTIN_BEGIN = AST_TREE_TOKEN_BUILTIN_CAST,
   AST_TREE_TOKEN_BUILTIN_TYPE_OF,
+  AST_TREE_TOKEN_BUILTIN_SIZE_OF,
   AST_TREE_TOKEN_BUILTIN_IMPORT,
   AST_TREE_TOKEN_BUILTIN_IS_COMPTIME,
   AST_TREE_TOKEN_BUILTIN_STACK_ALLOC,
@@ -26,7 +27,9 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_BUILTIN_GREATER_OR_EQUAL,
   AST_TREE_TOKEN_BUILTIN_SMALLER_OR_EQUAL,
   AST_TREE_TOKEN_BUILTIN_PUTC,
-  AST_TREE_TOKEN_BUILTIN_END = AST_TREE_TOKEN_BUILTIN_PUTC,
+  AST_TREE_TOKEN_BUILTIN_C_LIBRARY,
+  AST_TREE_TOKEN_BUILTIN_C_FUNCTION,
+  AST_TREE_TOKEN_BUILTIN_END = AST_TREE_TOKEN_BUILTIN_C_FUNCTION,
 
   AST_TREE_TOKEN_KEYWORD_RETURN,
   AST_TREE_TOKEN_KEYWORD_BREAK,
@@ -455,6 +458,8 @@ bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesBuiltinCast(AstTree *tree, AstTreeSetTypesHelper helper,
                          AstTreeFunctionCall *functionCall);
 bool setTypesBuiltinTypeOf(AstTree *tree, AstTreeSetTypesHelper helper,
+                           AstTreeFunctionCall *functionCall);
+bool setTypesBuiltinSizeOf(AstTree *tree, AstTreeSetTypesHelper helper,
                            AstTreeFunctionCall *functionCall);
 bool setTypesBuiltinImport(AstTree *tree, AstTreeSetTypesHelper helper,
                            AstTreeFunctionCall *functionCall);
