@@ -20,9 +20,9 @@ INC_DIRS := $(SRC_DIR)
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 # OP_FLAG := -Ofast
-# OP_FLAG := -O3
+OP_FLAG := -O3
 # OP_FLAG := -Oz
-OP_FLAG := -g
+# OP_FLAG := -g
 
 # CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -DPRINT_STATISTICS -DPRINT_COMPILE_TREE $(OP_FLAG)
 CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -lffi -DPRINT_STATISTICS $(OP_FLAG)
@@ -73,8 +73,11 @@ test/big.felan: Makefile
 	echo "main :: () -> void {" > $@
 	for((n = 0;n < 1000000;n++)); do echo "  print('1');" >> $@; done
 	echo "};" >> $@
+	echo "libc :: @c_library(\"/lib/libc.so.6\");" >> $@
+	echo "putchar :: @c_function(libc,\"putchar\",(i32)->i32);" >> $@
 	echo "print :: (value:u8) -> void {" >> $@
-	echo "  @putc(value);" >> $@
+	echo "  putchar(@cast(value,i32));" >> $@
+	# echo "  @putc(value);" >> $@
 	echo "};" >> $@
 
 # $@ = left hand of :
