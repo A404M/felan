@@ -20,12 +20,19 @@ main :: ()->void{
   str2 := &c[0];
   screenWidth :i32: 800;
   screenHeight :i32: 450;
+  white :u32: 4294967295;
+  black :u32: 4278190080;
   InitWindow(screenWidth,screenHeight,str);
-  while (!WindowShouldClose()) {
+  while !WindowShouldClose() {
     BeginDrawing();
-    ClearBackground(@cast(4294967295,u32));
-    DrawText(str2,@cast(190,i32),@cast(200,i32),@cast(20,i32),@cast(4278190080,u32));
+    ClearBackground(@cast(white,u32));
+    DrawText(str2,@cast(190,i32),@cast(200,i32),@cast(20,i32),@cast(black,u32));
     EndDrawing();
   }
   CloseWindow();
+};
+
+color :: (a:u8,r:u8,g:u8,b:u8)->u32{
+  t :u8= 255;
+  c := t&a;
 };

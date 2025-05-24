@@ -597,3 +597,132 @@ __logical_or__ :: (left:bool,lazy right:bool) -> bool {
     return false;
   }
 };
+
+__bitwise_not__ :: (value:u8) -> u8 {
+  return @bitwise_not(value);
+};
+
+__bitwise_not__ :: (value:i8) -> i8 {
+  return @bitwise_not(value);
+};
+
+__bitwise_not__ :: (value:u16) -> u16 {
+  return @bitwise_not(value);
+};
+
+__bitwise_not__ :: (value:i16) -> i16 {
+  return @bitwise_not(value);
+};
+
+__bitwise_not__ :: (value:u32) -> u32 {
+  return @bitwise_not(value);
+};
+
+__bitwise_not__ :: (value:i32) -> i32 {
+  return @bitwise_not(value);
+};
+
+__bitwise_not__ :: (value:u64) -> u64 {
+  return @bitwise_not(value);
+};
+
+__bitwise_not__ :: (value:i64) -> i64 {
+  return @bitwise_not(value);
+};
+
+__bitwise_and__ :: (left:u8,right:u8) -> u8 {
+  return @bitwise_and(left,right);
+};
+
+__bitwise_and__ :: (left:i8,right:i8) -> i8 {
+  return @bitwise_and(left,right);
+};
+
+__bitwise_and__ :: (left:u16,right:u16) -> u16 {
+  return @bitwise_and(left,right);
+};
+
+__bitwise_and__ :: (left:i16,right:i16) -> i16 {
+  return @bitwise_and(left,right);
+};
+
+__bitwise_and__ :: (left:u32,right:u32) -> u32 {
+  return @bitwise_and(left,right);
+};
+
+__bitwise_and__ :: (left:i32,right:i32) -> i32 {
+  return @bitwise_and(left,right);
+};
+
+__bitwise_and__ :: (left:u64,right:u64) -> u64 {
+  return @bitwise_and(left,right);
+};
+
+__bitwise_and__ :: (left:i64,right:i64) -> i64 {
+  return @bitwise_and(left,right);
+};
+
+__bitwise_xor__ :: (left:u8,right:u8) -> u8 {
+  return @bitwise_xor(left,right);
+};
+
+__bitwise_xor__ :: (left:i8,right:i8) -> i8 {
+  return @bitwise_xor(left,right);
+};
+
+__bitwise_xor__ :: (left:u16,right:u16) -> u16 {
+  return @bitwise_xor(left,right);
+};
+
+__bitwise_xor__ :: (left:i16,right:i16) -> i16 {
+  return @bitwise_xor(left,right);
+};
+
+__bitwise_xor__ :: (left:u32,right:u32) -> u32 {
+  return @bitwise_xor(left,right);
+};
+
+__bitwise_xor__ :: (left:i32,right:i32) -> i32 {
+  return @bitwise_xor(left,right);
+};
+
+__bitwise_xor__ :: (left:u64,right:u64) -> u64 {
+  return @bitwise_xor(left,right);
+};
+
+__bitwise_xor__ :: (left:i64,right:i64) -> i64 {
+  return @bitwise_xor(left,right);
+};
+
+__bitwise_or__ :: (left:u8,right:u8) -> u8 {
+  return @bitwise_or(left,right);
+};
+
+__bitwise_or__ :: (left:i8,right:i8) -> i8 {
+  return @bitwise_or(left,right);
+};
+
+__bitwise_or__ :: (left:u16,right:u16) -> u16 {
+  return @bitwise_or(left,right);
+};
+
+__bitwise_or__ :: (left:i16,right:i16) -> i16 {
+  return @bitwise_or(left,right);
+};
+
+__bitwise_or__ :: (left:u32,right:u32) -> u32 {
+  return @bitwise_or(left,right);
+};
+
+__bitwise_or__ :: (left:i32,right:i32) -> i32 {
+  return @bitwise_or(left,right);
+};
+
+__bitwise_or__ :: (left:u64,right:u64) -> u64 {
+  return @bitwise_or(left,right);
+};
+
+__bitwise_or__ :: (left:i64,right:i64) -> i64 {
+  return @bitwise_or(left,right);
+};
+

@@ -31,6 +31,10 @@ typedef enum ParserToken {
   PARSER_TOKEN_BUILTIN_PUTC,
   PARSER_TOKEN_BUILTIN_C_LIBRARY,
   PARSER_TOKEN_BUILTIN_C_FUNCTION,
+  PARSER_TOKEN_BUILTIN_BITWISE_NOT,
+  PARSER_TOKEN_BUILTIN_BITWISE_AND,
+  PARSER_TOKEN_BUILTIN_BITWISE_XOR,
+  PARSER_TOKEN_BUILTIN_BITWISE_OR,
 
   PARSER_TOKEN_VALUE_INT,
   PARSER_TOKEN_VALUE_FLOAT,
@@ -108,6 +112,10 @@ typedef enum ParserToken {
   PARSER_TOKEN_OPERATOR_LOGICAL_NOT,
   PARSER_TOKEN_OPERATOR_LOGICAL_AND,
   PARSER_TOKEN_OPERATOR_LOGICAL_OR,
+  PARSER_TOKEN_OPERATOR_BITWISE_NOT,
+  PARSER_TOKEN_OPERATOR_BITWISE_AND,
+  PARSER_TOKEN_OPERATOR_BITWISE_XOR,
+  PARSER_TOKEN_OPERATOR_BITWISE_OR,
 
   PARSER_TOKEN_FUNCTION_DEFINITION,
 
@@ -262,6 +270,9 @@ ParserNode *parserBinaryOrLeftOperator(LexerNode *node, LexerNode *begin,
                                        LexerToken laterToken);
 ParserNode *parserLeftOperator(LexerNode *node, LexerNode *end,
                                ParserNode *parent, ParserToken token);
+ParserNode *parserLeftOperatorWithConti(LexerNode *node, LexerNode *begin,
+                                        LexerNode *end, ParserNode *parent,
+                                        ParserToken token, bool *conti);
 ParserNode *parserRightOperator(LexerNode *node, LexerNode *begin,
                                 ParserNode *parent, ParserToken token);
 ParserNode *parserIf(LexerNode *node, LexerNode *end, ParserNode *parent);

@@ -34,6 +34,10 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_BUILTIN_PUTC",
     "PARSER_TOKEN_BUILTIN_C_LIBRARY",
     "PARSER_TOKEN_BUILTIN_C_FUNCTION",
+    "PARSER_TOKEN_BUILTIN_BITWISE_NOT",
+    "PARSER_TOKEN_BUILTIN_BITWISE_AND",
+    "PARSER_TOKEN_BUILTIN_BITWISE_XOR",
+    "PARSER_TOKEN_BUILTIN_BITWISE_OR",
 
     "PARSER_TOKEN_VALUE_INT",
     "PARSER_TOKEN_VALUE_FLOAT",
@@ -111,6 +115,10 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_OPERATOR_LOGICAL_NOT",
     "PARSER_TOKEN_OPERATOR_LOGICAL_AND",
     "PARSER_TOKEN_OPERATOR_LOGICAL_OR",
+    "PARSER_TOKEN_OPERATOR_BITWISE_NOT",
+    "PARSER_TOKEN_OPERATOR_BITWISE_AND",
+    "PARSER_TOKEN_OPERATOR_BITWISE_XOR",
+    "PARSER_TOKEN_OPERATOR_BITWISE_OR",
 
     "PARSER_TOKEN_FUNCTION_DEFINITION",
 
@@ -171,7 +179,7 @@ static const ParserOrder PARSER_ORDER[] = {
         .end = LEXER_TOKEN_ORDER10,
     },
     {
-        .ltr = false,
+        .ltr = true,
         .begin = LEXER_TOKEN_ORDER10,
         .end = LEXER_TOKEN_ORDER11,
     },
@@ -181,13 +189,18 @@ static const ParserOrder PARSER_ORDER[] = {
         .end = LEXER_TOKEN_ORDER12,
     },
     {
-        .ltr = true,
+        .ltr = false,
         .begin = LEXER_TOKEN_ORDER12,
         .end = LEXER_TOKEN_ORDER13,
     },
     {
-        .ltr = false,
+        .ltr = true,
         .begin = LEXER_TOKEN_ORDER13,
+        .end = LEXER_TOKEN_ORDER14,
+    },
+    {
+        .ltr = false,
+        .begin = LEXER_TOKEN_ORDER14,
         .end = LEXER_TOKEN_END_ORDERS,
     },
 };
@@ -269,6 +282,10 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_BUILTIN_PUTC:
   case PARSER_TOKEN_BUILTIN_C_LIBRARY:
   case PARSER_TOKEN_BUILTIN_C_FUNCTION:
+  case PARSER_TOKEN_BUILTIN_BITWISE_NOT:
+  case PARSER_TOKEN_BUILTIN_BITWISE_AND:
+  case PARSER_TOKEN_BUILTIN_BITWISE_XOR:
+  case PARSER_TOKEN_BUILTIN_BITWISE_OR:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_BOOL:
@@ -346,6 +363,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_OPERATOR_LOGICAL_NOT:
+  case PARSER_TOKEN_OPERATOR_BITWISE_NOT:
   case PARSER_TOKEN_KEYWORD_STRUCT:
   case PARSER_TOKEN_OPERATOR_POINTER:
   case PARSER_TOKEN_OPERATOR_ADDRESS:
@@ -441,6 +459,9 @@ void parserNodePrint(const ParserNode *node, int indent) {
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_OPERATOR_LOGICAL_AND:
   case PARSER_TOKEN_OPERATOR_LOGICAL_OR:
+  case PARSER_TOKEN_OPERATOR_BITWISE_AND:
+  case PARSER_TOKEN_OPERATOR_BITWISE_XOR:
+  case PARSER_TOKEN_OPERATOR_BITWISE_OR:
   case PARSER_TOKEN_OPERATOR_ACCESS:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:
@@ -579,6 +600,10 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_BUILTIN_PUTC:
   case PARSER_TOKEN_BUILTIN_C_LIBRARY:
   case PARSER_TOKEN_BUILTIN_C_FUNCTION:
+  case PARSER_TOKEN_BUILTIN_BITWISE_NOT:
+  case PARSER_TOKEN_BUILTIN_BITWISE_AND:
+  case PARSER_TOKEN_BUILTIN_BITWISE_XOR:
+  case PARSER_TOKEN_BUILTIN_BITWISE_OR:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_BOOL:
@@ -642,7 +667,7 @@ void parserNodeDelete(ParserNode *node) {
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_OPERATOR_LOGICAL_NOT:
-  case PARSER_TOKEN_KEYWORD_STRUCT:
+  case PARSER_TOKEN_OPERATOR_BITWISE_NOT:
   case PARSER_TOKEN_OPERATOR_POINTER:
   case PARSER_TOKEN_OPERATOR_ADDRESS:
   case PARSER_TOKEN_OPERATOR_DEREFERENCE:
@@ -691,6 +716,10 @@ void parserNodeDelete(ParserNode *node) {
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_OPERATOR_LOGICAL_AND:
   case PARSER_TOKEN_OPERATOR_LOGICAL_OR:
+  case PARSER_TOKEN_OPERATOR_BITWISE_AND:
+  case PARSER_TOKEN_OPERATOR_BITWISE_XOR:
+  case PARSER_TOKEN_OPERATOR_BITWISE_OR:
+  case PARSER_TOKEN_KEYWORD_STRUCT:
   case PARSER_TOKEN_OPERATOR_ACCESS:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:
@@ -911,6 +940,14 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserNoMetadata(node, parent, PARSER_TOKEN_BUILTIN_C_LIBRARY);
   case LEXER_TOKEN_BUILTIN_C_FUNCTION:
     return parserNoMetadata(node, parent, PARSER_TOKEN_BUILTIN_C_FUNCTION);
+  case LEXER_TOKEN_BUILTIN_BITWISE_NOT:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_BUILTIN_BITWISE_NOT);
+  case LEXER_TOKEN_BUILTIN_BITWISE_AND:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_BUILTIN_BITWISE_AND);
+  case LEXER_TOKEN_BUILTIN_BITWISE_XOR:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_BUILTIN_BITWISE_XOR);
+  case LEXER_TOKEN_BUILTIN_BITWISE_OR:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_BUILTIN_BITWISE_OR);
   case LEXER_TOKEN_KEYWORD_TYPE:
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_TYPE);
   case LEXER_TOKEN_KEYWORD_VOID:
@@ -1053,6 +1090,18 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
   case LEXER_TOKEN_SYMBOL_LOGICAL_NOT:
     return parserLeftOperator(node, end, parent,
                               PARSER_TOKEN_OPERATOR_LOGICAL_NOT);
+  case LEXER_TOKEN_SYMBOL_BITWISE_AND:
+    return parserBinaryOperator(node, begin, end, parent,
+                                PARSER_TOKEN_OPERATOR_BITWISE_AND);
+  case LEXER_TOKEN_SYMBOL_BITWISE_XOR:
+    return parserBinaryOperator(node, begin, end, parent,
+                                PARSER_TOKEN_OPERATOR_BITWISE_XOR);
+  case LEXER_TOKEN_SYMBOL_BITWISE_OR:
+    return parserBinaryOperator(node, begin, end, parent,
+                                PARSER_TOKEN_OPERATOR_BITWISE_OR);
+  case LEXER_TOKEN_SYMBOL_BITWISE_NOT:
+    return parserLeftOperator(node, end, parent,
+                              PARSER_TOKEN_OPERATOR_BITWISE_NOT);
   case LEXER_TOKEN_SYMBOL_PLUS: {
     ParserNode *result = parserBinaryOrLeftOperator(node, begin, end, parent,
                                                     PARSER_TOKEN_OPERATOR_PLUS,
@@ -1074,12 +1123,9 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     *conti = result == NULL;
     return result;
   }
-  case LEXER_TOKEN_SYMBOL_ADDRESS: {
-    ParserNode *result =
-        parserLeftOperator(node, end, parent, PARSER_TOKEN_OPERATOR_ADDRESS);
-    *conti = result == NULL;
-    return result;
-  }
+  case LEXER_TOKEN_SYMBOL_ADDRESS:
+    return parserLeftOperatorWithConti(node, begin, end, parent,
+                                       PARSER_TOKEN_OPERATOR_ADDRESS, conti);
   case LEXER_TOKEN_SYMBOL_DEREFERENCE: {
     ParserNode *result = parserRightOperator(node, begin, parent,
                                              PARSER_TOKEN_OPERATOR_DEREFERENCE);
@@ -1711,6 +1757,10 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_BUILTIN_PUTC:
       case PARSER_TOKEN_BUILTIN_C_LIBRARY:
       case PARSER_TOKEN_BUILTIN_C_FUNCTION:
+  case PARSER_TOKEN_BUILTIN_BITWISE_NOT:
+  case PARSER_TOKEN_BUILTIN_BITWISE_AND:
+  case PARSER_TOKEN_BUILTIN_BITWISE_XOR:
+  case PARSER_TOKEN_BUILTIN_BITWISE_OR:
       case PARSER_TOKEN_VALUE_INT:
       case PARSER_TOKEN_VALUE_FLOAT:
       case PARSER_TOKEN_VALUE_BOOL:
@@ -1779,6 +1829,10 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_OPERATOR_LOGICAL_NOT:
       case PARSER_TOKEN_OPERATOR_LOGICAL_AND:
       case PARSER_TOKEN_OPERATOR_LOGICAL_OR:
+      case PARSER_TOKEN_OPERATOR_BITWISE_NOT:
+      case PARSER_TOKEN_OPERATOR_BITWISE_AND:
+      case PARSER_TOKEN_OPERATOR_BITWISE_XOR:
+      case PARSER_TOKEN_OPERATOR_BITWISE_OR:
       case PARSER_TOKEN_FUNCTION_CALL:
       case PARSER_TOKEN_KEYWORD_COMPTIME:
         printError(bodyArray->data[i]->str_begin, bodyArray->data[i]->str_end,
@@ -2025,6 +2079,31 @@ ParserNode *parserLeftOperator(LexerNode *node, LexerNode *end,
                            (ParserNodeSingleChildMetadata *)right, parent);
 }
 
+ParserNode *parserLeftOperatorWithConti(LexerNode *node, LexerNode *begin,
+                                        LexerNode *end, ParserNode *parent,
+                                        ParserToken token, bool *conti) {
+  LexerNode *leftNode = node - 1;
+  LexerNode *rightNode = node + 1;
+
+  if ((leftNode >= begin && leftNode->parserNode != NULL) ||
+      (rightNode >= end || rightNode->parserNode == NULL)) {
+    node->token = LEXER_TOKEN_SYMBOL_BITWISE_AND;
+    *conti = true;
+    return NULL;
+  }
+
+  ParserNode *right = getUntilCommonParent(rightNode->parserNode, parent);
+
+  if (right == NULL) {
+    printError(node->str_begin, node->str_end, "No operand found");
+    return NULL;
+  }
+
+  return right->parent = node->parserNode =
+             newParserNode(token, node->str_begin, right->str_end,
+                           (ParserNodeSingleChildMetadata *)right, parent);
+}
+
 ParserNode *parserRightOperator(LexerNode *node, LexerNode *begin,
                                 ParserNode *parent, ParserToken token) {
   LexerNode *leftNode = node - 1;
@@ -2217,6 +2296,10 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_BUILTIN_PUTC:
   case PARSER_TOKEN_BUILTIN_C_LIBRARY:
   case PARSER_TOKEN_BUILTIN_C_FUNCTION:
+  case PARSER_TOKEN_BUILTIN_BITWISE_NOT:
+  case PARSER_TOKEN_BUILTIN_BITWISE_AND:
+  case PARSER_TOKEN_BUILTIN_BITWISE_XOR:
+  case PARSER_TOKEN_BUILTIN_BITWISE_OR:
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_VARIABLE:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
@@ -2251,6 +2334,10 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_LOGICAL_NOT:
   case PARSER_TOKEN_OPERATOR_LOGICAL_AND:
   case PARSER_TOKEN_OPERATOR_LOGICAL_OR:
+  case PARSER_TOKEN_OPERATOR_BITWISE_NOT:
+  case PARSER_TOKEN_OPERATOR_BITWISE_AND:
+  case PARSER_TOKEN_OPERATOR_BITWISE_XOR:
+  case PARSER_TOKEN_OPERATOR_BITWISE_OR:
   case PARSER_TOKEN_VALUE_INT:
   case PARSER_TOKEN_VALUE_FLOAT:
   case PARSER_TOKEN_VALUE_BOOL:
@@ -2323,6 +2410,10 @@ bool parserIsFunction(ParserNode *node) {
   case PARSER_TOKEN_BUILTIN_PUTC:
   case PARSER_TOKEN_BUILTIN_C_LIBRARY:
   case PARSER_TOKEN_BUILTIN_C_FUNCTION:
+  case PARSER_TOKEN_BUILTIN_BITWISE_NOT:
+  case PARSER_TOKEN_BUILTIN_BITWISE_AND:
+  case PARSER_TOKEN_BUILTIN_BITWISE_XOR:
+  case PARSER_TOKEN_BUILTIN_BITWISE_OR:
   case PARSER_TOKEN_OPERATOR_ACCESS:
   case PARSER_TOKEN_FUNCTION_CALL:
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
@@ -2359,6 +2450,10 @@ bool parserIsFunction(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_LOGICAL_NOT:
   case PARSER_TOKEN_OPERATOR_LOGICAL_AND:
   case PARSER_TOKEN_OPERATOR_LOGICAL_OR:
+  case PARSER_TOKEN_OPERATOR_BITWISE_NOT:
+  case PARSER_TOKEN_OPERATOR_BITWISE_AND:
+  case PARSER_TOKEN_OPERATOR_BITWISE_XOR:
+  case PARSER_TOKEN_OPERATOR_BITWISE_OR:
   case PARSER_TOKEN_VALUE_INT:
   case PARSER_TOKEN_VALUE_FLOAT:
   case PARSER_TOKEN_VALUE_BOOL:
@@ -2463,6 +2558,10 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_BUILTIN_PUTC:
   case PARSER_TOKEN_BUILTIN_C_LIBRARY:
   case PARSER_TOKEN_BUILTIN_C_FUNCTION:
+  case PARSER_TOKEN_BUILTIN_BITWISE_NOT:
+  case PARSER_TOKEN_BUILTIN_BITWISE_AND:
+  case PARSER_TOKEN_BUILTIN_BITWISE_XOR:
+  case PARSER_TOKEN_BUILTIN_BITWISE_OR:
   case PARSER_TOKEN_OPERATOR_ADDRESS:
   case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
@@ -2503,6 +2602,10 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_LOGICAL_NOT:
   case PARSER_TOKEN_OPERATOR_LOGICAL_AND:
   case PARSER_TOKEN_OPERATOR_LOGICAL_OR:
+  case PARSER_TOKEN_OPERATOR_BITWISE_NOT:
+  case PARSER_TOKEN_OPERATOR_BITWISE_AND:
+  case PARSER_TOKEN_OPERATOR_BITWISE_XOR:
+  case PARSER_TOKEN_OPERATOR_BITWISE_OR:
   case PARSER_TOKEN_KEYWORD_WHILE:
     return false;
   case PARSER_TOKEN_NONE:
@@ -2542,6 +2645,10 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_BUILTIN_PUTC:
   case PARSER_TOKEN_BUILTIN_C_LIBRARY:
   case PARSER_TOKEN_BUILTIN_C_FUNCTION:
+  case PARSER_TOKEN_BUILTIN_BITWISE_NOT:
+  case PARSER_TOKEN_BUILTIN_BITWISE_AND:
+  case PARSER_TOKEN_BUILTIN_BITWISE_XOR:
+  case PARSER_TOKEN_BUILTIN_BITWISE_OR:
   case PARSER_TOKEN_OPERATOR_ACCESS:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:
@@ -2568,6 +2675,10 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_LOGICAL_NOT:
   case PARSER_TOKEN_OPERATOR_LOGICAL_AND:
   case PARSER_TOKEN_OPERATOR_LOGICAL_OR:
+  case PARSER_TOKEN_OPERATOR_BITWISE_NOT:
+  case PARSER_TOKEN_OPERATOR_BITWISE_AND:
+  case PARSER_TOKEN_OPERATOR_BITWISE_XOR:
+  case PARSER_TOKEN_OPERATOR_BITWISE_OR:
   case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
