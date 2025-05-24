@@ -1365,12 +1365,19 @@ ParserNode *parserComma(LexerNode *node, LexerNode *begin, ParserNode *parent) {
 ParserNode *parserParenthesis(LexerNode *closing, LexerNode *begin,
                               ParserNode *parent, bool *conti) {
   LexerNode *opening = NULL;
+  int in = 0;
 
   for (LexerNode *iter = closing - 1; iter >= begin; --iter) {
-    if (iter->parserNode == NULL &&
-        iter->token == LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS) {
-      opening = iter;
-      break;
+    if (iter->parserNode == NULL) {
+      if (iter->token == LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS) {
+        if (in == 0) {
+          opening = iter;
+          break;
+        }
+        in -= 1;
+      } else if (iter->token == LEXER_TOKEN_SYMBOL_FUNCTION_CALL) {
+        in += 1;
+      }
     }
   }
 
@@ -1384,7 +1391,7 @@ ParserNode *parserParenthesis(LexerNode *closing, LexerNode *begin,
   ParserNode *before;
   if (beforeNode >= begin && beforeNode->parserNode != NULL &&
       (before = getUntilCommonParent(beforeNode->parserNode, parent)) != NULL &&
-      isExpression(before)) {
+      parserIsFunction(before)) {
     closing->token = LEXER_TOKEN_SYMBOL_FUNCTION_CALL;
     *conti = true;
     return NULL;
@@ -1456,7 +1463,7 @@ ParserNode *parserFunctionCall(LexerNode *closing, LexerNode *begin,
   ParserNode *before;
   if (beforeNode < begin || beforeNode->parserNode == NULL ||
       (before = getUntilCommonParent(beforeNode->parserNode, parent)) == NULL ||
-      !isExpression(before)) {
+      !parserIsFunction(before)) {
     printError(closing->str_begin, closing->str_end, "Bad function call");
     UNREACHABLE;
   }
@@ -2284,6 +2291,112 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_ROOT:
   case PARSER_TOKEN_SYMBOL_EOL:
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
+  case PARSER_TOKEN_SYMBOL_COMMA:
+    return false;
+  case PARSER_TOKEN_NONE:
+  }
+  UNREACHABLE;
+}
+
+bool parserIsFunction(ParserNode *node) {
+  switch (node->token) {
+  case PARSER_TOKEN_IDENTIFIER:
+  case PARSER_TOKEN_BUILTIN_CAST:
+  case PARSER_TOKEN_BUILTIN_TYPE_OF:
+  case PARSER_TOKEN_BUILTIN_SIZE_OF:
+  case PARSER_TOKEN_BUILTIN_IMPORT:
+  case PARSER_TOKEN_BUILTIN_IS_COMPTIME:
+  case PARSER_TOKEN_BUILTIN_STACK_ALLOC:
+  case PARSER_TOKEN_BUILTIN_HEAP_ALLOC:
+  case PARSER_TOKEN_BUILTIN_NEG:
+  case PARSER_TOKEN_BUILTIN_ADD:
+  case PARSER_TOKEN_BUILTIN_SUB:
+  case PARSER_TOKEN_BUILTIN_MUL:
+  case PARSER_TOKEN_BUILTIN_DIV:
+  case PARSER_TOKEN_BUILTIN_MOD:
+  case PARSER_TOKEN_BUILTIN_EQUAL:
+  case PARSER_TOKEN_BUILTIN_NOT_EQUAL:
+  case PARSER_TOKEN_BUILTIN_GREATER:
+  case PARSER_TOKEN_BUILTIN_SMALLER:
+  case PARSER_TOKEN_BUILTIN_GREATER_OR_EQUAL:
+  case PARSER_TOKEN_BUILTIN_SMALLER_OR_EQUAL:
+  case PARSER_TOKEN_BUILTIN_PUTC:
+  case PARSER_TOKEN_BUILTIN_C_LIBRARY:
+  case PARSER_TOKEN_BUILTIN_C_FUNCTION:
+  case PARSER_TOKEN_OPERATOR_ACCESS:
+  case PARSER_TOKEN_FUNCTION_CALL:
+  case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
+    return true;
+  case PARSER_TOKEN_CONSTANT:
+  case PARSER_TOKEN_VARIABLE:
+  case PARSER_TOKEN_SYMBOL_PARENTHESIS:
+  case PARSER_TOKEN_SYMBOL_BRACKET_LEFT:
+  case PARSER_TOKEN_SYMBOL_BRACKET_RIGHT:
+  case PARSER_TOKEN_FUNCTION_DEFINITION:
+  case PARSER_TOKEN_KEYWORD_RETURN:
+  case PARSER_TOKEN_OPERATOR_ASSIGN:
+  case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:
+  case PARSER_TOKEN_OPERATOR_SUB_ASSIGN:
+  case PARSER_TOKEN_OPERATOR_MULTIPLY_ASSIGN:
+  case PARSER_TOKEN_OPERATOR_DIVIDE_ASSIGN:
+  case PARSER_TOKEN_OPERATOR_MODULO_ASSIGN:
+  case PARSER_TOKEN_OPERATOR_POINTER:
+  case PARSER_TOKEN_OPERATOR_ADDRESS:
+  case PARSER_TOKEN_OPERATOR_DEREFERENCE:
+  case PARSER_TOKEN_OPERATOR_PLUS:
+  case PARSER_TOKEN_OPERATOR_MINUS:
+  case PARSER_TOKEN_OPERATOR_SUM:
+  case PARSER_TOKEN_OPERATOR_SUB:
+  case PARSER_TOKEN_OPERATOR_MULTIPLY:
+  case PARSER_TOKEN_OPERATOR_DIVIDE:
+  case PARSER_TOKEN_OPERATOR_MODULO:
+  case PARSER_TOKEN_OPERATOR_EQUAL:
+  case PARSER_TOKEN_OPERATOR_NOT_EQUAL:
+  case PARSER_TOKEN_OPERATOR_GREATER:
+  case PARSER_TOKEN_OPERATOR_SMALLER:
+  case PARSER_TOKEN_OPERATOR_GREATER_OR_EQUAL:
+  case PARSER_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
+  case PARSER_TOKEN_OPERATOR_LOGICAL_NOT:
+  case PARSER_TOKEN_OPERATOR_LOGICAL_AND:
+  case PARSER_TOKEN_OPERATOR_LOGICAL_OR:
+  case PARSER_TOKEN_VALUE_INT:
+  case PARSER_TOKEN_VALUE_FLOAT:
+  case PARSER_TOKEN_VALUE_BOOL:
+  case PARSER_TOKEN_VALUE_CHAR:
+  case PARSER_TOKEN_VALUE_STRING:
+  case PARSER_TOKEN_KEYWORD_IF:
+  case PARSER_TOKEN_KEYWORD_WHILE:
+  case PARSER_TOKEN_KEYWORD_COMPTIME:
+  case PARSER_TOKEN_TYPE_TYPE:
+  case PARSER_TOKEN_TYPE_FUNCTION:
+  case PARSER_TOKEN_TYPE_VOID:
+  case PARSER_TOKEN_TYPE_BOOL:
+  case PARSER_TOKEN_TYPE_I8:
+  case PARSER_TOKEN_TYPE_U8:
+  case PARSER_TOKEN_TYPE_I16:
+  case PARSER_TOKEN_TYPE_U16:
+  case PARSER_TOKEN_TYPE_I32:
+  case PARSER_TOKEN_TYPE_U32:
+  case PARSER_TOKEN_TYPE_I64:
+  case PARSER_TOKEN_TYPE_U64:
+#ifdef FLOAT_16_SUPPORT
+  case PARSER_TOKEN_TYPE_F16:
+#endif
+  case PARSER_TOKEN_TYPE_F32:
+  case PARSER_TOKEN_TYPE_F64:
+  case PARSER_TOKEN_TYPE_F128:
+  case PARSER_TOKEN_TYPE_CODE:
+  case PARSER_TOKEN_TYPE_NAMESPACE:
+  case PARSER_TOKEN_TYPE_SHAPE_SHIFTER:
+  case PARSER_TOKEN_TYPE_C_LIBRARY:
+  case PARSER_TOKEN_TYPE_C_FUNCTION:
+  case PARSER_TOKEN_KEYWORD_NULL:
+  case PARSER_TOKEN_KEYWORD_UNDEFINED:
+  case PARSER_TOKEN_KEYWORD_BREAK:
+  case PARSER_TOKEN_KEYWORD_CONTINUE:
+  case PARSER_TOKEN_KEYWORD_STRUCT:
+  case PARSER_TOKEN_ROOT:
+  case PARSER_TOKEN_SYMBOL_EOL:
   case PARSER_TOKEN_SYMBOL_COMMA:
     return false;
   case PARSER_TOKEN_NONE:

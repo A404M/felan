@@ -272,6 +272,7 @@ ParserNode *parserStruct(LexerNode *node, LexerNode *end, ParserNode *parent);
 bool isAllArguments(const ParserNodeArray *nodes);
 
 bool isExpression(ParserNode *node);
+bool parserIsFunction(ParserNode *node);
 bool isType(ParserNode *node);
 bool isValue(ParserNode *node);
 

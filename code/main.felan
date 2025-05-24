@@ -11,16 +11,20 @@ BeginDrawing :: @c_function(raylib,"BeginDrawing",()->void);
 EndDrawing :: @c_function(raylib,"EndDrawing",()->void);
 CloseWindow :: @c_function(raylib,"CloseWindow",()->void);
 ClearBackground :: @c_function(raylib,"ClearBackground",(color:u32)->void);
+DrawText :: @c_function(raylib,"DrawText",(*u8,i32,i32,i32,u32)->void);
 
 main :: ()->void{
-  b := "hello\0";
+  b := "raylib [core] example - basic window\0";
+  c := "Congrats! You created your first window!\0";
   str := &b[0];
+  str2 := &c[0];
   screenWidth :i32: 800;
   screenHeight :i32: 450;
   InitWindow(screenWidth,screenHeight,str);
-  while WindowShouldClose() == false {
+  while (!WindowShouldClose()) {
     BeginDrawing();
     ClearBackground(@cast(4294967295,u32));
+    DrawText(str2,@cast(190,i32),@cast(200,i32),@cast(20,i32),@cast(4278190080,u32));
     EndDrawing();
   }
   CloseWindow();

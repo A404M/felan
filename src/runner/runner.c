@@ -1704,6 +1704,8 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                variable->value->token);
     UNREACHABLE;
   }
+  case AST_TREE_TOKEN_VALUE_C_LIBRARY:
+  case AST_TREE_TOKEN_VALUE_C_FUNCTION:
   case AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER: {
     UNREACHABLE;
   }
@@ -1829,6 +1831,8 @@ AstTree *toRawValue(AstTree *value) {
                       copyAstTree(value->type), value->str_begin,
                       value->str_end);
   }
+  case AST_TREE_TOKEN_VALUE_C_LIBRARY:
+  case AST_TREE_TOKEN_VALUE_C_FUNCTION:
   case AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER:
   case AST_TREE_TOKEN_VALUE_NAMESPACE:
   case AST_TREE_TOKEN_TYPE_FUNCTION:
@@ -1908,6 +1912,11 @@ AstTree *toRawValue(AstTree *value) {
   case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS:
   case AST_TREE_TOKEN_SCOPE:
   case AST_TREE_TOKEN_NONE:
+  case AST_TREE_TOKEN_BUILTIN_SIZE_OF:
+  case AST_TREE_TOKEN_BUILTIN_C_LIBRARY:
+  case AST_TREE_TOKEN_BUILTIN_C_FUNCTION:
+  case AST_TREE_TOKEN_TYPE_C_LIBRARY:
+  case AST_TREE_TOKEN_TYPE_C_FUNCTION:
   }
   return NULL;
 }
@@ -2048,6 +2057,8 @@ AstTree *castTo(AstTree *tree, AstTree *to) {
   case AST_TREE_TOKEN_VALUE_UNDEFINED:
   case AST_TREE_TOKEN_VALUE_NAMESPACE:
   case AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER:
+  case AST_TREE_TOKEN_VALUE_C_LIBRARY:
+  case AST_TREE_TOKEN_VALUE_C_FUNCTION:
   case AST_TREE_TOKEN_VALUE_INT:
   case AST_TREE_TOKEN_VALUE_FLOAT:
   case AST_TREE_TOKEN_VALUE_BOOL:
@@ -2078,8 +2089,13 @@ AstTree *castTo(AstTree *tree, AstTree *to) {
   case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS:
   case AST_TREE_TOKEN_SCOPE:
   case AST_TREE_TOKEN_NONE:
-    UNREACHABLE;
+  case AST_TREE_TOKEN_BUILTIN_SIZE_OF:
+  case AST_TREE_TOKEN_BUILTIN_C_LIBRARY:
+  case AST_TREE_TOKEN_BUILTIN_C_FUNCTION:
+  case AST_TREE_TOKEN_TYPE_C_LIBRARY:
+  case AST_TREE_TOKEN_TYPE_C_FUNCTION:
   }
+  UNREACHABLE;
 }
 
 ffi_type *toFFIType(AstTree *type) {
