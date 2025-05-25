@@ -726,3 +726,67 @@ __bitwise_or__ :: (left:i64,right:i64) -> i64 {
   return @bitwise_or(left,right);
 };
 
+__shift_left__ :: (left:u8,right:u8) -> u8 {
+  return @shift_left(left,right);
+};
+
+__shift_left__ :: (left:i8,right:i8) -> i8 {
+  return @shift_left(left,right);
+};
+
+__shift_left__ :: (left:u16,right:u16) -> u16 {
+  return @shift_left(left,right);
+};
+
+__shift_left__ :: (left:i16,right:i16) -> i16 {
+  return @shift_left(left,right);
+};
+
+__shift_left__ :: (left:u32,right:u32) -> u32 {
+  return @shift_left(left,right);
+};
+
+__shift_left__ :: (left:i32,right:i32) -> i32 {
+  return @shift_left(left,right);
+};
+
+__shift_left__ :: (left:u64,right:u64) -> u64 {
+  return @shift_left(left,right);
+};
+
+__shift_left__ :: (left:i64,right:i64) -> i64 {
+  return @shift_left(left,right);
+};
+
+__shift_right__ :: (left:u8,right:u8) -> u8 {
+  return @shift_right(left,right);
+};
+
+__shift_right__ :: (left:i8,right:i8) -> i8 {
+  return @shift_right(left,right);
+};
+
+__shift_right__ :: (left:u16,right:u16) -> u16 {
+  return @shift_right(left,right);
+};
+
+__shift_right__ :: (left:i16,right:i16) -> i16 {
+  return @shift_right(left,right);
+};
+
+__shift_right__ :: (left:u32,right:u32) -> u32 {
+  return @shift_right(left,right);
+};
+
+__shift_right__ :: (left:i32,right:i32) -> i32 {
+  return @shift_right(left,right);
+};
+
+__shift_right__ :: (left:u64,right:u64) -> u64 {
+  return @shift_right(left,right);
+};
+
+__shift_right__ :: (left:i64,right:i64) -> i64 {
+  return @shift_right(left,right);
+};
+

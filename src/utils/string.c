@@ -56,6 +56,33 @@ u64 decimalToU64(char const *str_begin, char const *str_end, bool *success) {
   return result;
 }
 
+u64 hexToU64(char const *str_begin, char const *str_end, bool *success) {
+  u64 result = 0;
+
+  if (str_end - str_begin > 16) {
+    *success = false;
+    return 0;
+  }
+
+  while (str_begin < str_end) {
+    result *= 16;
+    if ('0' <= *str_begin && *str_begin <= '9') {
+      result += *str_begin - '0';
+    } else if ('A' <= *str_begin && *str_begin <= 'F') {
+      result += *str_begin - 'A' + 10;
+    } else if ('a' <= *str_begin && *str_begin <= 'f') {
+      result += *str_begin - 'a' + 10;
+    } else {
+      *success = false;
+      return 0;
+    }
+    str_begin += 1;
+  }
+
+  *success = true;
+  return result;
+}
+
 f128 numberToFloat(char const *str_begin, char const *str_end, bool *success) {
   f128 left = 0;
   f128 right = 0;

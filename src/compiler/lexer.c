@@ -37,6 +37,8 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_BUILTIN_BITWISE_AND",
     "LEXER_TOKEN_BUILTIN_BITWISE_XOR",
     "LEXER_TOKEN_BUILTIN_BITWISE_OR",
+    "LEXER_TOKEN_BUILTIN_SHIFT_LEFT",
+    "LEXER_TOKEN_BUILTIN_SHIFT_RIGHT",
     "LEXER_TOKEN_KEYWORD_TYPE",
     "LEXER_TOKEN_KEYWORD_VOID",
     "LEXER_TOKEN_KEYWORD_I8",
@@ -89,6 +91,9 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_SUM",
     "LEXER_TOKEN_SYMBOL_SUB",
 
+    "LEXER_TOKEN_SYMBOL_LEFT_SHIFT",
+    "LEXER_TOKEN_SYMBOL_RIGHT_SHIFT",
+
     "LEXER_TOKEN_SYMBOL_EQUAL",
     "LEXER_TOKEN_SYMBOL_NOT_EQUAL",
     "LEXER_TOKEN_SYMBOL_GREATER",
@@ -135,9 +140,9 @@ const char *LEXER_TOKEN_STRINGS[] = {
 };
 
 static const char *LEXER_SYMBOL_STRINGS[] = {
-    ";",  "(", ")",  "{", "}", "->", ":",  "=",  "+=", "-=", "*=", "/=",
-    "%=", ",", "+",  "-", "*", "/",  "%",  "==", "!=", ">",  ">=", "<",
-    "<=", "&", ".*", ".", "!", "&&", "||", "[",  "]",  "^",  "|",  "~",
+    ";",  "(", ")", "{",  "}",  "->", ":",  "=",  "+=", "-=", "*=", "/=", "%=",
+    ",",  "+", "-", "*",  "/",  "%",  "==", "!=", ">",  ">=", "<",  "<=", "&",
+    ".*", ".", "!", "&&", "||", "[",  "]",  "^",  "|",  "~",  "<<", ">>",
 };
 static const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_EOL,
@@ -176,6 +181,8 @@ static const LexerToken LEXER_SYMBOL_TOKENS[] = {
     LEXER_TOKEN_SYMBOL_BITWISE_XOR,
     LEXER_TOKEN_SYMBOL_BITWISE_OR,
     LEXER_TOKEN_SYMBOL_BITWISE_NOT,
+    LEXER_TOKEN_SYMBOL_LEFT_SHIFT,
+    LEXER_TOKEN_SYMBOL_RIGHT_SHIFT,
 };
 static const size_t LEXER_SYMBOL_SIZE =
     sizeof(LEXER_SYMBOL_TOKENS) / sizeof(*LEXER_SYMBOL_TOKENS);
@@ -245,6 +252,8 @@ static const char *LEXER_BUILTIN_STRINGS[] = {
     "bitwise_and",
     "bitwise_xor",
     "bitwise_or",
+    "shift_left",
+    "shift_right",
 };
 static const LexerToken LEXER_BUILTIN_TOKENS[] = {
     LEXER_TOKEN_BUILTIN_CAST,
@@ -273,6 +282,8 @@ static const LexerToken LEXER_BUILTIN_TOKENS[] = {
     LEXER_TOKEN_BUILTIN_BITWISE_AND,
     LEXER_TOKEN_BUILTIN_BITWISE_XOR,
     LEXER_TOKEN_BUILTIN_BITWISE_OR,
+    LEXER_TOKEN_BUILTIN_SHIFT_LEFT,
+    LEXER_TOKEN_BUILTIN_SHIFT_RIGHT,
 };
 static const size_t LEXER_BUILTIN_SIZE =
     sizeof(LEXER_BUILTIN_TOKENS) / sizeof(*LEXER_BUILTIN_TOKENS);
@@ -521,6 +532,8 @@ lexerPushClear(LexerNodeArray *array, size_t *array_size, char const *iter,
   case LEXER_TOKEN_SYMBOL_LOGICAL_NOT:
   case LEXER_TOKEN_SYMBOL_LOGICAL_AND:
   case LEXER_TOKEN_SYMBOL_LOGICAL_OR:
+  case LEXER_TOKEN_SYMBOL_LEFT_SHIFT:
+  case LEXER_TOKEN_SYMBOL_RIGHT_SHIFT:
   case LEXER_TOKEN_BUILTIN_CAST:
   case LEXER_TOKEN_BUILTIN_TYPE_OF:
   case LEXER_TOKEN_BUILTIN_IMPORT:
@@ -547,6 +560,8 @@ lexerPushClear(LexerNodeArray *array, size_t *array_size, char const *iter,
   case LEXER_TOKEN_BUILTIN_BITWISE_AND:
   case LEXER_TOKEN_BUILTIN_BITWISE_XOR:
   case LEXER_TOKEN_BUILTIN_BITWISE_OR:
+  case LEXER_TOKEN_BUILTIN_SHIFT_LEFT:
+  case LEXER_TOKEN_BUILTIN_SHIFT_RIGHT:
   case LEXER_TOKEN_SYMBOL_CLOSE_BRACKET:
   case LEXER_TOKEN_SYMBOL_OPEN_BRACKET:
   case LEXER_TOKEN_KEYWORD_SHAPE_SHIFTER:
