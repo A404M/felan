@@ -2243,8 +2243,8 @@ AstTreeRoot *makeAstRoot(const ParserNode *parsedRoot, char *filePath) {
       case PARSER_TOKEN_BUILTIN_BITWISE_AND:
       case PARSER_TOKEN_BUILTIN_BITWISE_XOR:
       case PARSER_TOKEN_BUILTIN_BITWISE_OR:
-  case PARSER_TOKEN_BUILTIN_SHIFT_LEFT:
-  case PARSER_TOKEN_BUILTIN_SHIFT_RIGHT:
+      case PARSER_TOKEN_BUILTIN_SHIFT_LEFT:
+      case PARSER_TOKEN_BUILTIN_SHIFT_RIGHT:
       case PARSER_TOKEN_SYMBOL_BRACKET_LEFT:
       case PARSER_TOKEN_SYMBOL_BRACKET_RIGHT:
         goto AFTER_SWITCH;
@@ -2748,8 +2748,8 @@ AstTree *astTreeParseFunction(const ParserNode *parserNode) {
     case PARSER_TOKEN_BUILTIN_BITWISE_AND:
     case PARSER_TOKEN_BUILTIN_BITWISE_XOR:
     case PARSER_TOKEN_BUILTIN_BITWISE_OR:
-  case PARSER_TOKEN_BUILTIN_SHIFT_LEFT:
-  case PARSER_TOKEN_BUILTIN_SHIFT_RIGHT:
+    case PARSER_TOKEN_BUILTIN_SHIFT_LEFT:
+    case PARSER_TOKEN_BUILTIN_SHIFT_RIGHT:
     case PARSER_TOKEN_SYMBOL_BRACKET_LEFT:
     case PARSER_TOKEN_SYMBOL_BRACKET_RIGHT:
       printError(node->str_begin, node->str_end, "Unexpected %s",
@@ -3362,8 +3362,8 @@ AstTree *astTreeParseCurlyBracket(const ParserNode *parserNode) {
     case PARSER_TOKEN_BUILTIN_BITWISE_AND:
     case PARSER_TOKEN_BUILTIN_BITWISE_XOR:
     case PARSER_TOKEN_BUILTIN_BITWISE_OR:
-  case PARSER_TOKEN_BUILTIN_SHIFT_LEFT:
-  case PARSER_TOKEN_BUILTIN_SHIFT_RIGHT:
+    case PARSER_TOKEN_BUILTIN_SHIFT_LEFT:
+    case PARSER_TOKEN_BUILTIN_SHIFT_RIGHT:
     case PARSER_TOKEN_SYMBOL_BRACKET_LEFT:
     case PARSER_TOKEN_SYMBOL_BRACKET_RIGHT:
       printError(node->str_begin, node->str_end, "Unexpected %s",
@@ -3976,12 +3976,8 @@ bool typeIsEqual(AstTree *type0, AstTree *type1) {
 
   bool ret = typeIsEqualBack(left, right);
 
-  if (type0 != left) {
-    astTreeDelete(left);
-  }
-  if (type1 != right) {
-    astTreeDelete(right);
-  }
+  astTreeDelete(left);
+  astTreeDelete(right);
 
   return ret;
 }
@@ -4300,7 +4296,7 @@ AstTree *getValue(AstTree *tree, bool copy) {
     };
 
     AstTree *value = runExpression(tree, scope, &shouldRet, false, true,
-                                   &breakCount, &shouldContinue);
+                                   &breakCount, &shouldContinue, false);
 
     if (!copy) {
       astTreeDelete(tree);
@@ -5103,6 +5099,7 @@ bool setTypesValueInt(AstTree *tree, AstTreeSetTypesHelper helper) {
     if (*value - *newValue != 0) {
       printWarning(tree->str_begin, tree->str_end, "Value is overflowing");
     }
+    free(value);
     tree->metadata = newValue;
     tree->type = &AST_TREE_U32_TYPE;
   } else if (typeIsEqual(helper.lookingType, &AST_TREE_I16_TYPE)) {
@@ -5435,13 +5432,14 @@ bool setTypesTypeFunction(AstTree *tree, AstTreeSetTypesHelper helper) {
   AstTreeTypeFunction *metadata = tree->metadata;
 
   for (size_t i = 0; i < metadata->arguments_size; ++i) {
-    AstTreeTypeFunctionArgument arg = metadata->arguments[i];
-    if (!setAllTypes(arg.type, helper, NULL, NULL)) {
+    AstTreeTypeFunctionArgument *arg = &metadata->arguments[i];
+    if (!setAllTypes(arg->type, helper, NULL, NULL)) {
       return false;
-    } else if (!typeIsEqual(arg.type->type, &AST_TREE_TYPE_TYPE)) {
-      printError(arg.str_begin, arg.str_end, "Expected a type");
+    } else if (!typeIsEqual(arg->type->type, &AST_TREE_TYPE_TYPE)) {
+      printError(arg->str_begin, arg->str_end, "Expected a type");
       return false;
     }
+    arg->type = getValue(arg->type, false);
   }
 
   if (!setAllTypes(metadata->returnType, helper, NULL, NULL)) {

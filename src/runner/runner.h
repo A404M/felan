@@ -21,11 +21,11 @@ AstTree *runAstTreeCFunction(AstTree *tree, AstTree **arguments,
 
 AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                        bool isLeft, bool isComptime, u32 *breakCount,
-                       bool *shouldContinue);
+                       bool *shouldContinue,bool needOwnership);
 
 AstTree *getForVariable(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                         bool isLeft, bool isComptime, u32 *breakCount,
-                        bool *shouldContinue, bool isLazy);
+                        bool *shouldContinue, bool isLazy,bool needOwnership);
 
 bool discontinue(bool shouldRet, u32 breakCount);
 
@@ -34,3 +34,4 @@ AstTree *toRawValue(AstTree *value);
 AstTree *castTo(AstTree *value, AstTree *to);
 
 ffi_type *toFFIType(AstTree *type);
+void deleteFFIType(ffi_type *type);
