@@ -25,7 +25,7 @@ Color :: struct {
 };
 
 main :: ()->void{
-  print(1236);
+  print("hello");
   return;
   b := "raylib [core] example - basic window\0";
   c := "Congrats! You created your first window!\0";
