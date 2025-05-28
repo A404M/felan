@@ -9,6 +9,7 @@ print :: (value:string) -> void {
   i :u64= 0;
   while i < value.length {
     print_char(value[i]);
+    i += @cast(1,u64);
   }
 };
 

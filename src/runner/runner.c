@@ -1796,6 +1796,24 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
       }
       UNREACHABLE;
     } else if (tree->token == AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED) {
+      if (tree->type->token == AST_TREE_TOKEN_TYPE_ARRAY) {
+        AstTreeBracket *array_metadata = tree->type->metadata;
+        if (metadata->member.index != 0) {
+          UNREACHABLE;
+        } else {
+          if (array_metadata->parameters.size == 1) {
+            AstTree *sizeTree = runExpression(
+                array_metadata->parameters.data[0], scope, shouldRet, false,
+                isComptime, breakCount, shouldContinue, false);
+            return sizeTree;
+          } else {
+            u64 *value = a404m_malloc(sizeof(*value));
+            *value = a404m_malloc_usable_size(tree->metadata);
+            return newAstTree(AST_TREE_TOKEN_RAW_VALUE, value,
+                              &AST_TREE_U64_TYPE, NULL, NULL);
+          }
+        }
+      }
       size_t index = 0;
       AstTreeStruct *type = tree->type->metadata;
       for (size_t i = 0; i < metadata->member.index; ++i) {
@@ -1858,7 +1876,8 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
       return array_indexNode;
     }
 
-    if (!typeIsEqual(array_indexNode->type, &AST_TREE_I64_TYPE)) {
+    if (!typeIsEqual(array_indexNode->type, &AST_TREE_I64_TYPE) &&
+        !typeIsEqual(array_indexNode->type, &AST_TREE_U64_TYPE)) {
       UNREACHABLE;
     }
 
