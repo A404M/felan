@@ -1430,9 +1430,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
   }
   case AST_TREE_TOKEN_KEYWORD_WHILE: {
     AstTreeWhile *metadata = expr->metadata;
-    AstTree *ret = &AST_TREE_VOID_VALUE;
     while (!*shouldRet) {
-      astTreeDelete(ret);
       AstTree *condition =
           runExpression(metadata->condition, scope, shouldRet, false,
                         isComptime, breakCount, shouldContinue, false);
@@ -1444,11 +1442,13 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
       if (!conti) {
         break;
       }
-      ret = runExpression(metadata->body, scope, shouldRet, isLeft, isComptime,
-                          breakCount, shouldContinue, false);
+      AstTree *ret =
+          runExpression(metadata->body, scope, shouldRet, isLeft, isComptime,
+                        breakCount, shouldContinue, false);
       if (*shouldRet) {
         return ret;
       }
+      astTreeDelete(ret);
       if (*breakCount == 1 && *shouldContinue) {
         *breakCount -= 1;
         *shouldContinue = false;
@@ -1457,7 +1457,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
         break;
       }
     }
-    return ret;
+    return &AST_TREE_VOID_VALUE;
   }
   case AST_TREE_TOKEN_KEYWORD_COMPTIME: {
     AstTreeSingleChild *operand = expr->metadata;
@@ -1805,10 +1805,12 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
             AstTree *sizeTree = runExpression(
                 array_metadata->parameters.data[0], scope, shouldRet, false,
                 isComptime, breakCount, shouldContinue, false);
+            astTreeDelete(tree);
             return sizeTree;
           } else {
             u64 *value = a404m_malloc(sizeof(*value));
             *value = a404m_malloc_usable_size(tree->metadata);
+            astTreeDelete(tree);
             return newAstTree(AST_TREE_TOKEN_RAW_VALUE, value,
                               &AST_TREE_U64_TYPE, NULL, NULL);
           }
@@ -2297,7 +2299,23 @@ AstTree *castTo(AstTree *tree, AstTree *to) {
     doCastAll(tree, bool, to);
     break;
   case AST_TREE_TOKEN_OPERATOR_POINTER: {
-    NOT_IMPLEMENTED;
+    if (to->token == AST_TREE_TOKEN_OPERATOR_POINTER) {
+      void **value = a404m_malloc(sizeof(*value));
+      *value = *(void **)tree->metadata;
+      return newAstTree(AST_TREE_TOKEN_RAW_VALUE, value, copyAstTree(to), NULL,
+                        NULL);
+    } else if (to->token == AST_TREE_TOKEN_TYPE_U64) {
+      u64 *value = a404m_malloc(sizeof(*value));
+      *value = *(u64 *)tree->metadata;
+      return newAstTree(AST_TREE_TOKEN_RAW_VALUE, value, copyAstTree(to), NULL,
+                        NULL);
+    } else if (to->token == AST_TREE_TOKEN_TYPE_I64) {
+      i64 *value = a404m_malloc(sizeof(*value));
+      *value = *(i64 *)tree->metadata;
+      return newAstTree(AST_TREE_TOKEN_RAW_VALUE, value, copyAstTree(to), NULL,
+                        NULL);
+    }
+    UNREACHABLE;
   }
   case AST_TREE_TOKEN_TYPE_CODE:
   case AST_TREE_TOKEN_TYPE_NAMESPACE:
