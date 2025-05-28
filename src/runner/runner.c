@@ -1418,13 +1418,11 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
     astTreeDelete(condition);
     AstTree *ret;
     if (condi) {
-      ret =
-          runExpression(metadata->ifBody, scope, shouldRet, isLeft, isComptime,
-                        breakCount, shouldContinue, false);
+      ret = runExpression(metadata->ifBody, scope, shouldRet, isLeft,
+                          isComptime, breakCount, shouldContinue, false);
     } else if (metadata->elseBody != NULL) {
-      ret =
-          runExpression(metadata->elseBody, scope, shouldRet, isLeft,
-                        isComptime, breakCount, shouldContinue, false);
+      ret = runExpression(metadata->elseBody, scope, shouldRet, isLeft,
+                          isComptime, breakCount, shouldContinue, false);
     } else {
       ret = &AST_TREE_VOID_VALUE;
     }
@@ -1472,10 +1470,9 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
     AstTree *ret = &AST_TREE_VOID_VALUE;
     for (size_t i = 0; i < metadata->expressions_size && !*shouldRet; ++i) {
       astTreeDelete(ret);
-      ret =
-          runExpression(metadata->expressions[i], scope, shouldRet,
-                        i == metadata->expressions_size - 1 && isLeft,
-                        isComptime, breakCount, shouldContinue, false);
+      ret = runExpression(metadata->expressions[i], scope, shouldRet,
+                          i == metadata->expressions_size - 1 && isLeft,
+                          isComptime, breakCount, shouldContinue, false);
       if (discontinue(*shouldRet, *breakCount)) {
         return ret;
       }
@@ -1502,9 +1499,9 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
 
     for (size_t i = 0; i < 1; ++i) {
       AstTreeVariable *arg = fun->arguments.data[i];
-      arguments[i] = getForVariable(arguments[i], scope, shouldRet, isLeft,
-                                    isComptime, breakCount, shouldContinue,
-                                    arg->isLazy, false);
+      arguments[i] =
+          getForVariable(arguments[i], scope, shouldRet, isLeft, isComptime,
+                         breakCount, shouldContinue, arg->isLazy, false);
       if (discontinue(*shouldRet, *breakCount)) {
         astTreeDelete(function);
         for (size_t j = 0; j < i; ++j) {
@@ -1553,9 +1550,9 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
 
     for (size_t i = 0; i < 2; ++i) {
       AstTreeVariable *arg = fun->arguments.data[i];
-      arguments[i] = getForVariable(arguments[i], scope, shouldRet, isLeft,
-                                    isComptime, breakCount, shouldContinue,
-                                    arg->isLazy, false);
+      arguments[i] =
+          getForVariable(arguments[i], scope, shouldRet, isLeft, isComptime,
+                         breakCount, shouldContinue, arg->isLazy, false);
       if (discontinue(*shouldRet, *breakCount)) {
         astTreeDelete(function);
         for (size_t j = 0; j < i; ++j) {
@@ -1649,6 +1646,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
     }
 
     if (operand->token != AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED) {
+      printLog("%s", AST_TREE_TOKEN_STRINGS[operand->token]);
       UNREACHABLE;
     }
 

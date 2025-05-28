@@ -1,0 +1,73 @@
+@import("types.felan");
+@import("operator.felan");
+
+libc :: @c_library("/lib/libc.so.6");
+puts :: @c_function(libc,"puts",(*u8)->i32);
+putchar :: @c_function(libc,"putchar",(i32)->void);
+
+print :: (value:string) -> void {
+  i :u64= 0;
+  while i < value.length {
+    print_char(value[i]);
+  }
+};
+
+print_char :: (value:u8) -> void {
+  putchar(@cast(value,i32));
+};
+
+print :: (value:i8) -> void {
+  _print_signed(@type_of(value),value);
+};
+
+print :: (value:u8) -> void {
+  _print_unsigned(@type_of(value),value);
+};
+
+print :: (value:i16) -> void {
+  _print_signed(@type_of(value),value);
+};
+
+print :: (value:u16) -> void {
+  _print_unsigned(@type_of(value),value);
+};
+
+print :: (value:i32) -> void {
+  _print_signed(@type_of(value),value);
+};
+
+print :: (value:u32) -> void {
+  _print_unsigned(@type_of(value),value);
+};
+
+print :: (value:i64) -> void {
+  _print_signed(@type_of(value),value);
+};
+
+print :: (value:u64) -> void {
+  _print_unsigned(@type_of(value),value);
+};
+
+_print_signed :: (comptime t:type, value:t) -> i32 {
+  if value < @cast(0,t) {
+    putchar(@cast('-',i32));
+    value = -value;
+  }
+  _print_unsigned(t,value);
+};
+
+_print_unsigned :: (comptime t:type, value:t) -> void {
+  NUMBERS_SIZE :: 21;
+  numbers : [NUMBERS_SIZE]u8 = undefined;
+  i := NUMBERS_SIZE - 1;
+  numbers[i] = '\0';
+
+  while {
+    i -= 1;
+    numbers[i] = @cast(value%@cast(10,t),u8)+'0';
+    value /= @cast(10,t);
+    value != @cast(0,t);
+  } {}
+
+  puts(&numbers[i]);
+};

@@ -5639,9 +5639,12 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
 
         AstTreeFunctionCallParam p0 = metadata->parameters[i];
         AstTreeFunctionCallParam p1 = call->parameters[i];
-        AstTree *v0 = getValue(p0.value, false);
-        AstTree *v1 = getValue(p1.value, false);
-        if (!isEqual(v0, v1)) {
+        AstTree *v0 = getValue(p0.value, true);
+        AstTree *v1 = getValue(p1.value, true);
+        bool res = isEqual(v0, v1);
+        astTreeDelete(v0);
+        astTreeDelete(v1);
+        if (!res) {
           goto SEARCH_LOOP_CONTINUE;
         }
       }
