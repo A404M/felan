@@ -1,12 +1,28 @@
 @import("lib/operator.felan");
 
+/*
 print :: (value:anytype) -> void {
-  if @type_of(value) == u8 {
+  if comptime @type_of(value) == u8 {
     @putc(value);
+  }else{
+    @putc('h');
+  }
+};
+*/
+
+print :: (value:*anytype)->void{
+  if comptime @type_of(value.*) == u8 {
+    @putc(value.*);
+  }else{
+    @putc('h');
   }
 };
 
 main :: ()->void{
-  print('a');
+  a := 'a';
+  b := 123;
+  print(&a);
+  print(&b);
+  // print(123);
 };
 

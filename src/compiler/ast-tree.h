@@ -433,6 +433,7 @@ AstTree *astTreeParseBracket(const ParserNode *parserNode, AstTreeToken token);
 
 bool isFunction(AstTree *value);
 bool isShapeShifter(AstTreeFunction *function);
+bool hasAnyTypeInside(AstTree *type);
 bool isConst(AstTree *tree);
 AstTree *makeTypeOf(AstTree *value);
 AstTree *makeTypeOfFunction(AstTreeFunction *function, const char *str_begin,
