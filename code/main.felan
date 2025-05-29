@@ -1,6 +1,12 @@
-@import("basic.felan");
+@import("lib/operator.felan");
+
+print :: (value:anytype) -> void {
+  if @type_of(value) == u8 {
+    @putc(value);
+  }
+};
 
 main :: ()->void{
-  print(1234);
+  print('a');
 };
 

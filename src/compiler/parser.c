@@ -48,6 +48,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_VALUE_STRING",
 
     "PARSER_TOKEN_TYPE_TYPE",
+    "PARSER_TOKEN_TYPE_ANY_TYPE",
     "PARSER_TOKEN_TYPE_FUNCTION",
     "PARSER_TOKEN_TYPE_VOID",
     "PARSER_TOKEN_TYPE_BOOL",
@@ -298,6 +299,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_BUILTIN_SHIFT_LEFT:
   case PARSER_TOKEN_BUILTIN_SHIFT_RIGHT:
   case PARSER_TOKEN_TYPE_TYPE:
+  case PARSER_TOKEN_TYPE_ANY_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_BOOL:
   case PARSER_TOKEN_TYPE_I8:
@@ -620,6 +622,7 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_BUILTIN_SHIFT_LEFT:
   case PARSER_TOKEN_BUILTIN_SHIFT_RIGHT:
   case PARSER_TOKEN_TYPE_TYPE:
+  case PARSER_TOKEN_TYPE_ANY_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_BOOL:
   case PARSER_TOKEN_TYPE_I8:
@@ -971,6 +974,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserNoMetadata(node, parent, PARSER_TOKEN_BUILTIN_SHIFT_RIGHT);
   case LEXER_TOKEN_KEYWORD_TYPE:
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_TYPE);
+  case LEXER_TOKEN_KEYWORD_ANY_TYPE:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_ANY_TYPE);
   case LEXER_TOKEN_KEYWORD_VOID:
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_VOID);
   case LEXER_TOKEN_KEYWORD_I8:
@@ -1810,6 +1815,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_VALUE_CHAR:
       case PARSER_TOKEN_VALUE_STRING:
       case PARSER_TOKEN_TYPE_TYPE:
+      case PARSER_TOKEN_TYPE_ANY_TYPE:
       case PARSER_TOKEN_TYPE_FUNCTION:
       case PARSER_TOKEN_TYPE_VOID:
       case PARSER_TOKEN_TYPE_BOOL:
@@ -2396,6 +2402,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_KEYWORD_WHILE:
   case PARSER_TOKEN_KEYWORD_COMPTIME:
   case PARSER_TOKEN_TYPE_TYPE:
+  case PARSER_TOKEN_TYPE_ANY_TYPE:
   case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_BOOL:
@@ -2516,6 +2523,7 @@ bool parserIsFunction(ParserNode *node) {
   case PARSER_TOKEN_KEYWORD_WHILE:
   case PARSER_TOKEN_KEYWORD_COMPTIME:
   case PARSER_TOKEN_TYPE_TYPE:
+  case PARSER_TOKEN_TYPE_ANY_TYPE:
   case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_BOOL:
@@ -2555,6 +2563,7 @@ bool parserIsFunction(ParserNode *node) {
 bool isType(ParserNode *node) {
   switch (node->token) {
   case PARSER_TOKEN_TYPE_TYPE:
+  case PARSER_TOKEN_TYPE_ANY_TYPE:
   case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_I8:
@@ -2742,6 +2751,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_OPERATOR_SHIFT_RIGHT:
   case PARSER_TOKEN_TYPE_FUNCTION:
   case PARSER_TOKEN_TYPE_TYPE:
+  case PARSER_TOKEN_TYPE_ANY_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
   case PARSER_TOKEN_TYPE_BOOL:
   case PARSER_TOKEN_TYPE_I8:

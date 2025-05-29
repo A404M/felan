@@ -1,7 +1,7 @@
 @import("types.felan");
 @import("operator.felan");
 
-libc :: @c_library("/lib/libc.so.6");
+libc :: @c_library("/usr/lib/libc.so.6");
 puts :: @c_function(libc,"puts",(*u8)->i32);
 putchar :: @c_function(libc,"putchar",(i32)->void);
 
