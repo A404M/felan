@@ -70,5 +70,11 @@ _print_unsigned :: (comptime t:type, value:t) -> void {
     value != @cast(0,t);
   } {}
 
+  while i < NUMBERS_SIZE - 1 {
+    @putc(numbers[i]);
+    i += 1;
+  }
+  return;
+
   puts(&numbers[i]);
 };

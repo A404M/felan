@@ -3727,7 +3727,7 @@ bool isConst(AstTree *tree) {
         return false;
       }
     }
-    return isConst(metadata->operand);
+    return isConst(metadata->operand) && isConst(metadata->operand);
   }
   case AST_TREE_TOKEN_NONE:
   }
@@ -7296,11 +7296,17 @@ bool setTypesTypeArray(AstTree *tree, AstTreeSetTypesHelper helper) {
       AstTree *param = metadata->parameters.data[i];
       if (!setAllTypes(param, newHelper, NULL, NULL)) {
         return false;
-      } else if (!isIntType(param->type)) {
+      } else if (!typeIsEqual(param->type, &AST_TREE_I64_TYPE) &&
+                 !typeIsEqual(param->type, &AST_TREE_U64_TYPE)) {
         printError(param->str_begin, param->str_end,
                    "Should only be int (for now)");
         return false;
+      } else if (!isConst(param)) {
+        printError(param->str_begin, param->str_end,
+                   "Should only be const (for now)");
+        return false;
       }
+      metadata->parameters.data[i] = getValue(param, false);
     }
   } else {
     printError(tree->str_begin, tree->str_end,
@@ -7822,8 +7828,11 @@ size_t getSizeOfType(AstTree *type) {
   case AST_TREE_TOKEN_TYPE_ARRAY: {
     AstTreeBracket *metadata = type->metadata;
     if (metadata->parameters.size == 1 &&
-        isIntType(metadata->parameters.data[0]->type)) {
-      return *(AstTreeInt *)metadata->parameters.data[0]->metadata;
+        (typeIsEqual(metadata->parameters.data[0]->type, &AST_TREE_I64_TYPE) ||
+         typeIsEqual(metadata->parameters.data[0]->type, &AST_TREE_U64_TYPE))) {
+      const size_t itemSize = getSizeOfType(metadata->operand);
+      const size_t size = *(u64 *)metadata->parameters.data[0]->metadata;
+      return size * itemSize;
     } else {
       UNREACHABLE;
     }
