@@ -1221,6 +1221,35 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     return newAstTree(AST_TREE_TOKEN_VALUE_C_FUNCTION, metadata,
                       copyAstTree(function->returnType), NULL, NULL);
   }
+  case AST_TREE_TOKEN_BUILTIN_STACK_ALLOC: {
+    AstTree *type = arguments[0];
+    AstTree *count = arguments[1];
+
+    size_t stackAllocation_capacity =
+        a404m_malloc_usable_size(scope->stackAllocation) /
+        sizeof(*scope->stackAllocation);
+    if (scope->stackAllocation_size == stackAllocation_capacity) {
+      stackAllocation_capacity += stackAllocation_capacity / 2 + 1;
+      scope->stackAllocation = a404m_realloc(
+          scope->stackAllocation,
+          stackAllocation_capacity * sizeof(*scope->stackAllocation));
+    }
+
+    const size_t sizeOfType = getSizeOfType(type);
+    const size_t size = *(u64 *)count->metadata * sizeOfType;
+    scope->stackAllocation[scope->stackAllocation_size] = a404m_malloc(size);
+    memset(scope->stackAllocation[scope->stackAllocation_size], 0, size);
+
+    AstTreeRawValue *value = a404m_malloc(sizeof(void *));
+    *(void **)value = scope->stackAllocation[scope->stackAllocation_size];
+
+    scope->stackAllocation_size += 1;
+
+    AstTreeTypeFunction *tree_type = tree->type->metadata;
+
+    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, value,
+                      copyAstTree(tree_type->returnType), NULL, NULL);
+  }
   case AST_TREE_TOKEN_BUILTIN_IMPORT:
   default:
   }

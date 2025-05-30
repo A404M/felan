@@ -202,6 +202,8 @@ typedef struct AstTreeScope {
   AstTreeVariables variables;
   AstTree **expressions;
   size_t expressions_size;
+  u8 **stackAllocation;
+  size_t stackAllocation_size;
 } AstTreeScope;
 
 typedef struct AstTreeFunction {
@@ -410,7 +412,7 @@ AstTree *astTreeParseLoopControl(const ParserNode *parserNode,
                                  AstTreeToken token);
 AstTree *astTreeParseReturn(const ParserNode *parserNode);
 AstTree *astTreeParsePureBinaryOperator(const ParserNode *parserNode,
-                                    AstTreeToken token);
+                                        AstTreeToken token);
 AstTree *astTreeParseBinaryOperator(const ParserNode *parserNode,
                                     AstTreeToken token);
 AstTree *astTreeParseUnaryOperator(const ParserNode *parserNode,
@@ -470,7 +472,7 @@ bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper,
                       AstTreeFunctionCall *functionCall);
 bool setTypesOperatorAssign(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorGeneral(AstTree *tree, AstTreeSetTypesHelper helper,
-                           const char *str, size_t str_size);
+                             const char *str, size_t str_size);
 bool setTypesOperatorPointer(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorAddress(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorDereference(AstTree *tree, AstTreeSetTypesHelper helper);

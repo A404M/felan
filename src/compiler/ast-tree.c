@@ -773,7 +773,11 @@ void astTreeFunctionDestroy(AstTreeFunction function) {
   for (size_t i = 0; i < function.arguments.size; ++i) {
     astTreeVariableDelete(function.arguments.data[i]);
   }
+  for (size_t i = 0; i < function.scope.stackAllocation_size; ++i) {
+    free(function.scope.stackAllocation[i]);
+  }
   astTreeDelete(function.returnType);
+  free(function.scope.stackAllocation);
   free(function.scope.expressions);
   free(function.scope.variables.data);
   free(function.arguments.data);
@@ -1001,6 +1005,10 @@ void astTreeDestroy(AstTree tree) {
     for (size_t i = 0; i < metadata->variables.size; ++i) {
       astTreeVariableDelete(metadata->variables.data[i]);
     }
+    for (size_t i = 0; i < metadata->stackAllocation_size; ++i) {
+      free(metadata->stackAllocation[i]);
+    }
+    free(metadata->stackAllocation);
     free(metadata->expressions);
     free(metadata->variables.data);
     free(metadata);
@@ -1413,6 +1421,8 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
           copyAstTreeBack(metadata->scope.expressions[i], new_oldVariables,
                           new_newVariables, new_variables_size, safetyCheck);
     }
+    new_metadata->scope.stackAllocation_size = 0; // TODO: change later
+    new_metadata->scope.stackAllocation = a404m_malloc(0);
 
     return newAstTree(tree->token, new_metadata,
                       copyAstTreeBack(tree->type, new_oldVariables,
@@ -1525,6 +1535,9 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
     new_metadata->expressions_size = metadata->expressions_size;
     new_metadata->expressions = a404m_malloc(
         new_metadata->expressions_size * sizeof(*new_metadata->expressions));
+
+    new_metadata->stackAllocation_size = 0; // TODO: change later
+    new_metadata->stackAllocation = a404m_malloc(0);
 
     const size_t new_variables_size = variables_size + 1;
     AstTreeVariables new_oldVariables[new_variables_size];
@@ -1761,6 +1774,9 @@ AstTreeFunction *copyAstTreeFunction(AstTreeFunction *metadata,
   new_metadata->scope.expressions =
       a404m_malloc(new_metadata->scope.expressions_size *
                    sizeof(*new_metadata->scope.expressions));
+
+  new_metadata->scope.stackAllocation_size = 0;
+  new_metadata->scope.stackAllocation = a404m_malloc(0);
 
   new_oldVariables[new_variables_size - 1] = metadata->scope.variables;
   new_newVariables[new_variables_size - 1] = new_metadata->scope.variables;
@@ -2593,6 +2609,8 @@ AstTree *astTreeParseFunction(const ParserNode *parserNode) {
       .expressions_size = 0,
       .variables.data = a404m_malloc(0),
       .variables.size = 0,
+      .stackAllocation = a404m_malloc(0),
+      .stackAllocation_size = 0,
   };
 
   AstTreeFunction *function = a404m_malloc(sizeof(*function));
@@ -3308,6 +3326,8 @@ AstTree *astTreeParseCurlyBracket(const ParserNode *parserNode) {
   scope->variables.size = 0;
   scope->expressions = a404m_malloc(0);
   scope->expressions_size = 0;
+  scope->stackAllocation = a404m_malloc(0);
+  scope->stackAllocation_size = 0;
 
   for (size_t i = 0; i < body->size; ++i) {
     const ParserNode *node = body->data[i];
@@ -3696,6 +3716,7 @@ bool hasAnyTypeInside(AstTree *type) {
     return hasAnyTypeInside(metadata->operand);
   }
   case AST_TREE_TOKEN_VARIABLE:
+  case AST_TREE_TOKEN_FUNCTION_CALL:
     return false;
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
@@ -3705,7 +3726,6 @@ bool hasAnyTypeInside(AstTree *type) {
   case AST_TREE_TOKEN_KEYWORD_WHILE:
   case AST_TREE_TOKEN_KEYWORD_COMPTIME:
   case AST_TREE_TOKEN_KEYWORD_STRUCT:
-  case AST_TREE_TOKEN_FUNCTION_CALL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER:
   case AST_TREE_TOKEN_VALUE_C_LIBRARY:
@@ -4463,6 +4483,8 @@ AstTree *getValue(AstTree *tree, bool copy) {
     scope->expressions_size = 0;
     scope->variables.data = a404m_malloc(0);
     scope->variables.size = 0;
+    scope->stackAllocation = a404m_malloc(0);
+    scope->stackAllocation_size = 0;
 
     AstTree scopeTree = {
         .token = AST_TREE_TOKEN_SCOPE,
@@ -5122,10 +5144,10 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
     return setTypesOperatorGeneral(tree, helper, STR_MINUS, STR_MINUS_SIZE);
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
     return setTypesOperatorGeneral(tree, helper, STR_LOGICAL_NOT,
-                                 STR_LOGICAL_NOT_SIZE);
+                                   STR_LOGICAL_NOT_SIZE);
   case AST_TREE_TOKEN_OPERATOR_BITWISE_NOT:
     return setTypesOperatorGeneral(tree, helper, STR_BITWISE_NOT,
-                                 STR_BITWISE_NOT_SIZE);
+                                   STR_BITWISE_NOT_SIZE);
   case AST_TREE_TOKEN_OPERATOR_SUM:
     return setTypesOperatorGeneral(tree, helper, STR_SUM, STR_SUM_SIZE);
   case AST_TREE_TOKEN_OPERATOR_SUB:
@@ -5140,38 +5162,38 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
     return setTypesOperatorGeneral(tree, helper, STR_EQUAL, STR_EQUAL_SIZE);
   case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
     return setTypesOperatorGeneral(tree, helper, STR_NOT_EQUAL,
-                                 STR_NOT_EQUAL_SIZE);
+                                   STR_NOT_EQUAL_SIZE);
   case AST_TREE_TOKEN_OPERATOR_GREATER:
     return setTypesOperatorGeneral(tree, helper, STR_GREATER, STR_GREATER_SIZE);
   case AST_TREE_TOKEN_OPERATOR_SMALLER:
     return setTypesOperatorGeneral(tree, helper, STR_SMALLER, STR_SMALLER_SIZE);
   case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
     return setTypesOperatorGeneral(tree, helper, STR_GREATER_OR_EQUAL,
-                                 STR_GREATER_OR_EQUAL_SIZE);
+                                   STR_GREATER_OR_EQUAL_SIZE);
   case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
     return setTypesOperatorGeneral(tree, helper, STR_SMALLER_OR_EQUAL,
-                                 STR_SMALLER_OR_EQUAL_SIZE);
+                                   STR_SMALLER_OR_EQUAL_SIZE);
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_AND:
     return setTypesOperatorGeneral(tree, helper, STR_LOGICAL_AND,
-                                 STR_LOGICAL_AND_SIZE);
+                                   STR_LOGICAL_AND_SIZE);
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_OR:
     return setTypesOperatorGeneral(tree, helper, STR_LOGICAL_OR,
-                                 STR_LOGICAL_OR_SIZE);
+                                   STR_LOGICAL_OR_SIZE);
   case AST_TREE_TOKEN_OPERATOR_BITWISE_AND:
     return setTypesOperatorGeneral(tree, helper, STR_BITWISE_AND,
-                                 STR_BITWISE_AND_SIZE);
+                                   STR_BITWISE_AND_SIZE);
   case AST_TREE_TOKEN_OPERATOR_BITWISE_XOR:
     return setTypesOperatorGeneral(tree, helper, STR_BITWISE_XOR,
-                                 STR_BITWISE_XOR_SIZE);
+                                   STR_BITWISE_XOR_SIZE);
   case AST_TREE_TOKEN_OPERATOR_BITWISE_OR:
     return setTypesOperatorGeneral(tree, helper, STR_BITWISE_OR,
-                                 STR_BITWISE_OR_SIZE);
+                                   STR_BITWISE_OR_SIZE);
   case AST_TREE_TOKEN_OPERATOR_SHIFT_LEFT:
     return setTypesOperatorGeneral(tree, helper, STR_SHIFT_LEFT,
-                                 STR_SHIFT_LEFT_SIZE);
+                                   STR_SHIFT_LEFT_SIZE);
   case AST_TREE_TOKEN_OPERATOR_SHIFT_RIGHT:
     return setTypesOperatorGeneral(tree, helper, STR_SHIFT_RIGHT,
-                                 STR_SHIFT_RIGHT_SIZE);
+                                   STR_SHIFT_RIGHT_SIZE);
   case AST_TREE_TOKEN_OPERATOR_POINTER:
     return setTypesOperatorPointer(tree, helper);
   case AST_TREE_TOKEN_OPERATOR_ADDRESS:
@@ -5850,7 +5872,7 @@ bool setTypesOperatorAssign(AstTree *tree, AstTreeSetTypesHelper helper) {
 }
 
 bool setTypesOperatorGeneral(AstTree *tree, AstTreeSetTypesHelper _helper,
-                           const char *str, size_t str_size) {
+                             const char *str, size_t str_size) {
   AstTreeFunctionCall *metadata = tree->metadata;
 
   AstTreeSetTypesHelper helper = {
@@ -6588,29 +6610,39 @@ bool setTypesBuiltinIsComptime(AstTree *tree, AstTreeSetTypesHelper helper) {
 bool setTypesBuiltinStackAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
                                AstTreeFunctionCall *functionCall) {
   (void)helper;
-  if (functionCall->parameters_size == 1) {
-    AstTree *size = NULL;
+  if (functionCall->parameters_size == 2) {
+    AstTree *type = NULL;
+    AstTree *count = NULL;
 
-    static const char SIZE_STR[] = "size";
-    static const size_t SIZE_STR_SIZE =
-        sizeof(SIZE_STR) / sizeof(*SIZE_STR) - sizeof(*SIZE_STR);
+    static const char TYPE_STR[] = "type";
+    static const size_t TYPE_STR_SIZE =
+        sizeof(TYPE_STR) / sizeof(*TYPE_STR) - sizeof(*TYPE_STR);
+    static const char COUNT_STR[] = "count";
+    static const size_t COUNT_STR_SIZE =
+        sizeof(COUNT_STR) / sizeof(*COUNT_STR) - sizeof(*COUNT_STR);
 
     for (size_t i = 0; i < functionCall->parameters_size; ++i) {
       AstTreeFunctionCallParam param = functionCall->parameters[i];
       const size_t param_name_size = param.nameEnd - param.nameBegin;
 
       if (param_name_size == 0) {
-        if (size == NULL) {
-          size = param.value;
+        if (type == NULL) {
+          type = param.value;
+        } else if (count == NULL) {
+          count = param.value;
         } else {
           printError(param.value->str_begin, param.value->str_end,
                      "Bad paramter");
           return false;
         }
-      } else if (param_name_size == SIZE_STR_SIZE &&
-                 strnEquals(param.nameBegin, SIZE_STR, SIZE_STR_SIZE) &&
-                 size == NULL) {
-        size = param.value;
+      } else if (param_name_size == COUNT_STR_SIZE &&
+                 strnEquals(param.nameBegin, COUNT_STR, COUNT_STR_SIZE) &&
+                 count == NULL) {
+        count = param.value;
+      } else if (param_name_size == TYPE_STR_SIZE &&
+                 strnEquals(param.nameBegin, TYPE_STR, TYPE_STR_SIZE) &&
+                 type == NULL) {
+        type = param.value;
       } else {
         printError(param.value->str_begin, param.value->str_end,
                    "Bad paramter");
@@ -6618,27 +6650,41 @@ bool setTypesBuiltinStackAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
       }
     }
 
-    if (size == NULL) {
+    if (count == NULL || type == NULL) {
       return false;
-    } else if (!typeIsEqual(size->type, &AST_TREE_U64_TYPE)) {
-      printError(size->str_begin, size->str_end,
-                 "Type missmatch, the argument should be `u64`");
+    } else if (!typeIsEqual(count->type, &AST_TREE_I64_TYPE) &&
+               !typeIsEqual(count->type, &AST_TREE_U64_TYPE)) {
+      printError(count->str_begin, count->str_end,
+                 "Type missmatch, the argument should be `u64` or `i64`");
+      return false;
+    } else if (!typeIsEqual(type->type, &AST_TREE_TYPE_TYPE)) {
+      printError(type->str_begin, type->str_end,
+                 "Type missmatch, the argument should be `type`");
       return false;
     }
 
     AstTreeTypeFunction *type_metadata = a404m_malloc(sizeof(*type_metadata));
-    type_metadata->arguments_size = 1;
+    type_metadata->arguments_size = 2;
     type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
                                             sizeof(*type_metadata->arguments));
 
     type_metadata->returnType =
-        newAstTree(AST_TREE_TOKEN_OPERATOR_POINTER, &AST_TREE_VOID_TYPE,
+        newAstTree(AST_TREE_TOKEN_OPERATOR_POINTER, copyAstTree(type),
                    &AST_TREE_TYPE_TYPE, NULL, NULL);
 
     type_metadata->arguments[0] = (AstTreeTypeFunctionArgument){
-        .type = copyAstTree(&AST_TREE_TYPE_TYPE),
-        .name_begin = SIZE_STR,
-        .name_end = SIZE_STR + SIZE_STR_SIZE,
+        .type = copyAstTree(type->type),
+        .name_begin = COUNT_STR,
+        .name_end = COUNT_STR + COUNT_STR_SIZE,
+        .str_begin = NULL,
+        .str_end = NULL,
+        .isComptime = false,
+    };
+
+    type_metadata->arguments[1] = (AstTreeTypeFunctionArgument){
+        .type = copyAstTree(count->type),
+        .name_begin = TYPE_STR,
+        .name_end = TYPE_STR + TYPE_STR_SIZE,
         .str_begin = NULL,
         .str_end = NULL,
         .isComptime = false,

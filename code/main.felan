@@ -12,12 +12,28 @@ __sum__ :: (left:*anytype,right:i64) -> (@type_of(left)) {
   return @add(left,right);
 };
 
+__sub__ :: (left:*anytype,right:i64) -> (@type_of(left)) {
+  return @sub(left,right);
+};
+
+__get_item__ :: (left:*anytype,index:i64) -> (@type_of(left.*)) {
+  left += index;
+  return left.*;
+};
+
+__set_item__ :: (left:*anytype,index:i64,item:@type_of(left.*)) -> (@type_of(left.*)) {
+  left += index;
+  return left.* = item;
+};
+
+__get_item_address__ :: (left:*anytype,index:i64,item:@type_of(left.*)) -> (@type_of(left)) {
+  left += index;
+  return left;
+};
+
 main :: ()->void{
-  arr :[10]i64= undefined;
-  arr[0] = 2;
-  arr[1] = 3;
-  p := &arr[0];
-  p += 1;
-  print(p.*);
+  p := @stack_alloc(i64,10);
+  __set_item__(p,1,0);
+  print(__get_item__(p,1));
 };
 
