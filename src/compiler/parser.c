@@ -328,7 +328,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_VALUE_INT: {
     ParserNodeIntMetadata *metadata = node->metadata;
-    printf(",operand=%lld", *metadata);
+    printf(",operand=%lld,type=%d", metadata->value, metadata->type);
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_VALUE_FLOAT: {
@@ -343,7 +343,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_VALUE_CHAR: {
     ParserNodeCharMetadata *metadata = node->metadata;
-    printf(",value=%c", (char)*metadata);
+    printf(",value=%c", (char)metadata->value);
   }
     goto RETURN_SUCCESS;
   case PARSER_TOKEN_VALUE_STRING: {
@@ -1294,13 +1294,16 @@ ParserNode *parserNumber(LexerNode *node, ParserNode *parent) {
       switch (*(node->str_begin + 1)) {
       case 'x':
       case 'X':
-        u64 value = hexToU64(node->str_begin + 2, node->str_end, &success);
+        ParserNodeIntType type = getIntType(node->str_begin + 2, node->str_end);
+        u64 value = hexToU64(node->str_begin + 2,
+                             node->str_end - getIntTypeSize(type), &success);
         if (!success) {
           printError(node->str_begin, node->str_end, "Error in parsing number");
           return NULL;
         }
         ParserNodeIntMetadata *metadata = a404m_malloc(sizeof(*metadata));
-        *metadata = value;
+        metadata->value = value;
+        metadata->type = type;
         parserNode = newParserNode(PARSER_TOKEN_VALUE_INT, node->str_begin,
                                    node->str_end, metadata, parent);
         break;
@@ -1311,10 +1314,13 @@ ParserNode *parserNumber(LexerNode *node, ParserNode *parent) {
     }
     // fall through
   default: {
-    u64 value = decimalToU64(node->str_begin, node->str_end, &success);
+    ParserNodeIntType type = getIntType(node->str_begin, node->str_end);
+    u64 value = decimalToU64(node->str_begin,
+                             node->str_end - getIntTypeSize(type), &success);
     if (success) {
       ParserNodeIntMetadata *metadata = a404m_malloc(sizeof(*metadata));
-      *metadata = value;
+      metadata->value = value;
+      metadata->type = type;
       parserNode = newParserNode(PARSER_TOKEN_VALUE_INT, node->str_begin,
                                  node->str_end, metadata, parent);
     } else {
@@ -1355,7 +1361,8 @@ ParserNode *parserChar(LexerNode *node, ParserNode *parent) {
     printError(node->str_begin, node->str_end, "Bad character");
     goto RETURN_ERROR;
   }
-  *metadata = c;
+  metadata->value = c;
+  metadata->type = PARSER_NODE_INT_TYPE_U8;
   return node->parserNode =
              newParserNode(PARSER_TOKEN_VALUE_CHAR, node->str_begin,
                            node->str_end, metadata, parent);
@@ -2841,4 +2848,65 @@ char escapeChar(char const *begin, char const *end, bool *success) {
     *success = false;
     return 0;
   }
+}
+
+ParserNodeIntType getIntType(char const *begin, char const *end) {
+  static const char I8[] = "i8";
+  static const size_t I8_SIZE = sizeof(I8) / sizeof(*I8) - sizeof(*I8);
+  static const char U8[] = "u8";
+  static const size_t U8_SIZE = sizeof(U8) / sizeof(*U8) - sizeof(*U8);
+  static const char I16[] = "i16";
+  static const size_t I16_SIZE = sizeof(I16) / sizeof(*I16) - sizeof(*I16);
+  static const char U16[] = "u16";
+  static const size_t U16_SIZE = sizeof(U16) / sizeof(*U16) - sizeof(*U16);
+  static const char I32[] = "i32";
+  static const size_t I32_SIZE = sizeof(I32) / sizeof(*I32) - sizeof(*I32);
+  static const char U32[] = "u32";
+  static const size_t U32_SIZE = sizeof(U32) / sizeof(*U32) - sizeof(*U32);
+  static const char I64[] = "i64";
+  static const size_t I64_SIZE = sizeof(I64) / sizeof(*I64) - sizeof(*I64);
+  static const char U64[] = "u64";
+  static const size_t U64_SIZE = sizeof(U64) / sizeof(*U64) - sizeof(*U64);
+
+  if (end - begin < 3) {
+    return PARSER_NODE_INT_TYPE_UNKNOWN;
+  }
+
+  if (strnEqualsCaseInsensitive(end - I8_SIZE, I8, I8_SIZE)) {
+    return PARSER_NODE_INT_TYPE_I8;
+  } else if (strnEqualsCaseInsensitive(end - U8_SIZE, U8, U8_SIZE)) {
+    return PARSER_NODE_INT_TYPE_U8;
+  } else if (strnEqualsCaseInsensitive(end - I16_SIZE, I16, I16_SIZE)) {
+    return PARSER_NODE_INT_TYPE_I16;
+  } else if (strnEqualsCaseInsensitive(end - U16_SIZE, U16, U16_SIZE)) {
+    return PARSER_NODE_INT_TYPE_U16;
+  } else if (strnEqualsCaseInsensitive(end - I32_SIZE, I32, I32_SIZE)) {
+    return PARSER_NODE_INT_TYPE_I32;
+  } else if (strnEqualsCaseInsensitive(end - U32_SIZE, U32, U32_SIZE)) {
+    return PARSER_NODE_INT_TYPE_U32;
+  } else if (strnEqualsCaseInsensitive(end - I64_SIZE, I64, I64_SIZE)) {
+    return PARSER_NODE_INT_TYPE_I64;
+  } else if (strnEqualsCaseInsensitive(end - U64_SIZE, U64, U64_SIZE)) {
+    return PARSER_NODE_INT_TYPE_U64;
+  } else {
+    return PARSER_NODE_INT_TYPE_UNKNOWN;
+  }
+}
+
+size_t getIntTypeSize(ParserNodeIntType type) {
+  switch (type) {
+  case PARSER_NODE_INT_TYPE_UNKNOWN:
+    return 0;
+  case PARSER_NODE_INT_TYPE_I8:
+  case PARSER_NODE_INT_TYPE_U8:
+    return 2;
+  case PARSER_NODE_INT_TYPE_I16:
+  case PARSER_NODE_INT_TYPE_U16:
+  case PARSER_NODE_INT_TYPE_I32:
+  case PARSER_NODE_INT_TYPE_U32:
+  case PARSER_NODE_INT_TYPE_I64:
+  case PARSER_NODE_INT_TYPE_U64:
+    return 3;
+  }
+  UNREACHABLE;
 }

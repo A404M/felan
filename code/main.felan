@@ -21,15 +21,8 @@ __get_item_address__ :: (left:*anytype,index:i64,item:@type_of(left.*)) -> (@typ
   return (left + index);
 };
 
-main :: ()->void{
-  arr :array(@cast(10,u64),i64) = undefined;
-  arr.ptr = @stack_alloc(10,i64);
-  i := 0;
-  while i < 10 {
-    __set_item__(arr.ptr,i,0);
-    i += 1;
-  }
-  print(__get_item__(arr.ptr,1));
-  free(@cast(arr.ptr,*void));
+main :: () -> void {
+  print(1234u64);
+  print(1234U64);
 };
 

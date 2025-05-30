@@ -2452,8 +2452,7 @@ AstTree *astTreeParse(const ParserNode *parserNode) {
   case PARSER_TOKEN_IDENTIFIER:
     return astTreeParseIdentifier(parserNode);
   case PARSER_TOKEN_VALUE_INT:
-    return astTreeParseValue(parserNode, AST_TREE_TOKEN_VALUE_INT,
-                             sizeof(AstTreeInt), NULL);
+    return astTreeParseIntValue(parserNode);
   case PARSER_TOKEN_VALUE_FLOAT:
     return astTreeParseValue(parserNode, AST_TREE_TOKEN_VALUE_FLOAT,
                              sizeof(AstTreeFloat), NULL);
@@ -2954,6 +2953,67 @@ AstTree *astTreeParseValue(const ParserNode *parserNode, AstTreeToken token,
 
   return newAstTree(token, metadata, type, parserNode->str_begin,
                     parserNode->str_end);
+}
+
+AstTree *astTreeParseIntValue(const ParserNode *parserNode) {
+  ParserNodeIntMetadata *node_metadata = parserNode->metadata;
+  switch (node_metadata->type) {
+  case PARSER_NODE_INT_TYPE_UNKNOWN: {
+    AstTreeInt *metadata = a404m_malloc(sizeof(*metadata));
+    *metadata = node_metadata->value;
+    return newAstTree(AST_TREE_TOKEN_VALUE_INT, metadata, NULL,
+                      parserNode->str_begin, parserNode->str_end);
+  }
+  case PARSER_NODE_INT_TYPE_I8: {
+    i8 *metadata = a404m_malloc(sizeof(*metadata));
+    *metadata = node_metadata->value;
+    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata, &AST_TREE_I8_TYPE,
+                      parserNode->str_begin, parserNode->str_end);
+  }
+  case PARSER_NODE_INT_TYPE_U8: {
+    u8 *metadata = a404m_malloc(sizeof(*metadata));
+    *metadata = node_metadata->value;
+    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata, &AST_TREE_I8_TYPE,
+                      parserNode->str_begin, parserNode->str_end);
+  }
+  case PARSER_NODE_INT_TYPE_I16: {
+    i16 *metadata = a404m_malloc(sizeof(*metadata));
+    *metadata = node_metadata->value;
+    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata, &AST_TREE_I16_TYPE,
+                      parserNode->str_begin, parserNode->str_end);
+  }
+  case PARSER_NODE_INT_TYPE_U16: {
+    u16 *metadata = a404m_malloc(sizeof(*metadata));
+    *metadata = node_metadata->value;
+    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata, &AST_TREE_I16_TYPE,
+                      parserNode->str_begin, parserNode->str_end);
+  }
+  case PARSER_NODE_INT_TYPE_I32: {
+    i32 *metadata = a404m_malloc(sizeof(*metadata));
+    *metadata = node_metadata->value;
+    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata, &AST_TREE_I32_TYPE,
+                      parserNode->str_begin, parserNode->str_end);
+  }
+  case PARSER_NODE_INT_TYPE_U32: {
+    u32 *metadata = a404m_malloc(sizeof(*metadata));
+    *metadata = node_metadata->value;
+    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata, &AST_TREE_I32_TYPE,
+                      parserNode->str_begin, parserNode->str_end);
+  }
+  case PARSER_NODE_INT_TYPE_I64: {
+    i64 *metadata = a404m_malloc(sizeof(*metadata));
+    *metadata = node_metadata->value;
+    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata, &AST_TREE_I64_TYPE,
+                      parserNode->str_begin, parserNode->str_end);
+  }
+  case PARSER_NODE_INT_TYPE_U64: {
+    u64 *metadata = a404m_malloc(sizeof(*metadata));
+    *metadata = node_metadata->value;
+    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata, &AST_TREE_I64_TYPE,
+                      parserNode->str_begin, parserNode->str_end);
+  }
+  }
+  UNREACHABLE;
 }
 
 AstTree *astTreeParseString(const ParserNode *parserNode) {

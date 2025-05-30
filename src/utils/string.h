@@ -8,6 +8,7 @@ size_t strLength(const char *str);
 
 bool strEquals(const char *left, const char *right);
 bool strnEquals(const char *left, const char *right, size_t len);
+bool strnEqualsCaseInsensitive(const char *left, const char *right, size_t len);
 
 size_t searchInStringArray(const char *array[], size_t array_size,
                            const char *str, size_t str_size);
@@ -18,3 +19,5 @@ f128 numberToFloat(char const*str_begin, char const*str_end, bool *success);
 char *u64ToString(u64 value);
 
 char *strClone(const char *str);
+
+bool charEqualsCaseInsensitive(char left,char right);

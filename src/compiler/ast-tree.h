@@ -406,6 +406,7 @@ AstTree *astTreeParseFunctionCall(const ParserNode *parserNode);
 AstTree *astTreeParseIdentifier(const ParserNode *parserNode);
 AstTree *astTreeParseValue(const ParserNode *parserNode, AstTreeToken token,
                            size_t metadata_size, AstTree *type);
+AstTree *astTreeParseIntValue(const ParserNode *parserNode);
 AstTree *astTreeParseString(const ParserNode *parserNode);
 AstTree *astTreeParseKeyword(const ParserNode *parserNode, AstTreeToken token);
 AstTree *astTreeParseLoopControl(const ParserNode *parserNode,

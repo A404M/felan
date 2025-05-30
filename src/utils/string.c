@@ -1,5 +1,6 @@
 #include "string.h"
 #include "memory.h"
+#include "utils/log.h"
 #include "utils/type.h"
 
 size_t strLength(const char *str) {
@@ -22,6 +23,16 @@ bool strEquals(const char *left, const char *right) {
 bool strnEquals(const char *left, const char *right, size_t len) {
   for (size_t i = 0; i < len; ++i) {
     if (left[i] != right[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool strnEqualsCaseInsensitive(const char *left, const char *right,
+                               size_t len) {
+  for (size_t i = 0; i < len; ++i) {
+    if (!charEqualsCaseInsensitive(left[i], right[i])) {
       return false;
     }
   }
@@ -142,4 +153,10 @@ char *strClone(const char *str) {
     result[i] = str[i];
   }
   return result;
+}
+
+bool charEqualsCaseInsensitive(char left, char right) {
+  return left == right ||
+         ('A' <= right && right <= 'Z' && left == right + ('a' - 'A')) ||
+         ('A' <= left && left <= 'Z' && right == left + ('a' - 'A'));
 }

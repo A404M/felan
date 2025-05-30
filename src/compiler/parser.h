@@ -176,7 +176,22 @@ typedef struct ParserNodeFunctionCall {
 
 typedef ParserNode ParserNodeSingleChildMetadata;
 
-typedef u64 ParserNodeIntMetadata;
+typedef enum ParserNodeIntType {
+  PARSER_NODE_INT_TYPE_UNKNOWN,
+  PARSER_NODE_INT_TYPE_I8,
+  PARSER_NODE_INT_TYPE_U8,
+  PARSER_NODE_INT_TYPE_I16,
+  PARSER_NODE_INT_TYPE_U16,
+  PARSER_NODE_INT_TYPE_I32,
+  PARSER_NODE_INT_TYPE_U32,
+  PARSER_NODE_INT_TYPE_I64,
+  PARSER_NODE_INT_TYPE_U64,
+} ParserNodeIntType;
+
+typedef struct ParserNodeIntMetadata {
+  u64 value;
+  ParserNodeIntType type;
+} ParserNodeIntMetadata;
 
 typedef f128 ParserNodeFloatMetadata;
 
@@ -293,3 +308,6 @@ bool isType(ParserNode *node);
 bool isValue(ParserNode *node);
 
 char escapeChar(char const *begin, char const *end, bool *success);
+
+ParserNodeIntType getIntType(char const *begin, char const *end);
+size_t getIntTypeSize(ParserNodeIntType type);
