@@ -411,21 +411,6 @@ void astTreePrint(const AstTree *tree, int indent) {
     AstTreeLoopControl *meatadata = tree->metadata;
     printf("count=%d", meatadata->count);
   }
-  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
-  case AST_TREE_TOKEN_OPERATOR_BITWISE_NOT:
-  case AST_TREE_TOKEN_OPERATOR_PLUS:
-  case AST_TREE_TOKEN_OPERATOR_MINUS: {
-    AstTreeUnary *metadata = tree->metadata;
-    printf(",\n");
-    for (int i = 0; i < indent; ++i)
-      printf(" ");
-    printf("child=\n");
-    astTreePrint(metadata->operand, indent + 1);
-    printf(",\n");
-    for (int i = 0; i < indent; ++i)
-      printf(" ");
-    printf("function=%p", metadata->function);
-  }
   case AST_TREE_TOKEN_OPERATOR_POINTER:
   case AST_TREE_TOKEN_OPERATOR_ADDRESS:
   case AST_TREE_TOKEN_OPERATOR_DEREFERENCE:
@@ -538,7 +523,11 @@ void astTreePrint(const AstTree *tree, int indent) {
   case AST_TREE_TOKEN_OPERATOR_GREATER:
   case AST_TREE_TOKEN_OPERATOR_SMALLER:
   case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL: {
+  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
+  case AST_TREE_TOKEN_OPERATOR_BITWISE_NOT:
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS: {
     AstTreeFunctionCall *metadata = tree->metadata;
     printf(",\n");
     for (int i = 0; i < indent; ++i)
@@ -922,15 +911,6 @@ void astTreeDestroy(AstTree tree) {
     free(metadata);
     return;
   }
-  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
-  case AST_TREE_TOKEN_OPERATOR_BITWISE_NOT:
-  case AST_TREE_TOKEN_OPERATOR_PLUS:
-  case AST_TREE_TOKEN_OPERATOR_MINUS: {
-    AstTreeUnary *metadata = tree.metadata;
-    astTreeDelete(metadata->operand);
-    free(metadata);
-  }
-    return;
   case AST_TREE_TOKEN_OPERATOR_POINTER:
   case AST_TREE_TOKEN_OPERATOR_ADDRESS:
   case AST_TREE_TOKEN_OPERATOR_DEREFERENCE:
@@ -959,6 +939,10 @@ void astTreeDestroy(AstTree tree) {
   }
     return;
   case AST_TREE_TOKEN_FUNCTION_CALL:
+  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
+  case AST_TREE_TOKEN_OPERATOR_BITWISE_NOT:
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_AND:
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_OR:
   case AST_TREE_TOKEN_OPERATOR_BITWISE_AND:
@@ -1436,23 +1420,6 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
                                       safetyCheck),
                       tree->str_begin, tree->str_end);
   }
-  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
-  case AST_TREE_TOKEN_OPERATOR_BITWISE_NOT:
-  case AST_TREE_TOKEN_OPERATOR_PLUS:
-  case AST_TREE_TOKEN_OPERATOR_MINUS: {
-    AstTreeUnary *metadata = tree->metadata;
-    AstTreeUnary *new_metadata = a404m_malloc(sizeof(*new_metadata));
-    new_metadata->operand =
-        copyAstTreeBack(metadata->operand, oldVariables, newVariables,
-                        variables_size, safetyCheck);
-    new_metadata->function = copyAstTreeBackFindVariable(
-        metadata->function, oldVariables, newVariables, variables_size);
-
-    return newAstTree(tree->token, new_metadata,
-                      copyAstTreeBack(tree->type, oldVariables, newVariables,
-                                      variables_size, safetyCheck),
-                      tree->str_begin, tree->str_end);
-  }
   case AST_TREE_TOKEN_OPERATOR_POINTER:
   case AST_TREE_TOKEN_OPERATOR_ADDRESS:
   case AST_TREE_TOKEN_OPERATOR_DEREFERENCE:
@@ -1483,6 +1450,10 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
                       tree->str_begin, tree->str_end);
   }
   case AST_TREE_TOKEN_FUNCTION_CALL:
+  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
+  case AST_TREE_TOKEN_OPERATOR_BITWISE_NOT:
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_AND:
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_OR:
   case AST_TREE_TOKEN_OPERATOR_BITWISE_AND:
@@ -3087,12 +3058,23 @@ AstTree *astTreeParseUnaryOperator(const ParserNode *parserNode,
                                    AstTreeToken token) {
   ParserNodeSingleChildMetadata *node_metadata = parserNode->metadata;
 
-  AstTreeUnary *metadata = a404m_malloc(sizeof(*metadata));
-  metadata->operand = astTreeParse(node_metadata);
-  if (metadata->operand == NULL) {
+  AstTreeFunctionCall *metadata = a404m_malloc(sizeof(*metadata));
+  metadata->parameters_size = 1;
+  metadata->parameters =
+      a404m_malloc(metadata->parameters_size * sizeof(*metadata->parameters));
+  AstTree *operand = astTreeParse(node_metadata);
+
+  if (operand == NULL) {
+    free(metadata->parameters);
     free(metadata);
     return NULL;
   }
+
+  metadata->parameters[0] = (AstTreeFunctionCallParam){
+      .value = operand,
+      .nameBegin = NULL,
+      .nameEnd = NULL,
+  };
   metadata->function = NULL;
 
   return newAstTree(token, metadata, NULL, parserNode->str_begin,
@@ -3851,6 +3833,10 @@ bool isConst(AstTree *tree) {
            (metadata->elseBody == NULL || isConst(metadata->elseBody));
   }
   case AST_TREE_TOKEN_FUNCTION_CALL:
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
+  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
+  case AST_TREE_TOKEN_OPERATOR_BITWISE_NOT:
   case AST_TREE_TOKEN_OPERATOR_SUM:
   case AST_TREE_TOKEN_OPERATOR_SUB:
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
@@ -3897,14 +3883,6 @@ bool isConst(AstTree *tree) {
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
     return false;
-  case AST_TREE_TOKEN_OPERATOR_PLUS:
-  case AST_TREE_TOKEN_OPERATOR_MINUS:
-  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
-  case AST_TREE_TOKEN_OPERATOR_BITWISE_NOT: {
-    AstTreeUnary *metadata = tree->metadata;
-    return metadata->function->isConst && isConst(metadata->function->value) &&
-           isConst(metadata->operand);
-  }
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *metadata = tree->metadata;
     return metadata->isConst && metadata->value != NULL;
@@ -3982,6 +3960,10 @@ AstTree *makeTypeOf(AstTree *value) {
     return ret;
   }
   case AST_TREE_TOKEN_FUNCTION_CALL:
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
+  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
+  case AST_TREE_TOKEN_OPERATOR_BITWISE_NOT:
   case AST_TREE_TOKEN_OPERATOR_SUM:
   case AST_TREE_TOKEN_OPERATOR_SUB:
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
@@ -4039,14 +4021,6 @@ AstTree *makeTypeOf(AstTree *value) {
   case AST_TREE_TOKEN_VARIABLE: {
     AstTreeVariable *variable = value->metadata;
     return copyAstTree(variable->type);
-  }
-  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
-  case AST_TREE_TOKEN_OPERATOR_BITWISE_NOT:
-  case AST_TREE_TOKEN_OPERATOR_PLUS:
-  case AST_TREE_TOKEN_OPERATOR_MINUS: {
-    AstTreeUnary *metadata = value->metadata;
-    AstTreeTypeFunction *function = metadata->function->type->metadata;
-    return copyAstTree(function->returnType);
   }
   case AST_TREE_TOKEN_KEYWORD_COMPTIME: {
     AstTreeSingleChild *metadata = value->metadata;
@@ -5143,60 +5117,60 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
     return setTypesOperatorAssign(tree, helper);
   case AST_TREE_TOKEN_OPERATOR_PLUS:
-    return setTypesOperatorUnary(tree, helper, STR_PLUS, STR_PLUS_SIZE);
+    return setTypesOperatorGeneral(tree, helper, STR_PLUS, STR_PLUS_SIZE);
   case AST_TREE_TOKEN_OPERATOR_MINUS:
-    return setTypesOperatorUnary(tree, helper, STR_MINUS, STR_MINUS_SIZE);
+    return setTypesOperatorGeneral(tree, helper, STR_MINUS, STR_MINUS_SIZE);
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
-    return setTypesOperatorUnary(tree, helper, STR_LOGICAL_NOT,
+    return setTypesOperatorGeneral(tree, helper, STR_LOGICAL_NOT,
                                  STR_LOGICAL_NOT_SIZE);
   case AST_TREE_TOKEN_OPERATOR_BITWISE_NOT:
-    return setTypesOperatorUnary(tree, helper, STR_BITWISE_NOT,
+    return setTypesOperatorGeneral(tree, helper, STR_BITWISE_NOT,
                                  STR_BITWISE_NOT_SIZE);
   case AST_TREE_TOKEN_OPERATOR_SUM:
-    return setTypesOperatorInfix(tree, helper, STR_SUM, STR_SUM_SIZE);
+    return setTypesOperatorGeneral(tree, helper, STR_SUM, STR_SUM_SIZE);
   case AST_TREE_TOKEN_OPERATOR_SUB:
-    return setTypesOperatorInfix(tree, helper, STR_SUB, STR_SUB_SIZE);
+    return setTypesOperatorGeneral(tree, helper, STR_SUB, STR_SUB_SIZE);
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
-    return setTypesOperatorInfix(tree, helper, STR_MUL, STR_MUL_SIZE);
+    return setTypesOperatorGeneral(tree, helper, STR_MUL, STR_MUL_SIZE);
   case AST_TREE_TOKEN_OPERATOR_DIVIDE:
-    return setTypesOperatorInfix(tree, helper, STR_DIV, STR_DIV_SIZE);
+    return setTypesOperatorGeneral(tree, helper, STR_DIV, STR_DIV_SIZE);
   case AST_TREE_TOKEN_OPERATOR_MODULO:
-    return setTypesOperatorInfix(tree, helper, STR_MOD, STR_MOD_SIZE);
+    return setTypesOperatorGeneral(tree, helper, STR_MOD, STR_MOD_SIZE);
   case AST_TREE_TOKEN_OPERATOR_EQUAL:
-    return setTypesOperatorInfix(tree, helper, STR_EQUAL, STR_EQUAL_SIZE);
+    return setTypesOperatorGeneral(tree, helper, STR_EQUAL, STR_EQUAL_SIZE);
   case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
-    return setTypesOperatorInfix(tree, helper, STR_NOT_EQUAL,
+    return setTypesOperatorGeneral(tree, helper, STR_NOT_EQUAL,
                                  STR_NOT_EQUAL_SIZE);
   case AST_TREE_TOKEN_OPERATOR_GREATER:
-    return setTypesOperatorInfix(tree, helper, STR_GREATER, STR_GREATER_SIZE);
+    return setTypesOperatorGeneral(tree, helper, STR_GREATER, STR_GREATER_SIZE);
   case AST_TREE_TOKEN_OPERATOR_SMALLER:
-    return setTypesOperatorInfix(tree, helper, STR_SMALLER, STR_SMALLER_SIZE);
+    return setTypesOperatorGeneral(tree, helper, STR_SMALLER, STR_SMALLER_SIZE);
   case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
-    return setTypesOperatorInfix(tree, helper, STR_GREATER_OR_EQUAL,
+    return setTypesOperatorGeneral(tree, helper, STR_GREATER_OR_EQUAL,
                                  STR_GREATER_OR_EQUAL_SIZE);
   case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
-    return setTypesOperatorInfix(tree, helper, STR_SMALLER_OR_EQUAL,
+    return setTypesOperatorGeneral(tree, helper, STR_SMALLER_OR_EQUAL,
                                  STR_SMALLER_OR_EQUAL_SIZE);
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_AND:
-    return setTypesOperatorInfix(tree, helper, STR_LOGICAL_AND,
+    return setTypesOperatorGeneral(tree, helper, STR_LOGICAL_AND,
                                  STR_LOGICAL_AND_SIZE);
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_OR:
-    return setTypesOperatorInfix(tree, helper, STR_LOGICAL_OR,
+    return setTypesOperatorGeneral(tree, helper, STR_LOGICAL_OR,
                                  STR_LOGICAL_OR_SIZE);
   case AST_TREE_TOKEN_OPERATOR_BITWISE_AND:
-    return setTypesOperatorInfix(tree, helper, STR_BITWISE_AND,
+    return setTypesOperatorGeneral(tree, helper, STR_BITWISE_AND,
                                  STR_BITWISE_AND_SIZE);
   case AST_TREE_TOKEN_OPERATOR_BITWISE_XOR:
-    return setTypesOperatorInfix(tree, helper, STR_BITWISE_XOR,
+    return setTypesOperatorGeneral(tree, helper, STR_BITWISE_XOR,
                                  STR_BITWISE_XOR_SIZE);
   case AST_TREE_TOKEN_OPERATOR_BITWISE_OR:
-    return setTypesOperatorInfix(tree, helper, STR_BITWISE_OR,
+    return setTypesOperatorGeneral(tree, helper, STR_BITWISE_OR,
                                  STR_BITWISE_OR_SIZE);
   case AST_TREE_TOKEN_OPERATOR_SHIFT_LEFT:
-    return setTypesOperatorInfix(tree, helper, STR_SHIFT_LEFT,
+    return setTypesOperatorGeneral(tree, helper, STR_SHIFT_LEFT,
                                  STR_SHIFT_LEFT_SIZE);
   case AST_TREE_TOKEN_OPERATOR_SHIFT_RIGHT:
-    return setTypesOperatorInfix(tree, helper, STR_SHIFT_RIGHT,
+    return setTypesOperatorGeneral(tree, helper, STR_SHIFT_RIGHT,
                                  STR_SHIFT_RIGHT_SIZE);
   case AST_TREE_TOKEN_OPERATOR_POINTER:
     return setTypesOperatorPointer(tree, helper);
@@ -5875,7 +5849,7 @@ bool setTypesOperatorAssign(AstTree *tree, AstTreeSetTypesHelper helper) {
   }
 }
 
-bool setTypesOperatorInfix(AstTree *tree, AstTreeSetTypesHelper _helper,
+bool setTypesOperatorGeneral(AstTree *tree, AstTreeSetTypesHelper _helper,
                            const char *str, size_t str_size) {
   AstTreeFunctionCall *metadata = tree->metadata;
 
@@ -5923,41 +5897,6 @@ bool setTypesOperatorInfix(AstTree *tree, AstTreeSetTypesHelper _helper,
     UNREACHABLE;
   }
 
-  return true;
-}
-
-bool setTypesOperatorUnary(AstTree *tree, AstTreeSetTypesHelper helper,
-                           const char *funcStr, size_t funcStr_size) {
-  AstTreeUnary *metadata = tree->metadata;
-  if (!setAllTypes(metadata->operand, helper, NULL, NULL)) {
-    return false;
-  }
-
-  AstTreeFunctionCallParam parameters[] = {
-      (AstTreeFunctionCallParam){
-          .nameBegin = NULL,
-          .nameEnd = NULL,
-          .value = metadata->operand,
-      },
-  };
-
-  AstTreeFunctionCall functionCall = {
-      .function = NULL,
-      .parameters = parameters,
-      .parameters_size = 1,
-  };
-
-  AstTreeVariable *variable = setTypesFindVariable(
-      funcStr, funcStr + funcStr_size, helper, &functionCall);
-  if (variable == NULL) {
-    printError(tree->str_begin, tree->str_end, "Can't find operator");
-    return false;
-  }
-
-  metadata->function = variable;
-  AstTreeTypeFunction *function = metadata->function->type->metadata;
-
-  tree->type = copyAstTree(function->returnType);
   return true;
 }
 

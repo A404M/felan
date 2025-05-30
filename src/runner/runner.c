@@ -1293,6 +1293,10 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                        bool isLeft, bool isComptime, u32 *breakCount,
                        bool *shouldContinue, bool needOwnership) {
   switch (expr->token) {
+  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
+  case AST_TREE_TOKEN_OPERATOR_BITWISE_NOT:
+  case AST_TREE_TOKEN_OPERATOR_MINUS:
+  case AST_TREE_TOKEN_OPERATOR_PLUS:
   case AST_TREE_TOKEN_OPERATOR_SUM:
   case AST_TREE_TOKEN_OPERATOR_SUB:
   case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
@@ -1529,42 +1533,6 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
         return ret;
       }
     }
-    return ret;
-  }
-  case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
-  case AST_TREE_TOKEN_OPERATOR_BITWISE_NOT:
-  case AST_TREE_TOKEN_OPERATOR_MINUS:
-  case AST_TREE_TOKEN_OPERATOR_PLUS: {
-    AstTreeUnary *metadata = expr->metadata;
-    AstTree *function =
-        runExpression(metadata->function->value, scope, shouldRet, false,
-                      isComptime, breakCount, shouldContinue, false);
-    if (discontinue(*shouldRet, *breakCount)) {
-      return function;
-    }
-
-    AstTreeFunction *fun = function->metadata;
-
-    AstTree *arguments[] = {
-        metadata->operand,
-    };
-
-    for (size_t i = 0; i < 1; ++i) {
-      AstTreeVariable *arg = fun->arguments.data[i];
-      arguments[i] =
-          getForVariable(arguments[i], scope, shouldRet, isLeft, isComptime,
-                         breakCount, shouldContinue, arg->isLazy, false);
-      if (discontinue(*shouldRet, *breakCount)) {
-        astTreeDelete(function);
-        for (size_t j = 0; j < i; ++j) {
-          astTreeDelete(arguments[j]);
-        }
-        return arguments[i];
-      }
-    }
-
-    AstTree *ret = runAstTreeFunction(function, arguments, 1, isComptime);
-    astTreeDelete(function);
     return ret;
   }
   case AST_TREE_TOKEN_TYPE_TYPE:

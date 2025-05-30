@@ -249,11 +249,6 @@ typedef struct AstTreeObject {
 
 typedef AstTree AstTreeSingleChild;
 
-typedef struct AstTreeUnary {
-  AstTree *operand;
-  AstTreeVariable *function;
-} AstTreeUnary;
-
 typedef struct AstTreePureInfix {
   AstTree *left;
   AstTree *right;
@@ -474,10 +469,8 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper,
                       AstTreeFunctionCall *functionCall);
 bool setTypesOperatorAssign(AstTree *tree, AstTreeSetTypesHelper helper);
-bool setTypesOperatorInfix(AstTree *tree, AstTreeSetTypesHelper helper,
+bool setTypesOperatorGeneral(AstTree *tree, AstTreeSetTypesHelper helper,
                            const char *str, size_t str_size);
-bool setTypesOperatorUnary(AstTree *tree, AstTreeSetTypesHelper helper,
-                           const char *funcStr, size_t funcStr_size);
 bool setTypesOperatorPointer(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorAddress(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorDereference(AstTree *tree, AstTreeSetTypesHelper helper);
