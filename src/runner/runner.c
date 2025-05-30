@@ -1293,6 +1293,24 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                        bool isLeft, bool isComptime, u32 *breakCount,
                        bool *shouldContinue, bool needOwnership) {
   switch (expr->token) {
+  case AST_TREE_TOKEN_OPERATOR_SUM:
+  case AST_TREE_TOKEN_OPERATOR_SUB:
+  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
+  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
+  case AST_TREE_TOKEN_OPERATOR_MODULO:
+  case AST_TREE_TOKEN_OPERATOR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_GREATER:
+  case AST_TREE_TOKEN_OPERATOR_SMALLER:
+  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
+  case AST_TREE_TOKEN_OPERATOR_LOGICAL_AND:
+  case AST_TREE_TOKEN_OPERATOR_LOGICAL_OR:
+  case AST_TREE_TOKEN_OPERATOR_BITWISE_AND:
+  case AST_TREE_TOKEN_OPERATOR_BITWISE_XOR:
+  case AST_TREE_TOKEN_OPERATOR_BITWISE_OR:
+  case AST_TREE_TOKEN_OPERATOR_SHIFT_LEFT:
+  case AST_TREE_TOKEN_OPERATOR_SHIFT_RIGHT:
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = expr->metadata;
     AstTree *function =
@@ -1375,7 +1393,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
     return result;
   }
   case AST_TREE_TOKEN_OPERATOR_ASSIGN: {
-    AstTreeInfix *metadata = expr->metadata;
+    AstTreePureInfix *metadata = expr->metadata;
     AstTree *l = runExpression(metadata->left, scope, shouldRet, true,
                                isComptime, breakCount, shouldContinue, false);
     if (discontinue(*shouldRet, *breakCount)) {
@@ -1546,57 +1564,6 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
     }
 
     AstTree *ret = runAstTreeFunction(function, arguments, 1, isComptime);
-    astTreeDelete(function);
-    return ret;
-  }
-  case AST_TREE_TOKEN_OPERATOR_SUM:
-  case AST_TREE_TOKEN_OPERATOR_SUB:
-  case AST_TREE_TOKEN_OPERATOR_MULTIPLY:
-  case AST_TREE_TOKEN_OPERATOR_DIVIDE:
-  case AST_TREE_TOKEN_OPERATOR_MODULO:
-  case AST_TREE_TOKEN_OPERATOR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_NOT_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_GREATER:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER:
-  case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_LOGICAL_AND:
-  case AST_TREE_TOKEN_OPERATOR_LOGICAL_OR:
-  case AST_TREE_TOKEN_OPERATOR_BITWISE_AND:
-  case AST_TREE_TOKEN_OPERATOR_BITWISE_XOR:
-  case AST_TREE_TOKEN_OPERATOR_BITWISE_OR:
-  case AST_TREE_TOKEN_OPERATOR_SHIFT_LEFT:
-  case AST_TREE_TOKEN_OPERATOR_SHIFT_RIGHT: {
-    AstTreeInfix *metadata = expr->metadata;
-    AstTree *function =
-        runExpression(metadata->functionCall->function, scope, shouldRet, false,
-                      isComptime, breakCount, shouldContinue, false);
-    if (discontinue(*shouldRet, *breakCount)) {
-      return function;
-    }
-
-    AstTreeFunction *fun = function->metadata;
-
-    AstTree *arguments[] = {
-        metadata->left,
-        metadata->right,
-    };
-
-    for (size_t i = 0; i < 2; ++i) {
-      AstTreeVariable *arg = fun->arguments.data[i];
-      arguments[i] =
-          getForVariable(arguments[i], scope, shouldRet, isLeft, isComptime,
-                         breakCount, shouldContinue, arg->isLazy, false);
-      if (discontinue(*shouldRet, *breakCount)) {
-        astTreeDelete(function);
-        for (size_t j = 0; j < i; ++j) {
-          astTreeDelete(arguments[j]);
-        }
-        return arguments[i];
-      }
-    }
-
-    AstTree *ret = runAstTreeFunction(function, arguments, 2, isComptime);
     astTreeDelete(function);
     return ret;
   }

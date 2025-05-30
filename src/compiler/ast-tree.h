@@ -254,11 +254,10 @@ typedef struct AstTreeUnary {
   AstTreeVariable *function;
 } AstTreeUnary;
 
-typedef struct AstTreeInfix {
+typedef struct AstTreePureInfix {
   AstTree *left;
   AstTree *right;
-  AstTreeFunctionCall *functionCall;
-} AstTreeInfix;
+} AstTreePureInfix;
 
 typedef struct AstTreeReturn {
   AstTree *value;
@@ -415,6 +414,8 @@ AstTree *astTreeParseKeyword(const ParserNode *parserNode, AstTreeToken token);
 AstTree *astTreeParseLoopControl(const ParserNode *parserNode,
                                  AstTreeToken token);
 AstTree *astTreeParseReturn(const ParserNode *parserNode);
+AstTree *astTreeParsePureBinaryOperator(const ParserNode *parserNode,
+                                    AstTreeToken token);
 AstTree *astTreeParseBinaryOperator(const ParserNode *parserNode,
                                     AstTreeToken token);
 AstTree *astTreeParseUnaryOperator(const ParserNode *parserNode,
@@ -475,11 +476,6 @@ bool setTypesVariable(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesOperatorAssign(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesOperatorInfix(AstTree *tree, AstTreeSetTypesHelper helper,
                            const char *str, size_t str_size);
-bool setTypesOperatorInfixWithRet(AstTree *tree, AstTree *retType,
-                                  AstTreeSetTypesHelper helper);
-bool setTypesOperatorInfixWithRetAndLooking(AstTree *tree, AstTree *lookingType,
-                                            AstTree *retType,
-                                            AstTreeSetTypesHelper helper);
 bool setTypesOperatorUnary(AstTree *tree, AstTreeSetTypesHelper helper,
                            const char *funcStr, size_t funcStr_size);
 bool setTypesOperatorPointer(AstTree *tree, AstTreeSetTypesHelper helper);
@@ -531,7 +527,7 @@ bool setTypesAstFunction(AstTreeFunction *function,
 
 bool setTypesAstVariable(AstTreeVariable *variable,
                          AstTreeSetTypesHelper helper);
-bool setTypesAstInfix(AstTreeInfix *infix, AstTreeSetTypesHelper helper);
+bool setTypesAstInfix(AstTreePureInfix *infix, AstTreeSetTypesHelper helper);
 
 AstTreeVariable *setTypesFindVariable(const char *name_begin,
                                       const char *name_end,
