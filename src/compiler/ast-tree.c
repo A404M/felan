@@ -6611,8 +6611,8 @@ bool setTypesBuiltinStackAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
                                AstTreeFunctionCall *functionCall) {
   (void)helper;
   if (functionCall->parameters_size == 2) {
-    AstTree *type = NULL;
     AstTree *count = NULL;
+    AstTree *type = NULL;
 
     static const char TYPE_STR[] = "type";
     static const size_t TYPE_STR_SIZE =
@@ -6626,10 +6626,10 @@ bool setTypesBuiltinStackAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
       const size_t param_name_size = param.nameEnd - param.nameBegin;
 
       if (param_name_size == 0) {
-        if (type == NULL) {
-          type = param.value;
-        } else if (count == NULL) {
+        if (count == NULL) {
           count = param.value;
+        } else if (type == NULL) {
+          type = param.value;
         } else {
           printError(param.value->str_begin, param.value->str_end,
                      "Bad paramter");
@@ -6673,18 +6673,18 @@ bool setTypesBuiltinStackAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
                    &AST_TREE_TYPE_TYPE, NULL, NULL);
 
     type_metadata->arguments[0] = (AstTreeTypeFunctionArgument){
-        .type = copyAstTree(type->type),
-        .name_begin = COUNT_STR,
-        .name_end = COUNT_STR + COUNT_STR_SIZE,
+        .type = copyAstTree(count->type),
+        .name_begin = TYPE_STR,
+        .name_end = TYPE_STR + TYPE_STR_SIZE,
         .str_begin = NULL,
         .str_end = NULL,
         .isComptime = false,
     };
 
     type_metadata->arguments[1] = (AstTreeTypeFunctionArgument){
-        .type = copyAstTree(count->type),
-        .name_begin = TYPE_STR,
-        .name_end = TYPE_STR + TYPE_STR_SIZE,
+        .type = copyAstTree(type->type),
+        .name_begin = COUNT_STR,
+        .name_end = COUNT_STR + COUNT_STR_SIZE,
         .str_begin = NULL,
         .str_end = NULL,
         .isComptime = false,

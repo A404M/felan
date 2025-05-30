@@ -9,14 +9,6 @@ print :: (value:**anytype)->void{
   }
 };
 
-__sum__ :: (left:*anytype,right:i64) -> (@type_of(left)) {
-  return @add(left,right);
-};
-
-__sub__ :: (left:*anytype,right:i64) -> (@type_of(left)) {
-  return @sub(left,right);
-};
-
 __get_item__ :: (left:*anytype,index:i64) -> (@type_of(left.*)) {
   return (left + index).*;
 };
@@ -30,13 +22,14 @@ __get_item_address__ :: (left:*anytype,index:i64,item:@type_of(left.*)) -> (@typ
 };
 
 main :: ()->void{
-  p := malloc(10,u64);
+  arr :array(@cast(10,u64),i64) = undefined;
+  arr.ptr = @stack_alloc(10,i64);
   i := 0;
   while i < 10 {
-    __set_item__(p,i,0);
+    __set_item__(arr.ptr,i,0);
     i += 1;
   }
-  print(__get_item__(p,1));
-  free(@cast(p,*void));
+  print(__get_item__(arr.ptr,1));
+  free(@cast(arr.ptr,*void));
 };
 

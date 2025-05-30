@@ -790,3 +790,15 @@ __shift_right__ :: (left:i64,right:i64) -> i64 {
   return @shift_right(left,right);
 };
 
+
+//---------------------- Pointers ------------------------
+
+__sum__ :: (left:*anytype,right:i64) -> (@type_of(left)) {
+  return @add(left,right);
+};
+
+__sub__ :: (left:*anytype,right:i64) -> (@type_of(left)) {
+  return @sub(left,right);
+};
+
+

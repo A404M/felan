@@ -1222,8 +1222,8 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
                       copyAstTree(function->returnType), NULL, NULL);
   }
   case AST_TREE_TOKEN_BUILTIN_STACK_ALLOC: {
-    AstTree *type = arguments[0];
-    AstTree *count = arguments[1];
+    AstTree *count = arguments[0];
+    AstTree *type = arguments[1];
 
     size_t stackAllocation_capacity =
         a404m_malloc_usable_size(scope->stackAllocation) /

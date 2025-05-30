@@ -2,7 +2,7 @@ string :: []u8;
 
 array :: (comptime size:u64, comptime t:type) -> type {
   return struct {
-    ptr : t;
-    size : i32 : size;
+    ptr : *t;
+    size : @type_of(size) : size;
   };
 };
