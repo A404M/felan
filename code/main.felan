@@ -17,23 +17,24 @@ __sub__ :: (left:*anytype,right:i64) -> (@type_of(left)) {
 };
 
 __get_item__ :: (left:*anytype,index:i64) -> (@type_of(left.*)) {
-  left += index;
-  return left.*;
+  return (left + index).*;
 };
 
 __set_item__ :: (left:*anytype,index:i64,item:@type_of(left.*)) -> (@type_of(left.*)) {
-  left += index;
-  return left.* = item;
+  return (left + index).* = item;
 };
 
 __get_item_address__ :: (left:*anytype,index:i64,item:@type_of(left.*)) -> (@type_of(left)) {
-  left += index;
-  return left;
+  return (left + index);
 };
 
 main :: ()->void{
   p := @stack_alloc(i64,10);
-  __set_item__(p,1,0);
+  i := 0;
+  while i < 10 {
+    __set_item__(p,i,0);
+    i += 1;
+  }
   print(__get_item__(p,1));
 };
 

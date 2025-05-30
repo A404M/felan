@@ -1238,7 +1238,7 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     const size_t sizeOfType = getSizeOfType(type);
     const size_t size = *(u64 *)count->metadata * sizeOfType;
     scope->stackAllocation[scope->stackAllocation_size] = a404m_malloc(size);
-    memset(scope->stackAllocation[scope->stackAllocation_size], 0, size);
+    // memset(scope->stackAllocation[scope->stackAllocation_size], 0, size);
 
     AstTreeRawValue *value = a404m_malloc(sizeof(void *));
     *(void **)value = scope->stackAllocation[scope->stackAllocation_size];
