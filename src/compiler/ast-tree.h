@@ -257,7 +257,7 @@ typedef struct AstTreeUnary {
 typedef struct AstTreeInfix {
   AstTree *left;
   AstTree *right;
-  AstTreeVariable *function;
+  AstTreeFunctionCall *functionCall;
 } AstTreeInfix;
 
 typedef struct AstTreeReturn {
@@ -353,6 +353,7 @@ void astTreeRootPrint(const AstTreeRoot *root);
 #endif
 
 void astTreeFunctionDestroy(AstTreeFunction function);
+void astTreeDeleteFunctionCall(AstTreeFunctionCall *functionCall);
 void astTreeDestroy(AstTree tree);
 void astTreeVariableDestroy(AstTreeVariable variable);
 void astTreeVariableDelete(AstTreeVariable *variable);
@@ -380,6 +381,11 @@ AstTreeFunction *copyAstTreeFunction(AstTreeFunction *function,
                                      AstTreeVariables oldVariables[],
                                      AstTreeVariables newVariables[],
                                      size_t variables_size, bool safetyCheck);
+AstTreeFunctionCall *copyAstTreeFunctionCall(AstTreeFunctionCall *functionCall,
+                                             AstTreeVariables oldVariables[],
+                                             AstTreeVariables newVariables[],
+                                             size_t variables_size,
+                                             bool safetyCheck);
 
 AstTreeRoots makeAstTree(const char *filePath
 #ifdef PRINT_STATISTICS
@@ -504,6 +510,9 @@ bool setTypesBuiltinHeapAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
                               AstTreeFunctionCall *functionCall);
 bool setTypesBuiltinUnary(AstTree *tree, AstTreeSetTypesHelper helper,
                           AstTreeFunctionCall *functionCall);
+bool setTypesBuiltinBinaryAlsoPointer(AstTree *tree,
+                                      AstTreeSetTypesHelper helper,
+                                      AstTreeFunctionCall *functionCall);
 bool setTypesBuiltinBinary(AstTree *tree, AstTreeSetTypesHelper helper,
                            AstTreeFunctionCall *functionCall);
 bool setTypesBuiltinBinaryWithRet(AstTree *tree, AstTreeSetTypesHelper helper,
@@ -528,6 +537,8 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
                                       const char *name_end,
                                       AstTreeSetTypesHelper helper,
                                       AstTreeFunctionCall *functionCall);
+AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
+                                AstTreeSetTypesHelper helper);
 
 char *u8ArrayToCString(AstTree *tree);
 

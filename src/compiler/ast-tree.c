@@ -790,6 +790,15 @@ void astTreeFunctionDestroy(AstTreeFunction function) {
   free(function.arguments.data);
 }
 
+void astTreeDeleteFunctionCall(AstTreeFunctionCall *functionCall) {
+  astTreeDelete(functionCall->function);
+  for (size_t i = 0; i < functionCall->parameters_size; ++i) {
+    astTreeDelete(functionCall->parameters[i].value);
+  }
+  free(functionCall->parameters);
+  free(functionCall);
+}
+
 void astTreeDestroy(AstTree tree) {
   if (tree.type != NULL) {
     astTreeDelete(tree.type);
@@ -949,12 +958,7 @@ void astTreeDestroy(AstTree tree) {
     return;
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = tree.metadata;
-    astTreeDelete(metadata->function);
-    for (size_t i = 0; i < metadata->parameters_size; ++i) {
-      astTreeDelete(metadata->parameters[i].value);
-    }
-    free(metadata->parameters);
-    free(metadata);
+    astTreeDeleteFunctionCall(metadata);
   }
     return;
   case AST_TREE_TOKEN_VARIABLE: {
@@ -983,6 +987,11 @@ void astTreeDestroy(AstTree tree) {
     AstTreeInfix *metadata = tree.metadata;
     astTreeDelete(metadata->left);
     astTreeDelete(metadata->right);
+    if (metadata->functionCall != NULL) {
+      astTreeDelete(metadata->functionCall->function);
+      free(metadata->functionCall->parameters);
+      free(metadata->functionCall);
+    }
     free(metadata);
   }
     return;
@@ -1392,8 +1401,31 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
     new_metadata->right =
         copyAstTreeBack(metadata->right, oldVariables, newVariables,
                         variables_size, safetyCheck);
-    new_metadata->function = copyAstTreeBackFindVariable(
-        metadata->function, oldVariables, newVariables, variables_size);
+    if (metadata->functionCall == NULL) {
+      new_metadata->functionCall = NULL;
+    } else {
+      new_metadata->functionCall =
+          a404m_malloc(sizeof(*new_metadata->functionCall));
+      new_metadata->functionCall->function =
+          copyAstTreeBack(metadata->functionCall->function, oldVariables,
+                          newVariables, variables_size, safetyCheck);
+      new_metadata->functionCall->parameters_size =
+          metadata->functionCall->parameters_size;
+      new_metadata->functionCall->parameters =
+          a404m_malloc(new_metadata->functionCall->parameters_size *
+                       sizeof(*new_metadata->functionCall->parameters));
+
+      new_metadata->functionCall->parameters[0] = (AstTreeFunctionCallParam){
+          .value = new_metadata->left,
+          .nameBegin = NULL,
+          .nameEnd = NULL,
+      };
+      new_metadata->functionCall->parameters[1] = (AstTreeFunctionCallParam){
+          .value = new_metadata->right,
+          .nameBegin = NULL,
+          .nameEnd = NULL,
+      };
+    }
     return newAstTree(tree->token, new_metadata,
                       copyAstTreeBack(tree->type, oldVariables, newVariables,
                                       variables_size, safetyCheck),
@@ -1497,22 +1529,8 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
   }
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = tree->metadata;
-    AstTreeFunctionCall *new_metadata = a404m_malloc(sizeof(*new_metadata));
-
-    new_metadata->function =
-        copyAstTreeBack(metadata->function, oldVariables, newVariables,
-                        variables_size, safetyCheck);
-
-    new_metadata->parameters_size = metadata->parameters_size;
-    new_metadata->parameters = a404m_malloc(metadata->parameters_size *
-                                            sizeof(*new_metadata->parameters));
-    for (size_t i = 0; i < metadata->parameters_size; ++i) {
-      new_metadata->parameters[i].nameBegin = metadata->parameters[i].nameBegin;
-      new_metadata->parameters[i].nameEnd = metadata->parameters[i].nameEnd;
-      new_metadata->parameters[i].value =
-          copyAstTreeBack(metadata->parameters[i].value, oldVariables,
-                          newVariables, variables_size, safetyCheck);
-    }
+    AstTreeFunctionCall *new_metadata = copyAstTreeFunctionCall(
+        metadata, oldVariables, newVariables, variables_size, safetyCheck);
     return newAstTree(tree->token, new_metadata,
                       copyAstTreeBack(tree->type, oldVariables, newVariables,
                                       variables_size, safetyCheck),
@@ -1808,6 +1826,30 @@ AstTreeFunction *copyAstTreeFunction(AstTreeFunction *metadata,
         copyAstTreeBack(metadata->scope.expressions[i], new_oldVariables,
                         new_newVariables, new_variables_size, safetyCheck);
   }
+  return new_metadata;
+}
+
+AstTreeFunctionCall *copyAstTreeFunctionCall(AstTreeFunctionCall *metadata,
+                                             AstTreeVariables oldVariables[],
+                                             AstTreeVariables newVariables[],
+                                             size_t variables_size,
+                                             bool safetyCheck) {
+  AstTreeFunctionCall *new_metadata = a404m_malloc(sizeof(*new_metadata));
+  new_metadata->function =
+      copyAstTreeBack(metadata->function, oldVariables, newVariables,
+                      variables_size, safetyCheck);
+
+  new_metadata->parameters_size = metadata->parameters_size;
+  new_metadata->parameters = a404m_malloc(metadata->parameters_size *
+                                          sizeof(*new_metadata->parameters));
+  for (size_t i = 0; i < metadata->parameters_size; ++i) {
+    new_metadata->parameters[i].nameBegin = metadata->parameters[i].nameBegin;
+    new_metadata->parameters[i].nameEnd = metadata->parameters[i].nameEnd;
+    new_metadata->parameters[i].value =
+        copyAstTreeBack(metadata->parameters[i].value, oldVariables,
+                        newVariables, variables_size, safetyCheck);
+  }
+
   return new_metadata;
 }
 
@@ -3028,7 +3070,7 @@ AstTree *astTreeParseBinaryOperator(const ParserNode *parserNode,
 
   metadata->left = left;
   metadata->right = right;
-  metadata->function = NULL;
+  metadata->functionCall = NULL;
 
   return newAstTree(token, metadata, NULL, parserNode->str_begin,
                     parserNode->str_end);
@@ -3080,7 +3122,7 @@ AstTree *astTreeParseOperateAssignOperator(const ParserNode *parserNode,
 
   metadata->left = left;
   metadata->right = right;
-  metadata->function = NULL;
+  metadata->functionCall = NULL;
 
   AstTreeInfix *assignMetadata = a404m_malloc(sizeof(*assignMetadata));
 
@@ -3090,7 +3132,7 @@ AstTree *astTreeParseOperateAssignOperator(const ParserNode *parserNode,
 
   assignMetadata->left = assignLeft;
   assignMetadata->right = assignRight;
-  assignMetadata->function = NULL;
+  assignMetadata->functionCall = NULL;
 
   return newAstTree(AST_TREE_TOKEN_OPERATOR_ASSIGN, assignMetadata, NULL,
                     parserNode->str_begin, parserNode->str_end);
@@ -3653,6 +3695,8 @@ bool hasAnyTypeInside(AstTree *type) {
     AstTreeBracket *metadata = type->metadata;
     return hasAnyTypeInside(metadata->operand);
   }
+  case AST_TREE_TOKEN_VARIABLE:
+    return false;
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
   case AST_TREE_TOKEN_KEYWORD_BREAK:
@@ -3662,7 +3706,6 @@ bool hasAnyTypeInside(AstTree *type) {
   case AST_TREE_TOKEN_KEYWORD_COMPTIME:
   case AST_TREE_TOKEN_KEYWORD_STRUCT:
   case AST_TREE_TOKEN_FUNCTION_CALL:
-  case AST_TREE_TOKEN_VARIABLE:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER:
   case AST_TREE_TOKEN_VALUE_C_LIBRARY:
@@ -3699,6 +3742,7 @@ bool hasAnyTypeInside(AstTree *type) {
   case AST_TREE_TOKEN_SCOPE:
   case AST_TREE_TOKEN_NONE:
   }
+  printLog("Bad token %s", AST_TREE_TOKEN_STRINGS[type->token]);
   UNREACHABLE;
 }
 
@@ -3844,7 +3888,7 @@ bool isConst(AstTree *tree) {
   case AST_TREE_TOKEN_OPERATOR_SHIFT_LEFT:
   case AST_TREE_TOKEN_OPERATOR_SHIFT_RIGHT: {
     AstTreeInfix *metadata = tree->metadata;
-    return metadata->function->isConst && isConst(metadata->function->value) &&
+    return isConst(metadata->functionCall->function) &&
            isConst(metadata->left) && isConst(metadata->right);
   }
   case AST_TREE_TOKEN_VARIABLE: {
@@ -3998,7 +4042,8 @@ AstTree *makeTypeOf(AstTree *value) {
   case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
   case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL: {
     AstTreeInfix *metadata = value->metadata;
-    AstTreeTypeFunction *function = metadata->function->type->metadata;
+    AstTreeTypeFunction *function =
+        metadata->functionCall->function->type->metadata;
     return copyAstTree(function->returnType);
   }
   case AST_TREE_TOKEN_OPERATOR_ACCESS: {
@@ -5183,6 +5228,7 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
     return setTypesBuiltinUnary(tree, helper, functionCall);
   case AST_TREE_TOKEN_BUILTIN_ADD:
   case AST_TREE_TOKEN_BUILTIN_SUB:
+    return setTypesBuiltinBinaryAlsoPointer(tree, helper, functionCall);
   case AST_TREE_TOKEN_BUILTIN_MUL:
   case AST_TREE_TOKEN_BUILTIN_DIV:
   case AST_TREE_TOKEN_BUILTIN_MOD:
@@ -5700,193 +5746,13 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
     tree->type = copyAstTree(function->returnType);
   } else if (metadata->function->type->token ==
              AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER) {
-    if (!isConst(metadata->function)) {
-      printError(metadata->function->str_begin, metadata->function->str_end,
-                 "Shape Shifters must be constant");
-      return false;
-    } else if (metadata->function->token != AST_TREE_TOKEN_VARIABLE) {
-      printError(metadata->function->str_begin, metadata->function->str_end,
-                 "Shape Shifters must be constant variable but got %s",
-                 AST_TREE_TOKEN_STRINGS[metadata->function->token]);
+    AstTree *function = getShapeShifterElement(metadata, helper);
+    if (function == NULL) {
       return false;
     }
-    AstTreeVariable *variable = metadata->function->metadata;
-    AstTreeShapeShifter *shapeShifter = variable->value->metadata;
-
-    AstTreeFunction *newFunction =
-        copyAstTreeFunction(shapeShifter->function, NULL, NULL, 0, true);
-
-    AstTreeFunctionCallParam initedArguments[newFunction->arguments.size];
-    size_t initedArguments_size = newFunction->arguments.size;
-
-    for (size_t i = 0; i < initedArguments_size; ++i) {
-      initedArguments[i].value = NULL;
-    }
-
-    for (size_t i = 0; i < metadata->parameters_size; ++i) {
-      AstTreeFunctionCallParam param = metadata->parameters[i];
-      if (param.nameBegin != param.nameEnd) {
-        const size_t param_name_size = param.nameEnd - param.nameBegin;
-        for (size_t j = 0; j < newFunction->arguments.size; ++j) {
-          AstTreeVariable *arg = newFunction->arguments.data[j];
-          if ((size_t)(arg->name_end - arg->name_begin) == param_name_size &&
-              strnEquals(arg->name_begin, param.nameBegin, param_name_size)) {
-            if (arg->isConst) {
-              arg->value = getValue(param.value, true);
-            }
-            if (hasAnyTypeInside(arg->type)) {
-              astTreeDelete(arg->type);
-              arg->type = copyAstTree(param.value->type);
-            }
-            initedArguments[j] = param;
-            goto END_OF_NAMED_FOR1;
-          }
-        }
-        printError(param.value->str_begin, param.value->str_end,
-                   "Argument not found");
-        return false;
-      }
-    END_OF_NAMED_FOR1:
-    }
-
-    for (size_t i = 0; i < metadata->parameters_size; ++i) {
-      AstTreeFunctionCallParam param = metadata->parameters[i];
-      if (param.nameBegin == param.nameEnd) {
-        for (size_t j = 0; j < newFunction->arguments.size; ++j) {
-          AstTreeVariable *arg = newFunction->arguments.data[j];
-          if (initedArguments[j].value == NULL) {
-            if (arg->isConst) {
-              arg->value = getValue(param.value, true);
-            }
-            if (hasAnyTypeInside(arg->type)) {
-              astTreeDelete(arg->type);
-              arg->type = copyAstTree(param.value->type);
-            }
-            initedArguments[j] = param;
-            goto END_OF_UNNAMED_FOR1;
-          }
-        }
-        printError(param.value->str_begin, param.value->str_end,
-                   "Too many arguments");
-        return false;
-      }
-    END_OF_UNNAMED_FOR1:
-    }
-
-    for (size_t i = 0; i < newFunction->arguments.size; ++i) {
-      AstTreeVariable *arg = newFunction->arguments.data[i];
-      if (initedArguments[i].value == NULL) {
-        printError(arg->name_begin, arg->name_end,
-                   "Argument is not initialized");
-        return false;
-      }
-    }
-
-    for (size_t i = 0; i < initedArguments_size; ++i) {
-      metadata->parameters[i] = initedArguments[i];
-    }
-
-    bool found = false;
-    size_t element_index;
-
-    for (size_t i = 0; i < shapeShifter->generateds.size; ++i) {
-      AstTreeFunctionCall *call = shapeShifter->generateds.calls[i];
-      if (metadata->parameters_size != call->parameters_size)
-        continue;
-
-      for (size_t i = 0; i < metadata->parameters_size; ++i) {
-        AstTreeFunctionCallParam p0 = metadata->parameters[i];
-        AstTreeFunctionCallParam p1 = call->parameters[i];
-        if (!typeIsEqual(p0.value->type, p1.value->type)) {
-          goto SEARCH_LOOP_CONTINUE;
-        }
-        if (shapeShifter->function->arguments.data[i]->isConst) {
-          AstTree *v0 = getValue(p0.value, true);
-          AstTree *v1 = getValue(p1.value, true);
-
-          bool res = isEqual(v0, v1);
-
-          astTreeDelete(v0);
-          astTreeDelete(v1);
-
-          if (!res) {
-            goto SEARCH_LOOP_CONTINUE;
-          }
-        }
-      }
-      element_index = i;
-      astTreeFunctionDestroy(*newFunction);
-      free(newFunction);
-      found = true;
-      break;
-    SEARCH_LOOP_CONTINUE:
-    }
-
-    if (!found) {
-      AstTreeVariable
-          *variables[helper.variables.size + newFunction->arguments.size];
-
-      for (size_t i = 0; i < helper.variables.size; ++i) {
-        variables[i] = helper.variables.data[i];
-      }
-
-      for (size_t i = 0; i < newFunction->arguments.size; ++i) {
-        variables[helper.variables.size + i] = newFunction->arguments.data[i];
-      }
-
-      AstTreeSetTypesHelper newHelper = {
-          .root = helper.root,
-          .variables.data = variables,
-          .variables.size = helper.variables.size,
-          .lookingType = NULL,
-          .dependencies = helper.dependencies,
-          .loops = helper.loops,
-          .loops_size = helper.loops_size,
-      };
-
-      for (size_t i = 0; i < newFunction->arguments.size; ++i) {
-        AstTreeVariable *var = newFunction->arguments.data[i];
-        if (!setTypesAstVariable(var, newHelper)) {
-          return false;
-        }
-        newHelper.variables.size += 1;
-      }
-
-      if (!setTypesAstFunction(newFunction, helper)) {
-        return false;
-      }
-
-      size_t generateds_size =
-          a404m_malloc_usable_size(shapeShifter->generateds.functions) /
-          sizeof(*shapeShifter->generateds.functions);
-      if (generateds_size == shapeShifter->generateds.size) {
-        generateds_size += generateds_size / 2 + 1;
-        shapeShifter->generateds.functions = a404m_realloc(
-            shapeShifter->generateds.functions,
-            generateds_size * sizeof(*shapeShifter->generateds.functions));
-        shapeShifter->generateds.calls = a404m_realloc(
-            shapeShifter->generateds.calls,
-            generateds_size * sizeof(*shapeShifter->generateds.calls));
-      }
-      shapeShifter->generateds.functions[shapeShifter->generateds.size] =
-          newFunction;
-      shapeShifter->generateds.calls[shapeShifter->generateds.size] = metadata;
-
-      element_index = shapeShifter->generateds.size;
-      shapeShifter->generateds.size += 1;
-    }
-
-    AstTreeShapeShifterElement *element = a404m_malloc(sizeof(*element));
-    element->shapeShifter = metadata->function;
-    element->index = element_index;
-    metadata->function =
-        newAstTree(AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT, element, NULL,
-                   metadata->function->str_begin, metadata->function->str_end);
-    metadata->function->type = makeTypeOf(metadata->function);
-
-    AstTreeTypeFunction *function = metadata->function->type->metadata;
-
-    tree->type = copyAstTree(function->returnType);
+    metadata->function = function;
+    AstTreeTypeFunction *functionType = function->type->metadata;
+    tree->type = copyAstTree(functionType->returnType);
   } else if (metadata->function->type->token ==
              AST_TREE_TOKEN_TYPE_C_FUNCTION) {
     AstTreeCFunctionType *cFunction = metadata->function->type->metadata;
@@ -6018,36 +5884,54 @@ bool setTypesOperatorInfix(AstTree *tree, AstTreeSetTypesHelper _helper,
     return false;
   }
 
-  AstTreeFunctionCallParam parameters[] = {
-      (AstTreeFunctionCallParam){
-          .nameBegin = NULL,
-          .nameEnd = NULL,
-          .value = metadata->left,
-      },
-      (AstTreeFunctionCallParam){
-          .nameBegin = NULL,
-          .nameEnd = NULL,
-          .value = metadata->right,
-      },
-  };
-
-  AstTreeFunctionCall functionCall = {
+  AstTreeFunctionCall *functionCall = a404m_malloc(sizeof(*functionCall));
+  *functionCall = (AstTreeFunctionCall){
       .function = NULL,
-      .parameters = parameters,
+      .parameters = a404m_malloc(2 * sizeof(*functionCall->parameters)),
       .parameters_size = 2,
   };
+  functionCall->parameters[0] = (AstTreeFunctionCallParam){
+      .nameBegin = NULL,
+      .nameEnd = NULL,
+      .value = metadata->left,
+  };
+  functionCall->parameters[1] = (AstTreeFunctionCallParam){
+      .nameBegin = NULL,
+      .nameEnd = NULL,
+      .value = metadata->right,
+  };
+
+  metadata->functionCall = functionCall;
 
   AstTreeVariable *variable =
-      setTypesFindVariable(str, str + str_size, helper, &functionCall);
+      setTypesFindVariable(str, str + str_size, helper, functionCall);
   if (variable == NULL) {
     printError(tree->str_begin, tree->str_end, "Can't find operator");
     return false;
+  } else if (!variable->isConst) {
+    printError(tree->str_begin, tree->str_end,
+               "Overloaded operator must be constant");
+    return false;
   }
 
-  metadata->function = variable;
-  AstTreeTypeFunction *function = metadata->function->type->metadata;
+  functionCall->function = newAstTree(AST_TREE_TOKEN_VARIABLE, variable,
+                                      copyAstTree(variable->type), NULL, NULL);
+  if (functionCall->function->type->token == AST_TREE_TOKEN_TYPE_FUNCTION) {
+    AstTreeTypeFunction *function = functionCall->function->type->metadata;
+    tree->type = copyAstTree(function->returnType);
+  } else if (functionCall->function->type->token ==
+             AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER) {
+    AstTree *function = getShapeShifterElement(functionCall, helper);
+    if (function == NULL) {
+      return NULL;
+    }
+    functionCall->function = function;
+    AstTreeTypeFunction *functionType = functionCall->function->type->metadata;
+    tree->type = copyAstTree(functionType->returnType);
+  } else {
+    UNREACHABLE;
+  }
 
-  tree->type = copyAstTree(function->returnType);
   return true;
 }
 
@@ -7034,6 +6918,96 @@ AFTER_SWITCH:
   return true;
 }
 
+bool setTypesBuiltinBinaryAlsoPointer(AstTree *tree,
+                                      AstTreeSetTypesHelper helper,
+                                      AstTreeFunctionCall *functionCall) {
+  (void)helper;
+  if (functionCall->parameters_size != 2) {
+    printError(tree->str_begin, tree->str_end, "Too many or too few arguments");
+    return false;
+  }
+  AstTree *left = NULL;
+  AstTree *right = NULL;
+
+  static char LEFT_STR[] = "left";
+  static const size_t LEFT_STR_SIZE =
+      sizeof(LEFT_STR) / sizeof(*LEFT_STR) - sizeof(*LEFT_STR);
+  static char RIGHT_STR[] = "right";
+  static const size_t RIGHT_STR_SIZE =
+      sizeof(RIGHT_STR) / sizeof(*RIGHT_STR) - sizeof(*RIGHT_STR);
+
+  for (size_t i = 0; i < functionCall->parameters_size; ++i) {
+    AstTreeFunctionCallParam param = functionCall->parameters[i];
+    const size_t param_name_size = param.nameEnd - param.nameBegin;
+
+    if (param_name_size == 0) {
+      if (left == NULL) {
+        left = param.value;
+      } else if (right == NULL) {
+        right = param.value;
+      } else {
+        printError(param.value->str_begin, param.value->str_end,
+                   "Bad paramter");
+        return false;
+      }
+    } else if (param_name_size == LEFT_STR_SIZE &&
+               strnEquals(param.nameBegin, LEFT_STR, LEFT_STR_SIZE) &&
+               left == NULL) {
+      left = param.value;
+    } else if (param_name_size == RIGHT_STR_SIZE &&
+               strnEquals(param.nameBegin, RIGHT_STR, RIGHT_STR_SIZE) &&
+               right == NULL) {
+      right = param.value;
+    } else {
+      printError(param.value->str_begin, param.value->str_end, "Bad paramter");
+      return false;
+    }
+  }
+
+  if (left == NULL || right == NULL) {
+    return false;
+  } else if (left->type->token != AST_TREE_TOKEN_OPERATOR_POINTER &&
+             !typeIsEqual(left->type, right->type)) {
+    printError(tree->str_begin, tree->str_end, "Type mismatch");
+    return false;
+  } else if (left->type->token == AST_TREE_TOKEN_OPERATOR_POINTER &&
+             !typeIsEqual(right->type, &AST_TREE_I64_TYPE) &&
+             !typeIsEqual(right->type, &AST_TREE_U64_TYPE)) {
+    printError(tree->str_begin, tree->str_end,
+               "Pointer can only have right hand as u64 or i64");
+    return false;
+  }
+
+  AstTreeTypeFunction *type_metadata = a404m_malloc(sizeof(*type_metadata));
+  type_metadata->arguments_size = 2;
+  type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
+                                          sizeof(*type_metadata->arguments));
+
+  type_metadata->returnType = copyAstTree(left->type);
+
+  type_metadata->arguments[0] = (AstTreeTypeFunctionArgument){
+      .type = copyAstTree(left->type),
+      .name_begin = LEFT_STR,
+      .name_end = LEFT_STR + LEFT_STR_SIZE,
+      .str_begin = NULL,
+      .str_end = NULL,
+      .isComptime = false,
+  };
+
+  type_metadata->arguments[1] = (AstTreeTypeFunctionArgument){
+      .type = copyAstTree(right->type),
+      .name_begin = RIGHT_STR,
+      .name_end = RIGHT_STR + RIGHT_STR_SIZE,
+      .str_begin = NULL,
+      .str_end = NULL,
+      .isComptime = false,
+  };
+
+  tree->type = newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, type_metadata,
+                          &AST_TREE_TYPE_TYPE, NULL, NULL);
+  return true;
+}
+
 bool setTypesBuiltinBinary(AstTree *tree, AstTreeSetTypesHelper helper,
                            AstTreeFunctionCall *functionCall) {
   (void)helper;
@@ -7103,7 +7077,7 @@ bool setTypesBuiltinBinary(AstTree *tree, AstTreeSetTypesHelper helper,
   };
 
   type_metadata->arguments[1] = (AstTreeTypeFunctionArgument){
-      .type = copyAstTree(left->type),
+      .type = copyAstTree(right->type),
       .name_begin = RIGHT_STR,
       .name_end = RIGHT_STR + RIGHT_STR_SIZE,
       .str_begin = NULL,
@@ -7581,6 +7555,10 @@ bool setTypesAstFunction(AstTreeFunction *metadata,
     return false;
   }
 
+  if (isConst(metadata->returnType)) {
+    metadata->returnType = getValue(metadata->returnType, false);
+  }
+
   for (size_t i = 0; i < helper.dependencies.size; ++i) {
     deps[deps_size] = helper.dependencies.data[i];
     deps_size += 1;
@@ -7921,6 +7899,193 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
   }
 
   return variable;
+}
+
+AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
+                                AstTreeSetTypesHelper helper) {
+  if (!isConst(metadata->function)) {
+    printError(metadata->function->str_begin, metadata->function->str_end,
+               "Shape Shifters must be constant");
+    return NULL;
+  } else if (metadata->function->token != AST_TREE_TOKEN_VARIABLE) {
+    printError(metadata->function->str_begin, metadata->function->str_end,
+               "Shape Shifters must be constant variable but got %s",
+               AST_TREE_TOKEN_STRINGS[metadata->function->token]);
+    return NULL;
+  }
+  AstTreeVariable *variable = metadata->function->metadata;
+  AstTreeShapeShifter *shapeShifter = variable->value->metadata;
+
+  AstTreeFunction *newFunction =
+      copyAstTreeFunction(shapeShifter->function, NULL, NULL, 0, true);
+
+  AstTreeFunctionCallParam initedArguments[newFunction->arguments.size];
+  size_t initedArguments_size = newFunction->arguments.size;
+
+  for (size_t i = 0; i < initedArguments_size; ++i) {
+    initedArguments[i].value = NULL;
+  }
+
+  for (size_t i = 0; i < metadata->parameters_size; ++i) {
+    AstTreeFunctionCallParam param = metadata->parameters[i];
+    if (param.nameBegin != param.nameEnd) {
+      const size_t param_name_size = param.nameEnd - param.nameBegin;
+      for (size_t j = 0; j < newFunction->arguments.size; ++j) {
+        AstTreeVariable *arg = newFunction->arguments.data[j];
+        if ((size_t)(arg->name_end - arg->name_begin) == param_name_size &&
+            strnEquals(arg->name_begin, param.nameBegin, param_name_size)) {
+          if (arg->isConst) {
+            arg->value = getValue(param.value, true);
+          }
+          if (hasAnyTypeInside(arg->type)) {
+            astTreeDelete(arg->type);
+            arg->type = copyAstTree(param.value->type);
+          }
+          initedArguments[j] = param;
+          goto END_OF_NAMED_FOR1;
+        }
+      }
+      printError(param.value->str_begin, param.value->str_end,
+                 "Argument not found");
+      return NULL;
+    }
+  END_OF_NAMED_FOR1:
+  }
+
+  for (size_t i = 0; i < metadata->parameters_size; ++i) {
+    AstTreeFunctionCallParam param = metadata->parameters[i];
+    if (param.nameBegin == param.nameEnd) {
+      for (size_t j = 0; j < newFunction->arguments.size; ++j) {
+        AstTreeVariable *arg = newFunction->arguments.data[j];
+        if (initedArguments[j].value == NULL) {
+          if (arg->isConst) {
+            arg->value = getValue(param.value, true);
+          }
+          if (hasAnyTypeInside(arg->type)) {
+            astTreeDelete(arg->type);
+            arg->type = copyAstTree(param.value->type);
+          }
+          initedArguments[j] = param;
+          goto END_OF_UNNAMED_FOR1;
+        }
+      }
+      printError(param.value->str_begin, param.value->str_end,
+                 "Too many arguments");
+      return NULL;
+    }
+  END_OF_UNNAMED_FOR1:
+  }
+
+  for (size_t i = 0; i < newFunction->arguments.size; ++i) {
+    AstTreeVariable *arg = newFunction->arguments.data[i];
+    if (initedArguments[i].value == NULL) {
+      printError(arg->name_begin, arg->name_end, "Argument is not initialized");
+      return NULL;
+    }
+  }
+
+  for (size_t i = 0; i < initedArguments_size; ++i) {
+    metadata->parameters[i] = initedArguments[i];
+  }
+
+  bool found = false;
+  size_t element_index;
+
+  for (size_t i = 0; i < shapeShifter->generateds.size; ++i) {
+    AstTreeFunctionCall *call = shapeShifter->generateds.calls[i];
+    if (metadata->parameters_size != call->parameters_size)
+      continue;
+
+    for (size_t i = 0; i < metadata->parameters_size; ++i) {
+      AstTreeFunctionCallParam p0 = metadata->parameters[i];
+      AstTreeFunctionCallParam p1 = call->parameters[i];
+      if (!typeIsEqual(p0.value->type, p1.value->type)) {
+        goto SEARCH_LOOP_CONTINUE;
+      }
+      if (shapeShifter->function->arguments.data[i]->isConst) {
+        AstTree *v0 = getValue(p0.value, true);
+        AstTree *v1 = getValue(p1.value, true);
+
+        bool res = isEqual(v0, v1);
+
+        astTreeDelete(v0);
+        astTreeDelete(v1);
+
+        if (!res) {
+          goto SEARCH_LOOP_CONTINUE;
+        }
+      }
+    }
+    element_index = i;
+    astTreeFunctionDestroy(*newFunction);
+    free(newFunction);
+    found = true;
+    break;
+  SEARCH_LOOP_CONTINUE:
+  }
+
+  if (!found) {
+    AstTreeVariable
+        *variables[helper.variables.size + newFunction->arguments.size];
+
+    for (size_t i = 0; i < helper.variables.size; ++i) {
+      variables[i] = helper.variables.data[i];
+    }
+
+    for (size_t i = 0; i < newFunction->arguments.size; ++i) {
+      variables[helper.variables.size + i] = newFunction->arguments.data[i];
+    }
+
+    AstTreeSetTypesHelper newHelper = {
+        .root = helper.root,
+        .variables.data = variables,
+        .variables.size = helper.variables.size,
+        .lookingType = NULL,
+        .dependencies = helper.dependencies,
+        .loops = helper.loops,
+        .loops_size = helper.loops_size,
+    };
+
+    for (size_t i = 0; i < newFunction->arguments.size; ++i) {
+      AstTreeVariable *var = newFunction->arguments.data[i];
+      if (!setTypesAstVariable(var, newHelper)) {
+        return NULL;
+      }
+      newHelper.variables.size += 1;
+    }
+
+    if (!setTypesAstFunction(newFunction, helper)) {
+      return NULL;
+    }
+
+    size_t generateds_size =
+        a404m_malloc_usable_size(shapeShifter->generateds.functions) /
+        sizeof(*shapeShifter->generateds.functions);
+    if (generateds_size == shapeShifter->generateds.size) {
+      generateds_size += generateds_size / 2 + 1;
+      shapeShifter->generateds.functions = a404m_realloc(
+          shapeShifter->generateds.functions,
+          generateds_size * sizeof(*shapeShifter->generateds.functions));
+      shapeShifter->generateds.calls = a404m_realloc(
+          shapeShifter->generateds.calls,
+          generateds_size * sizeof(*shapeShifter->generateds.calls));
+    }
+    shapeShifter->generateds.functions[shapeShifter->generateds.size] =
+        newFunction;
+    shapeShifter->generateds.calls[shapeShifter->generateds.size] = metadata;
+
+    element_index = shapeShifter->generateds.size;
+    shapeShifter->generateds.size += 1;
+  }
+
+  AstTreeShapeShifterElement *element = a404m_malloc(sizeof(*element));
+  element->shapeShifter = metadata->function;
+  element->index = element_index;
+  metadata->function =
+      newAstTree(AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT, element, NULL,
+                 metadata->function->str_begin, metadata->function->str_end);
+  metadata->function->type = makeTypeOf(metadata->function);
+  return metadata->function;
 }
 
 char *u8ArrayToCString(AstTree *tree) {

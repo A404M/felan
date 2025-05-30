@@ -334,6 +334,23 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     case AST_TREE_TOKEN_TYPE_F128:
       *(f128 *)ret = *(f128 *)left->metadata + *(f128 *)right->metadata;
       break;
+    case AST_TREE_TOKEN_OPERATOR_POINTER:
+      if (typeIsEqual(right->type, &AST_TREE_I64_TYPE)) {
+        *(u8 **)ret =
+            *(u8 **)left->metadata +
+            *(i64 *)right->metadata *
+                getSizeOfType((AstTreeSingleChild *)left->type->metadata);
+        break;
+      } else if (typeIsEqual(right->type, &AST_TREE_U64_TYPE)) {
+        *(u8 **)ret =
+            *(u8 **)left->metadata +
+            *(u64 *)right->metadata *
+                getSizeOfType((AstTreeSingleChild *)left->type->metadata);
+        break;
+      } else {
+        printLog("%s", AST_TREE_TOKEN_STRINGS[right->type->token]);
+        UNREACHABLE;
+      }
     default:
       UNREACHABLE;
     }
@@ -384,6 +401,23 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     case AST_TREE_TOKEN_TYPE_F128:
       *(f128 *)ret = *(f128 *)left->metadata - *(f128 *)right->metadata;
       break;
+    case AST_TREE_TOKEN_OPERATOR_POINTER:
+      if (typeIsEqual(right->type, &AST_TREE_I64_TYPE)) {
+        *(u8 **)ret =
+            *(u8 **)left->metadata -
+            *(i64 *)right->metadata *
+                getSizeOfType((AstTreeSingleChild *)left->type->metadata);
+        break;
+      } else if (typeIsEqual(right->type, &AST_TREE_U64_TYPE)) {
+        *(u8 **)ret =
+            *(u8 **)left->metadata -
+            *(u64 *)right->metadata *
+                getSizeOfType((AstTreeSingleChild *)left->type->metadata);
+        break;
+      } else {
+        printLog("%s", AST_TREE_TOKEN_STRINGS[right->type->token]);
+        UNREACHABLE;
+      }
     default:
       UNREACHABLE;
     }
@@ -1535,7 +1569,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
   case AST_TREE_TOKEN_OPERATOR_SHIFT_RIGHT: {
     AstTreeInfix *metadata = expr->metadata;
     AstTree *function =
-        runExpression(metadata->function->value, scope, shouldRet, false,
+        runExpression(metadata->functionCall->function, scope, shouldRet, false,
                       isComptime, breakCount, shouldContinue, false);
     if (discontinue(*shouldRet, *breakCount)) {
       return function;
