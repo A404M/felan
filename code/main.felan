@@ -1,4 +1,5 @@
 @import("basic.felan");
+@import("lib/memory.felan");
 
 print :: (value:**anytype)->void{
   if comptime @type_of(value.*) == u8 {
@@ -29,12 +30,13 @@ __get_item_address__ :: (left:*anytype,index:i64,item:@type_of(left.*)) -> (@typ
 };
 
 main :: ()->void{
-  p := @stack_alloc(i64,10);
+  p := malloc(10,u64);
   i := 0;
   while i < 10 {
     __set_item__(p,i,0);
     i += 1;
   }
   print(__get_item__(p,1));
+  free(@cast(p,*void));
 };
 

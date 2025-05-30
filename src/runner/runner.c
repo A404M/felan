@@ -2409,6 +2409,7 @@ AstTree *castTo(AstTree *tree, AstTree *to) {
   case AST_TREE_TOKEN_TYPE_C_LIBRARY:
   case AST_TREE_TOKEN_TYPE_C_FUNCTION:
   }
+  printLog("%s", AST_TREE_TOKEN_STRINGS[tree->token]);
   UNREACHABLE;
 }
 

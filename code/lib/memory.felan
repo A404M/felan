@@ -1,0 +1,7 @@
+libc :: @c_library("/usr/lib/libc.so.6");
+malloc :: @c_function(libc,"malloc",(i64)->(*void));
+free :: @c_function(libc,"free",(*void)->void);
+
+malloc :: (size:i64,comptime t:type) -> (*t) {
+  return @cast(malloc(size*@cast(@size_of(t),i64)),*t);
+};
