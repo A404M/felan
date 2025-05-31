@@ -801,4 +801,15 @@ __sub__ :: (left:*anytype,right:i64) -> (@type_of(left)) {
   return @sub(left,right);
 };
 
+__get_item__ :: (left:*anytype,index:i64) -> (@type_of(left.*)) {
+  return (left + index).*;
+};
+
+__set_item__ :: (left:*anytype,index:i64,item:@type_of(left.*)) -> (@type_of(left.*)) {
+  return (left + index).* = item;
+};
+
+__get_item_address__ :: (left:*anytype,index:i64) -> (@type_of(left)) {
+  return (left + index);
+};
 

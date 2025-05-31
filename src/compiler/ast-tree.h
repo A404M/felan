@@ -88,7 +88,6 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_VALUE_BOOL,
   AST_TREE_TOKEN_VALUE_OBJECT,
   AST_TREE_TOKEN_RAW_VALUE,
-  AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED,
 
   AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT,
 
@@ -422,6 +421,7 @@ AstTree *astTreeParseUnaryOperator(const ParserNode *parserNode,
                                    AstTreeToken token);
 AstTree *astTreeParseUnaryOperatorSingleChild(const ParserNode *parserNode,
                                               AstTreeToken token);
+AstTree *astTreeParseAddressOperator(const ParserNode *parserNode);
 AstTree *astTreeParseOperateAssignOperator(const ParserNode *parserNode,
                                            AstTreeToken token);
 bool astTreeParseConstant(const ParserNode *parserNode,

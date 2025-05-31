@@ -262,7 +262,6 @@ const char *AST_TREE_TOKEN_STRINGS[] = {
     "AST_TREE_TOKEN_VALUE_BOOL",
     "AST_TREE_TOKEN_VALUE_OBJECT",
     "AST_TREE_TOKEN_RAW_VALUE",
-    "AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED",
 
     "AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT",
 
@@ -404,7 +403,6 @@ void astTreePrint(const AstTree *tree, int indent) {
   case AST_TREE_TOKEN_VALUE_NULL:
   case AST_TREE_TOKEN_VALUE_UNDEFINED:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
-  case AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED:
     goto RETURN_SUCCESS;
   case AST_TREE_TOKEN_TYPE_C_FUNCTION:
     NOT_IMPLEMENTED;
@@ -863,7 +861,6 @@ void astTreeDestroy(AstTree tree) {
   case AST_TREE_TOKEN_VALUE_UNDEFINED:
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
-  case AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED:
     return;
   case AST_TREE_TOKEN_KEYWORD_BREAK:
   case AST_TREE_TOKEN_KEYWORD_CONTINUE: {
@@ -1310,14 +1307,6 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
         copyAstTreeVariables(metadata->variables, oldVariables, newVariables,
                              variables_size, safetyCheck);
 
-    return newAstTree(tree->token, newMetadata,
-                      copyAstTreeBack(tree->type, oldVariables, newVariables,
-                                      variables_size, safetyCheck),
-                      tree->str_begin, tree->str_end);
-  }
-  case AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED: {
-    AstTreeRawValue *metadata = tree->metadata;
-    AstTreeRawValue *newMetadata = metadata;
     return newAstTree(tree->token, newMetadata,
                       copyAstTreeBack(tree->type, oldVariables, newVariables,
                                       variables_size, safetyCheck),
@@ -2569,8 +2558,7 @@ AstTree *astTreeParse(const ParserNode *parserNode) {
     return astTreeParseUnaryOperatorSingleChild(
         parserNode, AST_TREE_TOKEN_OPERATOR_POINTER);
   case PARSER_TOKEN_OPERATOR_ADDRESS:
-    return astTreeParseUnaryOperatorSingleChild(
-        parserNode, AST_TREE_TOKEN_OPERATOR_ADDRESS);
+    return astTreeParseAddressOperator(parserNode);
   case PARSER_TOKEN_OPERATOR_DEREFERENCE:
     return astTreeParseUnaryOperatorSingleChild(
         parserNode, AST_TREE_TOKEN_OPERATOR_DEREFERENCE);
@@ -3193,6 +3181,23 @@ AstTree *astTreeParseUnaryOperatorSingleChild(const ParserNode *parserNode,
 
   return newAstTree(token, metadata, NULL, parserNode->str_begin,
                     parserNode->str_end);
+}
+
+AstTree *astTreeParseAddressOperator(const ParserNode *parserNode) {
+  ParserNodeSingleChildMetadata *node_metadata = parserNode->metadata;
+
+  AstTreeSingleChild *metadata = astTreeParse(node_metadata);
+  if (metadata == NULL) {
+    return NULL;
+  }
+
+  if (metadata->token == AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS) {
+    metadata->token = AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS_ADDRESS;
+    return metadata;
+  }
+
+  return newAstTree(AST_TREE_TOKEN_OPERATOR_ADDRESS, metadata, NULL,
+                    parserNode->str_begin, parserNode->str_end);
 }
 
 AstTree *astTreeParseOperateAssignOperator(const ParserNode *parserNode,
@@ -3853,7 +3858,6 @@ bool hasAnyTypeInside(AstTree *type) {
   case AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER:
   case AST_TREE_TOKEN_VALUE_C_LIBRARY:
   case AST_TREE_TOKEN_VALUE_C_FUNCTION:
-  case AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED:
   case AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_PLUS:
@@ -3957,7 +3961,6 @@ bool isConst(AstTree *tree) {
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VALUE_OBJECT:
   case AST_TREE_TOKEN_RAW_VALUE:
-  case AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED:
   case AST_TREE_TOKEN_KEYWORD_COMPTIME:
   case AST_TREE_TOKEN_SCOPE:
     return true;
@@ -4254,7 +4257,6 @@ AstTree *makeTypeOf(AstTree *value) {
   case AST_TREE_TOKEN_VALUE_C_LIBRARY:
   case AST_TREE_TOKEN_VALUE_C_FUNCTION:
   case AST_TREE_TOKEN_RAW_VALUE:
-  case AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED:
   case AST_TREE_TOKEN_NONE:
   }
   UNREACHABLE;
@@ -4351,7 +4353,6 @@ bool typeIsEqualBack(const AstTree *type0, const AstTree *type1) {
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VALUE_OBJECT:
   case AST_TREE_TOKEN_RAW_VALUE:
-  case AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_SUM:
@@ -4565,7 +4566,6 @@ AstTree *getValue(AstTree *tree, bool copy) {
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VALUE_OBJECT:
   case AST_TREE_TOKEN_RAW_VALUE:
-  case AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED:
   case AST_TREE_TOKEN_VARIABLE:
   case AST_TREE_TOKEN_FUNCTION_CALL:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
@@ -4736,7 +4736,6 @@ bool isIntType(AstTree *type) {
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VALUE_OBJECT:
   case AST_TREE_TOKEN_RAW_VALUE:
-  case AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_PLUS:
   case AST_TREE_TOKEN_OPERATOR_MINUS:
@@ -4854,7 +4853,6 @@ bool isFloatType(AstTree *type) {
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VALUE_OBJECT:
   case AST_TREE_TOKEN_RAW_VALUE:
-  case AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_PLUS:
   case AST_TREE_TOKEN_OPERATOR_MINUS:
@@ -4944,7 +4942,6 @@ bool isEqual(AstTree *left, AstTree *right) {
     AstTreeVariable *right_metadata = right->metadata;
     return isEqualVariable(left_metadata, right_metadata);
   }
-  case AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED:
   case AST_TREE_TOKEN_RAW_VALUE: {
     AstTreeRawValue *left_metadata = left->metadata;
     AstTreeRawValue *right_metadata = right->metadata;
@@ -5418,7 +5415,6 @@ bool setAllTypes(AstTree *tree, AstTreeSetTypesHelper helper,
   case AST_TREE_TOKEN_VALUE_C_FUNCTION:
   case AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT:
   case AST_TREE_TOKEN_RAW_VALUE:
-  case AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED:
   case AST_TREE_TOKEN_NONE:
   }
   printError(tree->str_begin, tree->str_end, "Unknown token %d", tree->token);
@@ -6959,7 +6955,6 @@ bool setTypesBuiltinUnary(AstTree *tree, AstTreeSetTypesHelper helper,
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VALUE_OBJECT:
   case AST_TREE_TOKEN_RAW_VALUE:
-  case AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_PLUS:
   case AST_TREE_TOKEN_OPERATOR_MINUS:
@@ -8148,8 +8143,7 @@ AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
 }
 
 char *u8ArrayToCString(AstTree *tree) {
-  if (tree->token == AST_TREE_TOKEN_RAW_VALUE ||
-      tree->token == AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED) {
+  if (tree->token == AST_TREE_TOKEN_RAW_VALUE) {
     AstTreeRawValue *value = tree->metadata;
     const size_t size = getSizeOfType(tree->type);
 
@@ -8286,7 +8280,6 @@ size_t getSizeOfType(AstTree *type) {
   case AST_TREE_TOKEN_VALUE_BOOL:
   case AST_TREE_TOKEN_VALUE_OBJECT:
   case AST_TREE_TOKEN_RAW_VALUE:
-  case AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED:
   case AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT:
   case AST_TREE_TOKEN_OPERATOR_ASSIGN:
   case AST_TREE_TOKEN_OPERATOR_PLUS:

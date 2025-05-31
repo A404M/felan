@@ -10,21 +10,12 @@ print :: (value:**anytype)->void{
   }
 };
 
-__get_item__ :: (left:*anytype,index:i64) -> (@type_of(left.*)) {
-  return (left + index).*;
-};
-
-__set_item__ :: (left:*anytype,index:i64,item:@type_of(left.*)) -> (@type_of(left.*)) {
-  return (left + index).* = item;
-};
-
-__get_item_address__ :: (left:*anytype,index:i64,item:@type_of(left.*)) -> (@type_of(left)) {
-  return (left + index);
-};
-
 main :: () -> void {
   a := @stack_alloc(10,u8);
   a[0] = '1';
+  b := &a[2];
+  b.* = '9';
   @putc(a[0]);
+  @putc(b.*);
 };
 
