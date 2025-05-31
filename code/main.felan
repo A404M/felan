@@ -1,5 +1,6 @@
-@import("basic.felan");
-@import("lib/memory.felan");
+// @import("basic.felan");
+// @import("lib/memory.felan");
+@import("lib/operator.felan");
 
 print :: (value:**anytype)->void{
   if comptime @type_of(value.*) == u8 {
@@ -22,7 +23,8 @@ __get_item_address__ :: (left:*anytype,index:i64,item:@type_of(left.*)) -> (@typ
 };
 
 main :: () -> void {
-  print(1234u64);
-  print(1234U64);
+  a := @stack_alloc(10,u8);
+  a[0] = '1';
+  @putc(a[0]);
 };
 

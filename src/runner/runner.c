@@ -1322,6 +1322,9 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                        bool isLeft, bool isComptime, u32 *breakCount,
                        bool *shouldContinue, bool needOwnership) {
   switch (expr->token) {
+  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS:
+  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS_ASSIGN:
+  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS_ADDRESS:
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
   case AST_TREE_TOKEN_OPERATOR_BITWISE_NOT:
   case AST_TREE_TOKEN_OPERATOR_MINUS:
@@ -1860,121 +1863,6 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
     return newAstTree(AST_TREE_TOKEN_OPERATOR_POINTER, newMetadata,
                       copyAstTree(expr->type), expr->str_begin, expr->str_end);
   }
-  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS: {
-    AstTreeBracket *metadata = expr->metadata;
-    AstTree *operand =
-        runExpression(metadata->operand, scope, shouldRet, true, isComptime,
-                      breakCount, shouldContinue, false);
-    if (discontinue(*shouldRet, *breakCount)) {
-      return operand;
-    }
-
-    AstTree *array_indexNode =
-        runExpression(metadata->parameters.data[0], scope, shouldRet, false,
-                      isComptime, breakCount, shouldContinue, false);
-    if (discontinue(*shouldRet, *breakCount)) {
-      astTreeDelete(operand);
-      return array_indexNode;
-    }
-
-    if (!typeIsEqual(array_indexNode->type, &AST_TREE_I64_TYPE) &&
-        !typeIsEqual(array_indexNode->type, &AST_TREE_U64_TYPE)) {
-      UNREACHABLE;
-    }
-
-    i64 index = *(AstTreeInt *)array_indexNode->metadata;
-    astTreeDelete(array_indexNode);
-
-    if (operand->token == AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED) {
-      AstTreeRawValue *value = operand->metadata;
-      AstTreeBracket *bracket = operand->type->metadata;
-      AstTree *type = copyAstTree(bracket->operand);
-      astTreeDelete(operand);
-      value = (AstTreeRawValue *)((u8 *)value + (index * getSizeOfType(type)));
-      return newAstTree(AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED, value, type, NULL,
-                        NULL);
-    } else if (operand->token != AST_TREE_TOKEN_VARIABLE) {
-      UNREACHABLE;
-    } else if (metadata->parameters.size != 1) {
-      UNREACHABLE;
-    }
-
-    AstTreeVariable *variable = operand->metadata;
-    astTreeDelete(operand);
-    if (variable->value->token == AST_TREE_TOKEN_VALUE_UNDEFINED) {
-      AstTreeBracket *array_type_metadata = variable->type->metadata;
-      if (array_type_metadata->parameters.size != 1) {
-        UNREACHABLE;
-      }
-      AstTree *arraySize_tree = runExpression(
-          array_type_metadata->parameters.data[0], scope, shouldRet, false,
-          isComptime, breakCount, shouldContinue, false);
-      if (discontinue(*shouldRet, *breakCount)) {
-        return arraySize_tree;
-      }
-      if (arraySize_tree->token != AST_TREE_TOKEN_VALUE_INT) {
-        UNREACHABLE;
-      }
-      AstTreeInt array_size = *(AstTreeInt *)arraySize_tree->metadata;
-      astTreeDelete(arraySize_tree);
-
-      AstTreeObject *newMetadata = a404m_malloc(sizeof(*newMetadata));
-
-      newMetadata->variables = (AstTreeVariables){
-          .data =
-              a404m_malloc(array_size * sizeof(*newMetadata->variables.data)),
-          .size = array_size,
-      };
-
-      for (size_t i = 0; i < array_size; ++i) {
-        AstTreeVariable *member = a404m_malloc(sizeof(*member));
-        member->name_begin = member->name_end = NULL;
-        member->isConst = false;
-        member->type = copyAstTree(array_type_metadata->operand);
-        member->value = newAstTree(
-            AST_TREE_TOKEN_VALUE_UNDEFINED, NULL, copyAstTree(member->type),
-            variable->value->str_begin, variable->value->str_end);
-        member->initValue = NULL;
-        newMetadata->variables.data[i] = member;
-      }
-
-      runnerVariableSetValue(variable, newAstTree(AST_TREE_TOKEN_VALUE_OBJECT,
-                                                  newMetadata,
-                                                  copyAstTree(variable->type),
-                                                  variable->value->str_begin,
-                                                  variable->value->str_end));
-    }
-    if (variable->value->token == AST_TREE_TOKEN_VALUE_OBJECT) {
-      AstTreeObject *object = variable->value->metadata;
-      AstTreeVariable *var = object->variables.data[index];
-
-      if (isLeft) {
-        return newAstTree(AST_TREE_TOKEN_VARIABLE, var, copyAstTree(var->type),
-                          var->name_begin, var->name_end);
-      } else {
-        return copyAstTree(var->value);
-      }
-    } else if (variable->value->token == AST_TREE_TOKEN_RAW_VALUE ||
-               variable->value->token == AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED) {
-      AstTreeRawValue *value = variable->value->metadata;
-      AstTreeBracket *bracket = (variable->value->type->metadata);
-      AstTree *type = bracket->operand;
-      value = (AstTreeRawValue *)((u8 *)value + (index * getSizeOfType(type)));
-      if (isLeft) {
-        return newAstTree(AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED, value,
-                          copyAstTree(type), variable->value->str_begin,
-                          variable->value->str_end);
-      } else {
-        return newAstTree(AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED, value,
-                          copyAstTree(type), variable->value->str_begin,
-                          variable->value->str_end);
-      }
-    }
-    printError(variable->value->str_begin, variable->value->str_end, "%s %d",
-               AST_TREE_TOKEN_STRINGS[variable->value->token],
-               variable->value->token);
-    UNREACHABLE;
-  }
   case AST_TREE_TOKEN_VALUE_C_LIBRARY:
   case AST_TREE_TOKEN_VALUE_C_FUNCTION:
   case AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER: {
@@ -2194,6 +2082,8 @@ AstTree *toRawValue(AstTree *value) {
   case AST_TREE_TOKEN_OPERATOR_SHIFT_LEFT:
   case AST_TREE_TOKEN_OPERATOR_SHIFT_RIGHT:
   case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS:
+  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS_ASSIGN:
+  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS_ADDRESS:
   case AST_TREE_TOKEN_SCOPE:
   case AST_TREE_TOKEN_NONE:
   case AST_TREE_TOKEN_TYPE_ANY_TYPE:
@@ -2400,6 +2290,8 @@ AstTree *castTo(AstTree *tree, AstTree *to) {
   case AST_TREE_TOKEN_OPERATOR_SHIFT_LEFT:
   case AST_TREE_TOKEN_OPERATOR_SHIFT_RIGHT:
   case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS:
+  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS_ASSIGN:
+  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS_ADDRESS:
   case AST_TREE_TOKEN_SCOPE:
   case AST_TREE_TOKEN_NONE:
   case AST_TREE_TOKEN_TYPE_ANY_TYPE:
@@ -2550,6 +2442,8 @@ ffi_type *toFFIType(AstTree *type) {
   case AST_TREE_TOKEN_OPERATOR_SHIFT_LEFT:
   case AST_TREE_TOKEN_OPERATOR_SHIFT_RIGHT:
   case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS:
+  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS_ASSIGN:
+  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS_ADDRESS:
   case AST_TREE_TOKEN_SCOPE:
   case AST_TREE_TOKEN_TYPE_ANY_TYPE:
   case AST_TREE_TOKEN_NONE:

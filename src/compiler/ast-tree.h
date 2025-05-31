@@ -114,6 +114,8 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_OPERATOR_LOGICAL_AND,
   AST_TREE_TOKEN_OPERATOR_LOGICAL_OR,
   AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS,
+  AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS_ASSIGN,
+  AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS_ADDRESS,
   AST_TREE_TOKEN_OPERATOR_BITWISE_NOT,
   AST_TREE_TOKEN_OPERATOR_BITWISE_AND,
   AST_TREE_TOKEN_OPERATOR_BITWISE_XOR,
@@ -412,7 +414,7 @@ AstTree *astTreeParseKeyword(const ParserNode *parserNode, AstTreeToken token);
 AstTree *astTreeParseLoopControl(const ParserNode *parserNode,
                                  AstTreeToken token);
 AstTree *astTreeParseReturn(const ParserNode *parserNode);
-AstTree *astTreeParsePureBinaryOperator(const ParserNode *parserNode,
+AstTree *astTreeParseAssignOperator(const ParserNode *parserNode,
                                         AstTreeToken token);
 AstTree *astTreeParseBinaryOperator(const ParserNode *parserNode,
                                     AstTreeToken token);
@@ -435,6 +437,7 @@ AstTree *astTreeParseStruct(const ParserNode *parserNode);
 AstTree *astTreeParseAccessOperator(const ParserNode *parserNode,
                                     AstTreeToken token);
 AstTree *astTreeParseBracket(const ParserNode *parserNode, AstTreeToken token);
+AstTree *astTreeParseArrayAccessOperator(const ParserNode *parserNode);
 
 bool isFunction(AstTree *value);
 bool isShapeShifter(AstTreeFunction *function);
@@ -517,7 +520,6 @@ bool setTypesBuiltinCLibrary(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesBuiltinCFunction(AstTree *tree, AstTreeSetTypesHelper helper,
                               AstTreeFunctionCall *functionCall);
 bool setTypesTypeArray(AstTree *tree, AstTreeSetTypesHelper helper);
-bool setTypesArrayAccess(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesAstFunction(AstTreeFunction *function,
                          AstTreeSetTypesHelper helper);
 
