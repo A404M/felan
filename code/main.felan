@@ -1,6 +1,7 @@
 // @import("basic.felan");
-@import("lib/memory.felan");
+// @import("lib/memory.felan");
 @import("lib/operator.felan");
+@import("lib/types.felan");
 
 print :: (value:**anytype)->void{
   if comptime @type_of(value.*) == u8 {
@@ -11,12 +12,8 @@ print :: (value:**anytype)->void{
 };
 
 main :: () -> void {
-  a := malloc(10,u8);
-  a[0] = '1';
-  b := &a[2];
-  b.* = '9';
+  a : [23]u8 = undefined;
+  a[0] = '2';
   @putc(a[0]);
-  @putc(b.*);
-  free(a);
 };
 

@@ -1307,6 +1307,11 @@ ParserNode *parserNumber(LexerNode *node, ParserNode *parent) {
         parserNode = newParserNode(PARSER_TOKEN_VALUE_INT, node->str_begin,
                                    node->str_end, metadata, parent);
         break;
+      case 'i':
+      case 'I':
+      case 'u':
+      case 'U':
+          goto DEFAULT;
       default:
         NOT_IMPLEMENTED;
       }
@@ -1314,6 +1319,7 @@ ParserNode *parserNumber(LexerNode *node, ParserNode *parent) {
     }
     // fall through
   default: {
+    DEFAULT:
     ParserNodeIntType type = getIntType(node->str_begin, node->str_end);
     u64 value = decimalToU64(node->str_begin,
                              node->str_end - getIntTypeSize(type), &success);

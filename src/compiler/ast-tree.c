@@ -8,6 +8,7 @@
 #include "utils/string.h"
 #include "utils/time.h"
 #include "utils/type.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -691,12 +692,13 @@ void astTreePrint(const AstTree *tree, int indent) {
     printf("]");
   }
     goto RETURN_SUCCESS;
-  case AST_TREE_TOKEN_NONE:
   case AST_TREE_TOKEN_VALUE_NAMESPACE:
   case AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER:
   case AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT:
   case AST_TREE_TOKEN_VALUE_C_LIBRARY:
   case AST_TREE_TOKEN_VALUE_C_FUNCTION:
+    goto RETURN_SUCCESS;
+  case AST_TREE_TOKEN_NONE:
   }
   UNREACHABLE;
 
@@ -2968,7 +2970,7 @@ AstTree *astTreeParseIntValue(const ParserNode *parserNode) {
   case PARSER_NODE_INT_TYPE_U8: {
     u8 *metadata = a404m_malloc(sizeof(*metadata));
     *metadata = node_metadata->value;
-    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata, &AST_TREE_I8_TYPE,
+    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata, &AST_TREE_U8_TYPE,
                       parserNode->str_begin, parserNode->str_end);
   }
   case PARSER_NODE_INT_TYPE_I16: {
@@ -2980,7 +2982,7 @@ AstTree *astTreeParseIntValue(const ParserNode *parserNode) {
   case PARSER_NODE_INT_TYPE_U16: {
     u16 *metadata = a404m_malloc(sizeof(*metadata));
     *metadata = node_metadata->value;
-    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata, &AST_TREE_I16_TYPE,
+    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata, &AST_TREE_U16_TYPE,
                       parserNode->str_begin, parserNode->str_end);
   }
   case PARSER_NODE_INT_TYPE_I32: {
@@ -2992,7 +2994,7 @@ AstTree *astTreeParseIntValue(const ParserNode *parserNode) {
   case PARSER_NODE_INT_TYPE_U32: {
     u32 *metadata = a404m_malloc(sizeof(*metadata));
     *metadata = node_metadata->value;
-    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata, &AST_TREE_I32_TYPE,
+    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata, &AST_TREE_U32_TYPE,
                       parserNode->str_begin, parserNode->str_end);
   }
   case PARSER_NODE_INT_TYPE_I64: {
@@ -3004,7 +3006,7 @@ AstTree *astTreeParseIntValue(const ParserNode *parserNode) {
   case PARSER_NODE_INT_TYPE_U64: {
     u64 *metadata = a404m_malloc(sizeof(*metadata));
     *metadata = node_metadata->value;
-    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata, &AST_TREE_I64_TYPE,
+    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata, &AST_TREE_U64_TYPE,
                       parserNode->str_begin, parserNode->str_end);
   }
   }
@@ -6411,9 +6413,20 @@ bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper) {
     static const char LENGTH_STR[] = "length";
     static const size_t LENGTH_STR_SIZE =
         sizeof(LENGTH_STR) / sizeof(*LENGTH_STR) - sizeof(*LENGTH_STR);
+    static const char PTR_STR[] = "ptr";
+    static const size_t PTR_STR_SIZE =
+        sizeof(PTR_STR) / sizeof(*PTR_STR) - sizeof(*PTR_STR);
+
     if (LENGTH_STR_SIZE == size && strnEquals(LENGTH_STR, str, size)) {
-      metadata->member.index = 0;
+      metadata->member.index = 1;
       tree->type = copyAstTree(&AST_TREE_U64_TYPE);
+      return true;
+    } else if (PTR_STR_SIZE == size && strnEquals(PTR_STR, str, size)) {
+      metadata->member.index = 0;
+      AstTreeBracket *arrayType = metadata->object->type->metadata;
+      tree->type = newAstTree(AST_TREE_TOKEN_OPERATOR_POINTER,
+                              copyAstTree(arrayType->operand),
+                              &AST_TREE_TYPE_TYPE, NULL, NULL);
       return true;
     }
 
@@ -7516,7 +7529,13 @@ bool setTypesTypeArray(AstTree *tree, AstTreeSetTypesHelper helper) {
     printError(metadata->operand->str_begin, metadata->operand->str_end,
                "Expected type");
     return false;
+  } else if (!isConst(metadata->operand)) {
+    printError(metadata->operand->str_begin, metadata->operand->str_end,
+               "Epxected const");
+    return false;
   }
+
+  metadata->operand = getValue(metadata->operand, false);
 
   if (metadata->parameters.size == 0) {
     // left empty

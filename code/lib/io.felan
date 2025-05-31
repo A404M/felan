@@ -6,10 +6,10 @@ puts :: @c_function(libc,"puts",(*u8)->i32);
 putchar :: @c_function(libc,"putchar",(i32)->void);
 
 print :: (value:string) -> void {
-  i :u64= 0;
-  while i < value.length {
+  i := 0;
+  while i < @cast(value.length,i64) {
     print_char(value[i]);
-    i += @cast(1,u64);
+    i += 1;
   }
 };
 
@@ -59,7 +59,7 @@ _print_signed :: (comptime t:type, value:t) -> i32 {
 
 _print_unsigned :: (comptime t:type, value:t) -> void {
   NUMBERS_SIZE :: 21;
-  numbers : [NUMBERS_SIZE]u8 = undefined;
+  numbers := @stack_alloc(NUMBERS_SIZE,u8);
   i := NUMBERS_SIZE - 1;
   numbers[i] = '\0';
 

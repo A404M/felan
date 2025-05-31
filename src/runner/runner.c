@@ -124,20 +124,22 @@
   }
 #endif
 
-void runnerVariableSetValue(AstTreeVariable *variable, AstTree *value) {
+void runnerVariableSetValue(AstTreeVariable *variable, AstTree *value,
+                            AstTreeScope *scope) {
   if (variable->isConst) {
     printLog("Can't assign to const");
     UNREACHABLE;
   }
-  runnerVariableSetValueWihtoutConstCheck(variable, value);
+  runnerVariableSetValueWihtoutConstCheck(variable, value, scope);
 }
 
 void runnerVariableSetValueWihtoutConstCheck(AstTreeVariable *variable,
-                                             AstTree *value) {
+                                             AstTree *value,
+                                             AstTreeScope *scope) {
   if (variable->value != NULL) {
     astTreeDelete(variable->value);
   }
-  AstTree *raw = toRawValue(value);
+  AstTree *raw = toRawValue(value, scope);
   if (raw == NULL) {
     variable->value = value;
   } else {
@@ -152,6 +154,16 @@ bool runAstTree(AstTreeRoots roots) {
       (sizeof(MAIN_STR) / sizeof(*MAIN_STR)) - sizeof(*MAIN_STR);
 
   AstTreeVariable *mainVariable = NULL;
+
+  AstTreeScope *scope = a404m_malloc(sizeof(*scope));
+  *scope = (AstTreeScope){
+      .expressions = a404m_malloc(0),
+      .expressions_size = 0,
+      .variables.data = a404m_malloc(0),
+      .variables.size = 0,
+      .stackAllocation = a404m_malloc(0),
+      .stackAllocation_size = 0,
+  };
 
   for (size_t i = 0; i < roots.size; ++i) {
     AstTreeRoot *root = roots.data[i];
@@ -168,7 +180,8 @@ bool runAstTree(AstTreeRoots roots) {
         mainVariable = variable;
       }
       if (!variable->isConst) {
-        runnerVariableSetValueWihtoutConstCheck(variable, variable->initValue);
+        runnerVariableSetValueWihtoutConstCheck(variable, variable->initValue,
+                                                scope);
       }
     }
   }
@@ -186,21 +199,24 @@ bool runAstTree(AstTreeRoots roots) {
     return false;
   }
 
-  AstTree *res = runAstTreeFunction(main, NULL, 0, false);
+  AstTree *res = runAstTreeFunction(main, NULL, 0, scope, false);
   const bool ret = res == &AST_TREE_VOID_VALUE;
   astTreeDelete(res);
   astTreeDelete(main);
+  astTreeDelete(
+      newAstTree(AST_TREE_TOKEN_SCOPE, scope, &AST_TREE_VOID_TYPE, NULL, NULL));
   return ret;
 }
 
 AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
-                            size_t arguments_size, bool isComptime) {
+                            size_t arguments_size, AstTreeScope *scope,
+                            bool isComptime) {
   AstTreeFunction *function = tree->metadata;
 
   for (size_t i = 0; i < arguments_size; ++i) {
     AstTree *param = arguments[i];
     AstTreeVariable *arg = function->arguments.data[i];
-    runnerVariableSetValueWihtoutConstCheck(arg, param);
+    runnerVariableSetValueWihtoutConstCheck(arg, param, scope);
   }
 
   bool shouldRet = false;
@@ -627,6 +643,7 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
       *(AstTreeBool *)ret->metadata = typeIsEqual(left, right);
       break;
     default:
+      printLog("%s", AST_TREE_TOKEN_STRINGS[left->token]);
       UNREACHABLE;
     }
     return ret;
@@ -1376,7 +1393,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
           return args[i];
         }
       }
-      result = runAstTreeFunction(function, args, args_size, isComptime);
+      result = runAstTreeFunction(function, args, args_size, scope, isComptime);
     } else if (function->token >= AST_TREE_TOKEN_BUILTIN_BEGIN &&
                function->token <= AST_TREE_TOKEN_BUILTIN_END) {
       for (size_t i = 0; i < args_size; ++i) {
@@ -1443,7 +1460,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
       if (right->token != AST_TREE_TOKEN_RAW_VALUE) {
         UNREACHABLE;
       }
-      if (l->token != AST_TREE_TOKEN_RAW_VALUE ||
+      if (l->token != AST_TREE_TOKEN_RAW_VALUE &&
           l->type->token != AST_TREE_TOKEN_OPERATOR_POINTER) {
         UNREACHABLE;
       }
@@ -1466,7 +1483,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
           astTreeDelete(l);
           return right;
         }
-        runnerVariableSetValue(left, right);
+        runnerVariableSetValue(left, right, scope);
         astTreeDelete(l);
         return copyAstTree(left->value);
       } else if (l->token == AST_TREE_TOKEN_RAW_VALUE) {
@@ -1512,7 +1529,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
         return value;
       }
     }
-    runnerVariableSetValue(variable, value);
+    runnerVariableSetValue(variable, value, scope);
     return &AST_TREE_VOID_VALUE;
   }
   case AST_TREE_TOKEN_KEYWORD_IF: {
@@ -1720,7 +1737,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
         AstTree *value =
             runExpression(variable->value, scope, shouldRet, false, isComptime,
                           breakCount, shouldContinue, false);
-        runnerVariableSetValue(variable, value);
+        runnerVariableSetValue(variable, value, scope);
       }
       return copyAstTree(variable->value);
     }
@@ -1728,7 +1745,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
   case AST_TREE_TOKEN_OPERATOR_ACCESS: {
     AstTreeAccess *metadata = expr->metadata;
     AstTree *tree =
-        runExpression(metadata->object, scope, shouldRet, true, isComptime,
+        runExpression(metadata->object, scope, shouldRet, false, isComptime,
                       breakCount, shouldContinue, false);
     if (discontinue(*shouldRet, *breakCount)) {
       return tree;
@@ -1779,7 +1796,8 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                                      newAstTree(AST_TREE_TOKEN_VALUE_UNDEFINED,
                                                 NULL, copyAstTree(member->type),
                                                 variable->value->str_begin,
-                                                variable->value->str_end));
+                                                variable->value->str_end),
+                                     scope);
             }
           }
 
@@ -1787,7 +1805,8 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
               variable,
               newAstTree(AST_TREE_TOKEN_VALUE_OBJECT, newMetadata,
                          copyAstTree(variable->type),
-                         variable->value->str_begin, variable->value->str_end));
+                         variable->value->str_begin, variable->value->str_end),
+              scope);
         }
         AstTreeObject *object = variable->value->metadata;
         AstTreeVariable *var = object->variables.data[metadata->member.index];
@@ -1802,24 +1821,13 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
       UNREACHABLE;
     } else if (tree->token == AST_TREE_TOKEN_RAW_VALUE) {
       if (tree->type->token == AST_TREE_TOKEN_TYPE_ARRAY) {
-        AstTreeBracket *array_metadata = tree->type->metadata;
-        if (metadata->member.index != 0) {
-          UNREACHABLE;
-        } else {
-          if (array_metadata->parameters.size == 1) {
-            AstTree *sizeTree = runExpression(
-                array_metadata->parameters.data[0], scope, shouldRet, false,
-                isComptime, breakCount, shouldContinue, false);
-            astTreeDelete(tree);
-            return sizeTree;
-          } else {
-            u64 *value = a404m_malloc(sizeof(*value));
-            *value = a404m_malloc_usable_size(tree->metadata);
-            astTreeDelete(tree);
-            return newAstTree(AST_TREE_TOKEN_RAW_VALUE, value,
-                              &AST_TREE_U64_TYPE, NULL, NULL);
-          }
-        }
+        u64 *tree_value = tree->metadata;
+
+        u64 *value = a404m_malloc(sizeof(*value));
+        *value = tree_value[metadata->member.index];
+        astTreeDelete(tree);
+        return newAstTree(AST_TREE_TOKEN_RAW_VALUE, value, copyAstTree(expr->type),
+                          NULL, NULL);
       }
       size_t index = 0;
       AstTreeStruct *type = tree->type->metadata;
@@ -1922,7 +1930,7 @@ bool discontinue(bool shouldRet, u32 breakCount) {
   return shouldRet || breakCount > 0;
 }
 
-AstTree *toRawValue(AstTree *value) {
+AstTree *toRawValue(AstTree *value, AstTreeScope *scope) {
   switch (value->token) {
   case AST_TREE_TOKEN_VALUE_VOID:
   case AST_TREE_TOKEN_VALUE_NULL: {
@@ -1934,9 +1942,48 @@ AstTree *toRawValue(AstTree *value) {
                       value->str_end);
   }
   case AST_TREE_TOKEN_VALUE_UNDEFINED: {
-    const size_t size = getSizeOfType(value->type);
-    AstTreeRawValue *rawValue = a404m_malloc(size);
-    memset(rawValue, 0, size);
+    size_t size;
+    AstTreeRawValue *rawValue;
+    if (value->type->token == AST_TREE_TOKEN_TYPE_ARRAY) {
+      struct Array {
+        void *data;
+        size_t size;
+      };
+      size = sizeof(struct Array);
+      rawValue = a404m_malloc(size);
+      struct Array *array = (void *)rawValue;
+
+      AstTreeBracket *bracket = value->type->metadata;
+
+      size_t stackAllocation_capacity =
+          a404m_malloc_usable_size(scope->stackAllocation) /
+          sizeof(*scope->stackAllocation);
+      if (scope->stackAllocation_size == stackAllocation_capacity) {
+        stackAllocation_capacity += stackAllocation_capacity / 2 + 1;
+        scope->stackAllocation = a404m_realloc(
+            scope->stackAllocation,
+            stackAllocation_capacity * sizeof(*scope->stackAllocation));
+      }
+
+      if (bracket->parameters.size != 1) {
+        UNREACHABLE;
+      }
+
+      const size_t sizeOfType = getSizeOfType(bracket->operand);
+      const size_t size =
+          *(u64 *)bracket->parameters.data[0]->metadata * sizeOfType;
+      scope->stackAllocation[scope->stackAllocation_size] = a404m_malloc(size);
+      // memset(scope->stackAllocation[scope->stackAllocation_size], 0, size);
+
+      array->data = scope->stackAllocation[scope->stackAllocation_size];
+      array->size = *(u64 *)bracket->parameters.data[0]->metadata;
+
+      scope->stackAllocation_size += 1;
+    } else {
+      size = getSizeOfType(value->type);
+      rawValue = a404m_malloc(size);
+      memset(rawValue, 0, size);
+    }
     return newAstTree(AST_TREE_TOKEN_RAW_VALUE, rawValue,
                       copyAstTree(value->type), value->str_begin,
                       value->str_end);
@@ -1981,7 +2028,7 @@ AstTree *toRawValue(AstTree *value) {
     size_t filledSize = 0;
     for (size_t i = 0; i < object->variables.size; ++i) {
       AstTreeVariable *variable = object->variables.data[i];
-      AstTree *variableValue = toRawValue(variable->value);
+      AstTree *variableValue = toRawValue(variable->value, scope);
       size_t variableValueSize = getSizeOfType(variableValue);
       if (variableValue == NULL) {
         NOT_IMPLEMENTED;

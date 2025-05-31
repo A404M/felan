@@ -790,7 +790,6 @@ __shift_right__ :: (left:i64,right:i64) -> i64 {
   return @shift_right(left,right);
 };
 
-
 //---------------------- Pointers ------------------------
 
 __sum__ :: (left:*anytype,right:i64) -> (@type_of(left)) {
@@ -813,3 +812,16 @@ __get_item_address__ :: (left:*anytype,index:i64) -> (@type_of(left)) {
   return (left + index);
 };
 
+//---------------------- Array ------------------------
+
+__get_item__ :: (left:[]anytype,index:i64) -> (@type_of(left.ptr.*)) {
+  return (left.ptr + index).*;
+};
+
+__set_item__ :: (left:[]anytype,index:i64,item:@type_of(left.ptr.*)) -> (@type_of(left.ptr.*)) {
+  return (left.ptr + index).* = item;
+};
+
+__get_item_address__ :: (left:[]anytype,index:i64) -> (@type_of(left.ptr)) {
+  return (left.ptr + index);
+};
