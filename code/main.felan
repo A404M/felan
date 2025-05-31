@@ -1,5 +1,5 @@
 // @import("basic.felan");
-// @import("lib/memory.felan");
+@import("lib/memory.felan");
 @import("lib/operator.felan");
 
 print :: (value:**anytype)->void{
@@ -11,11 +11,12 @@ print :: (value:**anytype)->void{
 };
 
 main :: () -> void {
-  a := @stack_alloc(10,u8);
+  a := malloc(10,u8);
   a[0] = '1';
   b := &a[2];
   b.* = '9';
   @putc(a[0]);
   @putc(b.*);
+  free(a);
 };
 

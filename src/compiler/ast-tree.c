@@ -7652,7 +7652,13 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
                                       const char *name_end,
                                       AstTreeSetTypesHelper helper,
                                       AstTreeFunctionCall *functionCall) {
-  AstTreeVariable *variable = NULL;
+  struct {
+    AstTreeVariable *var;
+    int op;
+  } variable = {
+      .var = NULL,
+      .op = 10,
+  };
 
   const char *str = name_begin;
   const size_t str_size = name_end - name_begin;
@@ -7672,7 +7678,8 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
         return NULL;
       }
 
-      variable = var;
+      variable.var = var;
+      variable.op = 0;
       break;
     }
   } else {
@@ -7750,13 +7757,17 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
             goto CONTINUE_OUTER;
           }
         }
-        if (variable != NULL) {
+        if (variable.var != NULL && variable.op == 0) {
           printError(name_begin, name_end, "Multiple candidates found for %.*s",
                      (int)(name_end - name_begin), name_begin);
           return NULL;
         }
-        variable = var;
+        variable.var = var;
+        variable.op = 0;
       } else if (var->type->token == AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER) {
+        if (variable.op < 1) {
+          continue;
+        }
         AstTreeShapeShifter *shapeShifter = var->value->metadata;
         AstTreeFunction *function = shapeShifter->function;
 
@@ -7863,12 +7874,13 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
         }
         free(arguments.data);
 
-        if (variable != NULL) {
+        if (variable.var != NULL) {
           printError(name_begin, name_end, "Multiple candidates found for %.*s",
                      (int)(name_end - name_begin), name_begin);
           return NULL;
         }
-        variable = var;
+        variable.var = var;
+        variable.op = 1;
         continue;
       CONTINUE_OUTER1:
         for (size_t i = 0; i < arguments.size; ++i) {
@@ -7936,23 +7948,24 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
             goto CONTINUE_OUTER;
           }
         }
-        if (variable != NULL) {
+        if (variable.var != NULL && variable.op == 0) {
           printError(name_begin, name_end, "Multiple candidates found for %.*s",
                      (int)(name_end - name_begin), name_begin);
           return NULL;
         }
-        variable = var;
+        variable.var = var;
+        variable.op = 0;
       }
     CONTINUE_OUTER:
     }
   }
-  if (variable == NULL) {
+  if (variable.var == NULL) {
     printError(name_begin, name_end, "No candidates found for %.*s",
                (int)(name_end - name_begin), name_begin);
     return NULL;
   }
 
-  return variable;
+  return variable.var;
 }
 
 AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
