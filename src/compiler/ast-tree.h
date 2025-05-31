@@ -246,8 +246,13 @@ typedef f128 AstTreeFloat;
 
 typedef bool AstTreeBool;
 
+typedef struct AstTreeObjectItem {
+  AstTree *value;
+} AstTreeObjectItem;
+
 typedef struct AstTreeObject {
-  AstTreeVariables variables;
+  AstTreeObjectItem *items;
+  size_t items_size;
 } AstTreeObject;
 
 typedef AstTree AstTreeSingleChild;
@@ -414,7 +419,7 @@ AstTree *astTreeParseLoopControl(const ParserNode *parserNode,
                                  AstTreeToken token);
 AstTree *astTreeParseReturn(const ParserNode *parserNode);
 AstTree *astTreeParseAssignOperator(const ParserNode *parserNode,
-                                        AstTreeToken token);
+                                    AstTreeToken token);
 AstTree *astTreeParseBinaryOperator(const ParserNode *parserNode,
                                     AstTreeToken token);
 AstTree *astTreeParseUnaryOperator(const ParserNode *parserNode,

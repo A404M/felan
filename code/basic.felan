@@ -1,3 +1,4 @@
 @import("lib/operator.felan");
 @import("lib/types.felan");
 @import("lib/io.felan");
+@import("lib/memory.felan");

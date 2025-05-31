@@ -38,3 +38,5 @@ AstTree *castTo(AstTree *value, AstTree *to);
 
 ffi_type *toFFIType(AstTree *type);
 void deleteFFIType(ffi_type *type);
+
+void *stackAlloc(size_t size, AstTreeScope *scope);

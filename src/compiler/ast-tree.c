@@ -461,14 +461,11 @@ void astTreePrint(const AstTree *tree, int indent) {
     for (int i = 0; i < indent; ++i)
       printf(" ");
     printf("[");
-    for (size_t i = 0; i < metadata->variables.size; ++i) {
-      AstTreeVariable *variable = metadata->variables.data[i];
+    for (size_t i = 0; i < metadata->items_size; ++i) {
+      AstTreeObjectItem item = metadata->items[i];
       for (int i = 0; i < indent + 1; ++i)
         printf(" ");
-      printf("{name=%.*s,value=\n",
-             (int)(variable->name_end - variable->name_begin),
-             variable->name_begin);
-      astTreePrint(variable->value, indent + 2);
+      astTreePrint(item.value, indent + 2);
       printf(",\n");
     }
     for (int i = 0; i < indent; ++i)
@@ -905,11 +902,11 @@ void astTreeDestroy(AstTree tree) {
   }
   case AST_TREE_TOKEN_VALUE_OBJECT: {
     AstTreeObject *metadata = tree.metadata;
-    for (size_t i = 0; i < metadata->variables.size; ++i) {
-      AstTreeVariable *variable = metadata->variables.data[i];
-      astTreeVariableDelete(variable);
+    for (size_t i = 0; i < metadata->items_size; ++i) {
+      AstTreeObjectItem item = metadata->items[i];
+      astTreeDelete(item.value);
     }
-    free(metadata->variables.data);
+    free(metadata->items);
     free(metadata);
     return;
   }
@@ -1305,9 +1302,15 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
     AstTreeObject *metadata = tree->metadata;
     AstTreeObject *newMetadata = a404m_malloc(sizeof(*newMetadata));
 
-    newMetadata->variables =
-        copyAstTreeVariables(metadata->variables, oldVariables, newVariables,
-                             variables_size, safetyCheck);
+    newMetadata->items_size = metadata->items_size;
+    newMetadata->items =
+        a404m_malloc(newMetadata->items_size * sizeof(*newMetadata->items));
+
+    for (size_t i = 0; i < newMetadata->items_size; ++i) {
+      newMetadata->items[i].value =
+          copyAstTreeBack(metadata->items[i].value, oldVariables, newVariables,
+                          variables_size, safetyCheck);
+    }
 
     return newAstTree(tree->token, newMetadata,
                       copyAstTreeBack(tree->type, oldVariables, newVariables,
@@ -3017,24 +3020,33 @@ AstTree *astTreeParseString(const ParserNode *parserNode) {
   ParserNodeStringMetadata *node_metadata = parserNode->metadata;
 
   const size_t size = node_metadata->end - node_metadata->begin;
-  AstTreeRawValue *metadata = a404m_malloc(size * sizeof(u8));
-  memcpy(metadata, node_metadata->begin, size);
+  AstTreeObject *metadata = a404m_malloc(sizeof(*metadata));
+  metadata->items_size = size;
+  metadata->items =
+      a404m_malloc(metadata->items_size * sizeof(*metadata->items));
+
+  for (size_t i = 0; i < size; ++i) {
+    u8 *value = a404m_malloc(sizeof(*value));
+    *value = node_metadata->begin[i];
+    metadata->items[i].value = newAstTree(AST_TREE_TOKEN_RAW_VALUE, value,
+                                          &AST_TREE_U8_TYPE, NULL, NULL);
+  }
 
   AstTreeBracket *type_metadata = a404m_malloc(sizeof(*type_metadata));
   type_metadata->operand = &AST_TREE_U8_TYPE;
 
-  AstTreeRawValue *parameter_metadata =
-      a404m_malloc(getSizeOfType(&AST_TREE_U64_TYPE));
-  *(u64 *)parameter_metadata = size;
-  AstTree *parameter = newAstTree(AST_TREE_TOKEN_RAW_VALUE, parameter_metadata,
-                                  &AST_TREE_U64_TYPE, NULL, NULL);
-
   type_metadata->parameters.size = 1;
   type_metadata->parameters.data = a404m_malloc(
       type_metadata->parameters.size * sizeof(*type_metadata->parameters.data));
-  type_metadata->parameters.data[0] = parameter;
 
-  return newAstTree(AST_TREE_TOKEN_RAW_VALUE, metadata,
+  u64 *parameter_metadata = a404m_malloc(sizeof(*parameter_metadata));
+  *parameter_metadata = size;
+
+  type_metadata->parameters.data[0] =
+      newAstTree(AST_TREE_TOKEN_RAW_VALUE, parameter_metadata,
+                 &AST_TREE_U64_TYPE, NULL, NULL);
+
+  return newAstTree(AST_TREE_TOKEN_VALUE_OBJECT, metadata,
                     newAstTree(AST_TREE_TOKEN_TYPE_ARRAY, type_metadata,
                                &AST_TREE_TYPE_TYPE, NULL, NULL),
                     parserNode->str_begin, parserNode->str_end);
@@ -8186,11 +8198,11 @@ char *u8ArrayToCString(AstTree *tree) {
     return newValue;
   } else if (tree->token == AST_TREE_TOKEN_VALUE_OBJECT) {
     AstTreeObject *object = tree->metadata;
-    char *str = a404m_malloc((object->variables.size + 1) * sizeof(*str));
-    for (size_t i = 0; i < object->variables.size; ++i) {
-      str[i] = *(AstTreeInt *)object->variables.data[i]->value->metadata;
+    char *str = a404m_malloc((object->items_size + 1) * sizeof(*str));
+    for (size_t i = 0; i < object->items_size; ++i) {
+      str[i] = *(u8 *)object->items[i].value->metadata;
     }
-    str[object->variables.size] = '\0';
+    str[object->items_size] = '\0';
     return str;
   }
   UNREACHABLE;
