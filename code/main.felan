@@ -1,7 +1,4 @@
-// @import("basic.felan");
-// @import("lib/memory.felan");
-@import("lib/operator.felan");
-@import("lib/types.felan");
+@import("basic.felan");
 
 print :: (value:**anytype)->void{
   if comptime @type_of(value.*) == u8 {
@@ -11,9 +8,15 @@ print :: (value:**anytype)->void{
   }
 };
 
+st :: struct {
+};
+
+__get_item__ :: (left:st,index:i64,index2:i64)->i64{
+  return index+index2;
+};
+
 main :: () -> void {
-  a : [23]u8 = undefined;
-  a[0] = '2';
-  @putc(a[0]);
+  a : st = undefined;
+  print(a[1,2]);
 };
 

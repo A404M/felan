@@ -34,6 +34,6 @@ main :: () -> void {
 ```
 
 # TODO
-* Overloading [] operator
+* ~Overloading [] operator~
 * Making \[n\]type = array(n,type)
 * Making *type = ptr(type)
