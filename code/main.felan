@@ -1,14 +1,6 @@
 @import("basic.felan");
 
-st :: struct {
-};
-
-__get_item__ :: (left:st,index:i64,index2:i64)->i64{
-  return index+index2;
-};
-
 main :: () -> void {
-  a := "abcdef";
-  print(a);
+  println(@cast(-1,i32));
 };
 

@@ -303,7 +303,7 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     default:
       UNREACHABLE;
     }
-    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, ret, copyAstTree(left), NULL,
+    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, ret, copyAstTree(left->type), NULL,
                       NULL);
   }
   case AST_TREE_TOKEN_BUILTIN_ADD: {
@@ -2345,7 +2345,7 @@ AstTree *castTo(AstTree *tree, AstTree *to) {
   case AST_TREE_TOKEN_TYPE_C_LIBRARY:
   case AST_TREE_TOKEN_TYPE_C_FUNCTION:
   }
-  printLog("%s", AST_TREE_TOKEN_STRINGS[tree->token]);
+  printLog("%s", AST_TREE_TOKEN_STRINGS[tree->type->token]);
   UNREACHABLE;
 }
 

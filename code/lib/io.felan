@@ -5,6 +5,15 @@ libc :: @c_library("/usr/lib/libc.so.6");
 puts :: @c_function(libc,"puts",(*u8)->i32);
 putchar :: @c_function(libc,"putchar",(i32)->void);
 
+println :: () -> void {
+  print_char('\n');
+};
+
+println :: (value:anytype) -> void {
+  print(value);
+  print_char('\n');
+};
+
 print :: (value:string) -> void {
   i := 0;
   while i < @cast(value.length,i64) {
