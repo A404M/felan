@@ -35,5 +35,8 @@ main :: () -> void {
 
 # TODO
 * ~Overloading [] operator~
-* Making \[n\]type = array(n,type)
-* Making *type = ptr(type)
+* Add code injection
+* Add macro
+* Add enum
+* Compile AST to BBA
+* Compile BBA to ASM
