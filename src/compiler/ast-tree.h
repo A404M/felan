@@ -35,7 +35,8 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_BUILTIN_BITWISE_OR,
   AST_TREE_TOKEN_BUILTIN_SHIFT_LEFT,
   AST_TREE_TOKEN_BUILTIN_SHIFT_RIGHT,
-  AST_TREE_TOKEN_BUILTIN_END = AST_TREE_TOKEN_BUILTIN_SHIFT_RIGHT,
+  AST_TREE_TOKEN_BUILTIN_INSERT,
+  AST_TREE_TOKEN_BUILTIN_END = AST_TREE_TOKEN_BUILTIN_INSERT,
 
   AST_TREE_TOKEN_KEYWORD_RETURN,
   AST_TREE_TOKEN_KEYWORD_BREAK,
@@ -284,6 +285,7 @@ typedef struct AstTreeSetTypesHelper {
   AstTreeRoot *root;
   AstTreeWhile **loops;
   size_t loops_size;
+  AstTreeScope *scope;
 } AstTreeSetTypesHelper;
 
 typedef struct AstTreeStruct {
@@ -524,6 +526,8 @@ bool setTypesBuiltinCLibrary(AstTree *tree, AstTreeSetTypesHelper helper,
                              AstTreeFunctionCall *functionCall);
 bool setTypesBuiltinCFunction(AstTree *tree, AstTreeSetTypesHelper helper,
                               AstTreeFunctionCall *functionCall);
+bool setTypesBuiltinInsert(AstTree *tree, AstTreeSetTypesHelper helper,
+                           AstTreeFunctionCall *functionCall);
 bool setTypesTypeArray(AstTree *tree, AstTreeSetTypesHelper helper);
 bool setTypesAstFunction(AstTreeFunction *function,
                          AstTreeSetTypesHelper helper);

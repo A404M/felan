@@ -1,6 +1,9 @@
 @import("basic.felan");
 
 main :: () -> void {
-  println(@cast(-1,i32));
+  a := 2;
+  a += @insert("2");
+  print(a);
+  // @insert("print(123);");
 };
 

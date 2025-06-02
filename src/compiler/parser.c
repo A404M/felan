@@ -40,6 +40,7 @@ const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_BUILTIN_BITWISE_OR",
     "PARSER_TOKEN_BUILTIN_SHIFT_LEFT",
     "PARSER_TOKEN_BUILTIN_SHIFT_RIGHT",
+    "PARSER_TOKEN_BUILTIN_INSERT",
 
     "PARSER_TOKEN_VALUE_INT",
     "PARSER_TOKEN_VALUE_FLOAT",
@@ -298,6 +299,7 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_BUILTIN_BITWISE_OR:
   case PARSER_TOKEN_BUILTIN_SHIFT_LEFT:
   case PARSER_TOKEN_BUILTIN_SHIFT_RIGHT:
+  case PARSER_TOKEN_BUILTIN_INSERT:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_ANY_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
@@ -621,6 +623,7 @@ void parserNodeDelete(ParserNode *node) {
   case PARSER_TOKEN_BUILTIN_BITWISE_OR:
   case PARSER_TOKEN_BUILTIN_SHIFT_LEFT:
   case PARSER_TOKEN_BUILTIN_SHIFT_RIGHT:
+  case PARSER_TOKEN_BUILTIN_INSERT:
   case PARSER_TOKEN_TYPE_TYPE:
   case PARSER_TOKEN_TYPE_ANY_TYPE:
   case PARSER_TOKEN_TYPE_VOID:
@@ -972,6 +975,8 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserNoMetadata(node, parent, PARSER_TOKEN_BUILTIN_SHIFT_LEFT);
   case LEXER_TOKEN_BUILTIN_SHIFT_RIGHT:
     return parserNoMetadata(node, parent, PARSER_TOKEN_BUILTIN_SHIFT_RIGHT);
+  case LEXER_TOKEN_BUILTIN_INSERT:
+    return parserNoMetadata(node, parent, PARSER_TOKEN_BUILTIN_INSERT);
   case LEXER_TOKEN_KEYWORD_TYPE:
     return parserNoMetadata(node, parent, PARSER_TOKEN_TYPE_TYPE);
   case LEXER_TOKEN_KEYWORD_ANY_TYPE:
@@ -1311,7 +1316,7 @@ ParserNode *parserNumber(LexerNode *node, ParserNode *parent) {
       case 'I':
       case 'u':
       case 'U':
-          goto DEFAULT;
+        goto DEFAULT;
       default:
         NOT_IMPLEMENTED;
       }
@@ -1319,7 +1324,7 @@ ParserNode *parserNumber(LexerNode *node, ParserNode *parent) {
     }
     // fall through
   default: {
-    DEFAULT:
+  DEFAULT:
     ParserNodeIntType type = getIntType(node->str_begin, node->str_end);
     u64 value = decimalToU64(node->str_begin,
                              node->str_end - getIntTypeSize(type), &success);
@@ -1822,6 +1827,7 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
       case PARSER_TOKEN_BUILTIN_BITWISE_OR:
       case PARSER_TOKEN_BUILTIN_SHIFT_LEFT:
       case PARSER_TOKEN_BUILTIN_SHIFT_RIGHT:
+      case PARSER_TOKEN_BUILTIN_INSERT:
       case PARSER_TOKEN_VALUE_INT:
       case PARSER_TOKEN_VALUE_FLOAT:
       case PARSER_TOKEN_VALUE_BOOL:
@@ -2366,6 +2372,7 @@ bool isExpression(ParserNode *node) {
   case PARSER_TOKEN_BUILTIN_BITWISE_OR:
   case PARSER_TOKEN_BUILTIN_SHIFT_LEFT:
   case PARSER_TOKEN_BUILTIN_SHIFT_RIGHT:
+  case PARSER_TOKEN_BUILTIN_INSERT:
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_VARIABLE:
   case PARSER_TOKEN_SYMBOL_PARENTHESIS:
@@ -2485,6 +2492,7 @@ bool parserIsFunction(ParserNode *node) {
   case PARSER_TOKEN_BUILTIN_BITWISE_OR:
   case PARSER_TOKEN_BUILTIN_SHIFT_LEFT:
   case PARSER_TOKEN_BUILTIN_SHIFT_RIGHT:
+  case PARSER_TOKEN_BUILTIN_INSERT:
   case PARSER_TOKEN_OPERATOR_ACCESS:
   case PARSER_TOKEN_FUNCTION_CALL:
   case PARSER_TOKEN_SYMBOL_CURLY_BRACKET:
@@ -2639,6 +2647,7 @@ bool isType(ParserNode *node) {
   case PARSER_TOKEN_BUILTIN_BITWISE_OR:
   case PARSER_TOKEN_BUILTIN_SHIFT_LEFT:
   case PARSER_TOKEN_BUILTIN_SHIFT_RIGHT:
+  case PARSER_TOKEN_BUILTIN_INSERT:
   case PARSER_TOKEN_OPERATOR_ADDRESS:
   case PARSER_TOKEN_KEYWORD_NULL:
   case PARSER_TOKEN_KEYWORD_UNDEFINED:
@@ -2730,6 +2739,7 @@ bool isValue(ParserNode *node) {
   case PARSER_TOKEN_BUILTIN_BITWISE_OR:
   case PARSER_TOKEN_BUILTIN_SHIFT_LEFT:
   case PARSER_TOKEN_BUILTIN_SHIFT_RIGHT:
+  case PARSER_TOKEN_BUILTIN_INSERT:
   case PARSER_TOKEN_OPERATOR_ACCESS:
   case PARSER_TOKEN_OPERATOR_ASSIGN:
   case PARSER_TOKEN_OPERATOR_SUM_ASSIGN:
