@@ -5682,25 +5682,23 @@ bool setTypesFunction(AstTree *tree, AstTreeSetTypesHelper _helper) {
     return true;
   }
 
-  AstTreeVariable **variables =
-      a404m_malloc((_helper.variables.size + metadata->arguments.size +
-                    metadata->scope.variables.size) *
-                   sizeof(*variables));
-
-  for (size_t i = 0; i < _helper.variables.size; ++i) {
-    variables[i] = _helper.variables.data[i];
-  }
-
   AstTreeSetTypesHelper helper = {
       .lookingType = NULL,
       .dependencies = _helper.dependencies,
-      .variables.data = variables,
+      .variables.data =
+          a404m_malloc((_helper.variables.size + metadata->arguments.size +
+                        metadata->scope.variables.size) *
+                       sizeof(*helper.variables.data)),
       .variables.size = _helper.variables.size,
       .root = _helper.root,
       .loops = NULL,
       .loops_size = 0,
       .scope = &metadata->scope,
   };
+
+  for (size_t i = 0; i < _helper.variables.size; ++i) {
+    helper.variables.data[i] = _helper.variables.data[i];
+  }
 
   AstTreeVariable *deps[helper.dependencies.size];
   size_t deps_size = 0;
@@ -5764,7 +5762,7 @@ bool setTypesFunction(AstTree *tree, AstTreeSetTypesHelper _helper) {
     }
   }
 
-  free(variables);
+  free(helper.variables.data);
   return true;
 }
 
@@ -6055,12 +6053,64 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
       *tree = *ast;
       free(ast);
     } else {
-      for (size_t i = 0; i < nodeArray->size; ++i) {
-        AstTree *tree = astTreeParse(nodeArray->data[i]);
-        if (tree == NULL) {
-          return false;
+      if (nodeArray->size != 0) {
+        AstTreeSetTypesHelper newHelper = {
+            .lookingType = NULL,
+            .dependencies = _helper.dependencies,
+            .variables = _helper.variables,
+            .root = _helper.root,
+            .loops = _helper.loops,
+            .loops_size = _helper.loops_size,
+            .scope = NULL,
+        };
+        AstTree *astNodes[nodeArray->size];
+        for (size_t i = 0; i < nodeArray->size; ++i) {
+          AstTree *tree = astTreeParse(nodeArray->data[i]);
+          if (tree == NULL || !setAllTypes(tree, newHelper, NULL, NULL)) {
+            return false;
+          }
+          astNodes[i] = tree;
         }
-        printLog("%s", AST_TREE_TOKEN_STRINGS[tree->token]);
+        astTreeDestroy(*tree);
+        *tree = *astNodes[0];
+        free(astNodes[0]);
+        size_t parentIndex = _helper.scope->expressions_size;
+        for (size_t i = 0; i < _helper.scope->expressions_size; ++i) {
+          if (_helper.scope->expressions[i] == tree) {
+            parentIndex = i;
+            break;
+          }
+        }
+        if (parentIndex == _helper.scope->expressions_size) {
+          UNREACHABLE;
+        }
+        size_t expression_capacity =
+            a404m_malloc_usable_size(_helper.scope->expressions) /
+            sizeof(*_helper.scope->expressions);
+
+        const size_t newSize =
+            _helper.scope->expressions_size + nodeArray->size - 1;
+
+        if (expression_capacity < newSize) {
+          UNREACHABLE;
+          expression_capacity = newSize;
+          _helper.scope->expressions = a404m_realloc(
+              _helper.scope->expressions,
+              expression_capacity * sizeof(*_helper.scope->expressions));
+        }
+
+        for (size_t i = _helper.scope->expressions_size - 1; i > parentIndex;
+             --i) {
+          _helper.scope->expressions[i] =
+              _helper.scope->expressions[i - nodeArray->size + 1];
+        }
+
+        for (size_t i = 1; i < nodeArray->size; ++i) {
+          UNREACHABLE;
+          _helper.scope->expressions[i + parentIndex] = astNodes[i];
+        }
+
+        _helper.scope->expressions_size = newSize;
       }
     }
     parserNodeDelete(rootParser);
@@ -6412,23 +6462,22 @@ bool setTypesScope(AstTree *tree, AstTreeSetTypesHelper _helper,
                    AstTreeFunction *function) {
   AstTreeScope *metadata = tree->metadata;
 
-  AstTreeVariable **variables = a404m_malloc(
-      (_helper.variables.size + metadata->variables.size) * sizeof(*variables));
-
-  for (size_t i = 0; i < _helper.variables.size; ++i) {
-    variables[i] = _helper.variables.data[i];
-  }
-
   AstTreeSetTypesHelper helper = {
       .lookingType = NULL,
       .dependencies = _helper.dependencies,
-      .variables.data = variables,
+      .variables.data =
+          a404m_malloc((_helper.variables.size + metadata->variables.size) *
+                       sizeof(*helper.variables.data)),
       .variables.size = _helper.variables.size,
       .root = _helper.root,
       .loops = _helper.loops,
       .loops_size = _helper.loops_size,
       .scope = metadata,
   };
+
+  for (size_t i = 0; i < _helper.variables.size; ++i) {
+    helper.variables.data[i] = _helper.variables.data[i];
+  }
 
   for (size_t i = 0; i < metadata->variables.size; ++i) {
     AstTreeVariable *variable = metadata->variables.data[i];
@@ -6470,7 +6519,7 @@ bool setTypesScope(AstTree *tree, AstTreeSetTypesHelper _helper,
         metadata->expressions[metadata->expressions_size - 1]->type);
   }
 
-  free(variables);
+  free(helper.variables.data);
   return true;
 }
 
@@ -7761,25 +7810,23 @@ bool setTypesAstInfix(AstTreePureInfix *infix, AstTreeSetTypesHelper _helper) {
 
 bool setTypesAstFunction(AstTreeFunction *metadata,
                          AstTreeSetTypesHelper _helper) {
-  AstTreeVariable **variables =
-      a404m_malloc((_helper.variables.size + metadata->arguments.size +
-                    metadata->scope.variables.size) *
-                   sizeof(*variables));
-
-  for (size_t i = 0; i < _helper.variables.size; ++i) {
-    variables[i] = _helper.variables.data[i];
-  }
-
   AstTreeSetTypesHelper helper = {
       .lookingType = NULL,
       .dependencies = _helper.dependencies,
-      .variables.data = variables,
+      .variables.data =
+          a404m_malloc((_helper.variables.size + metadata->arguments.size +
+                        metadata->scope.variables.size) *
+                       sizeof(*_helper.variables.data)),
       .variables.size = _helper.variables.size,
       .root = _helper.root,
       .loops = _helper.loops,
       .loops_size = _helper.loops_size,
       .scope = &metadata->scope,
   };
+
+  for (size_t i = 0; i < _helper.variables.size; ++i) {
+    helper.variables.data[i] = _helper.variables.data[i];
+  }
 
   AstTreeVariable *deps[helper.dependencies.size];
   size_t deps_size = 0;
@@ -7841,7 +7888,7 @@ bool setTypesAstFunction(AstTreeFunction *metadata,
     }
   }
 
-  free(variables);
+  free(helper.variables.data);
   return true;
 }
 

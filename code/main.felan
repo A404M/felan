@@ -1,9 +1,10 @@
-@import("basic.felan");
+// @import("basic.felan");
 
 main :: () -> void {
-  a := 2;
-  a += @insert("2");
-  print(a);
+  a := '2';
+  @insert("a = '3';");
+  @insert("a = '5';");
+  @putc(a);
   // @insert("print(123);");
 };
 
