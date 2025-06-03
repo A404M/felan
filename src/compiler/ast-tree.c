@@ -8495,16 +8495,7 @@ size_t getSizeOfType(AstTree *type) {
     return size;
   }
   case AST_TREE_TOKEN_TYPE_ARRAY: {
-    AstTreeBracket *metadata = type->metadata;
-    if (metadata->parameters.size == 1 &&
-        (typeIsEqual(metadata->parameters.data[0]->type, &AST_TREE_I64_TYPE) ||
-         typeIsEqual(metadata->parameters.data[0]->type, &AST_TREE_U64_TYPE))) {
-      const size_t itemSize = getSizeOfType(metadata->operand);
-      const size_t size = *(u64 *)metadata->parameters.data[0]->metadata;
-      return size * itemSize;
-    } else {
-      UNREACHABLE;
-    }
+    return sizeof(void *) + sizeof(u64);
   }
   case AST_TREE_TOKEN_OPERATOR_POINTER:
     return sizeof(void *);

@@ -2,7 +2,7 @@
 @import("types.felan");
 
 sub_string :: (str:string, begin:i64, end:i64) -> string {
-  result := "";
+  result :[0]u8 = undefined;
   result.ptr = str.ptr + begin;
   result.length = @cast(end-begin,u64);
   return result;
