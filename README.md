@@ -7,9 +7,33 @@ A strongly statically typed programming language with a simple and friendly synt
 * Operator overloading
 * Function overloading
 * Generic programming
+* Meta programming
 * Low level access
 * Pointer
 * ...
+
+# Requirement
+* Linux or *nix like OS
+* git
+* gnu make
+* gcc (you can use clang or tcc but you have to change make for it)
+* libffi (for calling C functions)
+
+# How to use ?
+## Clone the repo
+```
+git clone https://github.com/A404M/felan
+cd felan
+```
+## Building
+```
+make
+```
+## Running
+Run ./build/felan with any file which you want to run
+```
+./build/felan code/main.felan
+```
 
 # Examples
 ## Hello world
