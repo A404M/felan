@@ -35,7 +35,7 @@ main :: () -> void {
 
 # TODO
 * ~Overloading [] operator~
-* Add code injection
+* ~Add code injection~
 * Add macro
 * Add enum
 * Compile AST to BBA
