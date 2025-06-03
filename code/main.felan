@@ -24,11 +24,30 @@ t :: (comptime formatter : string) -> void {
   }
 };
 
+sub_string :: (str:string, begin:i64, end:i64) -> string {
+  result := "";
+  result.ptr = str.ptr + begin;
+  result.length = @cast(end-begin,u64);
+  return result;
+};
+
 main :: () -> void {
   a := '2';
-  @insert("a = '3';a = '5';");
-  @putc(a);
+  // @insert("a = '3';a = '5';");
+  // @putc(a);
+  println(a);
+  b := &a;
+  println(b.*);
+  println(a);
+  b.* = '5';
+  println(b.*);
+  arr :[10]u8= undefined;
+  arr[0] = '6';
+  @putc(arr[0]);
   // t("hello {world}");
+  // str := "abcdef";
+  // print(@cast(9-3,u8));
+  // print(sub_string(str,1,3));
   // @insert("print(123);");
 };
 

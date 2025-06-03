@@ -24,11 +24,11 @@ AstTree *runAstTreeCFunction(AstTree *tree, AstTree **arguments,
 
 AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                        bool isLeft, bool isComptime, u32 *breakCount,
-                       bool *shouldContinue, bool needOwnership);
+                       bool *shouldContinue);
 
 AstTree *getForVariable(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                         bool isLeft, bool isComptime, u32 *breakCount,
-                        bool *shouldContinue, bool isLazy, bool needOwnership);
+                        bool *shouldContinue, bool isLazy);
 
 bool discontinue(bool shouldRet, u32 breakCount);
 
