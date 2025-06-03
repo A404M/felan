@@ -1404,8 +1404,9 @@ ParserNode *parserString(LexerNode *node, ParserNode *parent) {
     metadata->end += 1;
   }
 
-  size_t size = metadata->end - metadata->begin;
-  metadata->begin = a404m_realloc(metadata->begin, size * (*metadata->begin));
+  const size_t size = metadata->end - metadata->begin;
+  metadata->begin =
+      a404m_realloc(metadata->begin, size * sizeof(*metadata->begin));
   metadata->end = metadata->begin + size;
 
   return node->parserNode =

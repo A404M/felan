@@ -303,8 +303,8 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
     default:
       UNREACHABLE;
     }
-    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, ret, copyAstTree(left->type), NULL,
-                      NULL);
+    return newAstTree(AST_TREE_TOKEN_RAW_VALUE, ret, copyAstTree(left->type),
+                      NULL, NULL);
   }
   case AST_TREE_TOKEN_BUILTIN_ADD: {
     AstTree *left = arguments[0];
@@ -1473,6 +1473,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
         astTreeDelete(l);
         return copyAstTree(left->value);
       } else if (l->token == AST_TREE_TOKEN_RAW_VALUE) {
+        UNREACHABLE;
         AstTree *right =
             runExpression(metadata->right, scope, shouldRet, false, isComptime,
                           breakCount, shouldContinue, false);

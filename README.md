@@ -20,16 +20,15 @@ A strongly statically typed programming language with a simple and friendly synt
 * libffi (for calling C functions)
 
 # How to use ?
-## Clone the repo
+Clone the repo
 ```
 git clone https://github.com/A404M/felan
 cd felan
 ```
-## Building
+Building
 ```
 make
 ```
-## Running
 Run ./build/felan with any file which you want to run
 ```
 ./build/felan code/main.felan

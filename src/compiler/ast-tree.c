@@ -6031,6 +6031,7 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
 
   if (metadata->function->token == AST_TREE_TOKEN_BUILTIN_INSERT) {
     char *code = u8ArrayToCString(metadata->parameters[0].value);
+    filePush("", code);
     LexerNodeArray lexerArray = lexer(code);
     if (lexerNodeArrayIsError(lexerArray)) {
       UNREACHABLE;
@@ -6065,8 +6066,12 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
         };
         AstTree *astNodes[nodeArray->size];
         for (size_t i = 0; i < nodeArray->size; ++i) {
-          AstTree *tree = astTreeParse(nodeArray->data[i]);
-          if (tree == NULL || !setAllTypes(tree, newHelper, NULL, NULL)) {
+          ParserNode *node = nodeArray->data[i];
+          while (node->token == PARSER_TOKEN_SYMBOL_EOL) {
+            node = (ParserNodeSingleChildMetadata *)node->metadata;
+          }
+          AstTree *tree = astTreeParse(node);
+          if (tree == NULL) {
             return false;
           }
           astNodes[i] = tree;
@@ -6074,6 +6079,9 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
         astTreeDestroy(*tree);
         *tree = *astNodes[0];
         free(astNodes[0]);
+        if (!setAllTypes(tree, newHelper, NULL, NULL)) {
+          return false;
+        }
         size_t parentIndex = _helper.scope->expressions_size;
         for (size_t i = 0; i < _helper.scope->expressions_size; ++i) {
           if (_helper.scope->expressions[i] == tree) {
@@ -6092,21 +6100,18 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
             _helper.scope->expressions_size + nodeArray->size - 1;
 
         if (expression_capacity < newSize) {
-          UNREACHABLE;
           expression_capacity = newSize;
           _helper.scope->expressions = a404m_realloc(
               _helper.scope->expressions,
               expression_capacity * sizeof(*_helper.scope->expressions));
         }
 
-        for (size_t i = _helper.scope->expressions_size - 1; i > parentIndex;
-             --i) {
+        for (size_t i = newSize - 1; i > parentIndex; --i) {
           _helper.scope->expressions[i] =
               _helper.scope->expressions[i - nodeArray->size + 1];
         }
 
         for (size_t i = 1; i < nodeArray->size; ++i) {
-          UNREACHABLE;
           _helper.scope->expressions[i + parentIndex] = astNodes[i];
         }
 
@@ -6115,7 +6120,6 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
     }
     parserNodeDelete(rootParser);
     lexerNodeArrayDestroy(lexerArray);
-    free(code);
   }
 
   return true;
