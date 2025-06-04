@@ -1964,7 +1964,7 @@ AstTree *toRawValue(AstTree *value, AstTreeScope *scope) {
     if (value->type->token == AST_TREE_TOKEN_TYPE_ARRAY) {
       u8 *ptr = stackAlloc(size, scope);
       ((u64 *)rawValue)[0] = (u64)ptr;
-      ((u64 *)rawValue)[1] = size;
+      ((u64 *)rawValue)[1] = object->items_size;
 
       size_t filledSize = 0;
       for (size_t i = 0; i < object->items_size; ++i) {

@@ -25,6 +25,9 @@ t :: (comptime formatter : string) -> void {
 };
 
 main :: () -> void {
+  a := '2';
+  @insert("a = '3';a = '5';");
+  print_char(a);
   t("hello {world}");
 };
 
