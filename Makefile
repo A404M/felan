@@ -47,6 +47,7 @@ lsp-files: clean
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)
+	rm -rf ./val.log*
 
 run: $(EXEC_FILE)
 	$(EXEC_FILE) $(args)

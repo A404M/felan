@@ -19,7 +19,12 @@ static int run(const char *filePath) {
   Time totalTime = {0};
   start = get_time();
 #endif
-  AstTreeRoots astTrees = makeAstTree(filePath, &lexTime, &parseTime);
+  AstTreeRoots astTrees = makeAstTree(filePath
+#ifdef PRINT_STATISTICS
+                                      ,
+                                      &lexTime, &parseTime
+#endif
+  );
   if (astTrees.size == AST_TREE_ROOTS_ERROR.size) {
     return 1;
   }

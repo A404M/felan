@@ -811,7 +811,9 @@ ParserNode *parserFromPath(const char *filePath
                            Time *lexingTime
 #endif
 ) {
+#ifdef PRINT_STATISTICS
   Time start = get_time();
+#endif
   char *code = readWholeFile(filePath);
   if (code == NULL) {
     return NULL;
@@ -821,8 +823,10 @@ ParserNode *parserFromPath(const char *filePath
   if (lexerNodeArrayIsError(lexed)) {
     return NULL;
   }
+#ifdef PRINT_STATISTICS
   Time end = get_time();
   *lexingTime = time_add(*lexingTime, time_diff(end, start));
+#endif
 
   ParserNode *root = parser(lexed);
   lexerNodeArrayDestroy(lexed);

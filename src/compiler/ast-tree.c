@@ -1836,8 +1836,12 @@ AstTreeRoots makeAstTree(const char *filePath
       .size = 0,
   };
 
-  if (getAstTreeRoot(strClone(filePath), &roots, lexingTime, parsingTime) ==
-      NULL) {
+  if (getAstTreeRoot(strClone(filePath), &roots
+#ifdef PRINT_STATISTICS
+                     ,
+                     lexingTime, parsingTime
+#endif
+                     ) == NULL) {
     goto RETURN_ERROR;
   }
 
@@ -1867,15 +1871,24 @@ AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
     }
   }
 
+#ifdef PRINT_STATISTICS
   Time start = get_time();
+#endif
 
-  ParserNode *parserNode = parserFromPath(filePath, lexingTime);
+  ParserNode *parserNode = parserFromPath(filePath
+#ifdef PRINT_STATISTICS
+                                          ,
+                                          lexingTime
+#endif
+  );
   if (parserNode == NULL) {
     goto RETURN_ERROR;
   }
 
+#ifdef PRINT_STATISTICS
   Time end = get_time();
   *parsingTime = time_add(*parsingTime, time_diff(end, start));
+#endif
   AstTreeRoot *root = makeAstRoot(parserNode, filePath);
   parserNodeDelete(parserNode);
   if (root == NULL) {
@@ -1958,15 +1971,6 @@ bool astTreeDoImport(AstTreeRoots *roots, AstTreeRoot *root, AstTree *tree,
       if (parameter == NULL) {
         return false;
       }
-
-      AstTree *type = makeStringType();
-      if (!typeIsEqual(type, parameter->type, helper.scope)) {
-        printError(parameter->str_begin, parameter->str_end,
-                   "Type mismatch (must be a []u8 aka string)");
-        astTreeDelete(type);
-        return false;
-      }
-      astTreeDelete(type);
 
       char *str = u8ArrayToCString(parameter);
       astTreeDelete(parameter);
@@ -6869,6 +6873,14 @@ bool setTypesBuiltinImport(AstTree *tree, AstTreeSetTypesHelper helper,
       return false;
     }
 
+    AstTree *fileType = makeStringType();
+
+    if (!typeIsEqual(file->type, fileType, helper.scope)) {
+      astTreeDelete(fileType);
+      printError(file->str_begin, file->str_end, "Bad paramter");
+      return false;
+    }
+
     AstTreeTypeFunction *type_metadata = a404m_malloc(sizeof(*type_metadata));
     type_metadata->arguments_size = 1;
     type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
@@ -6878,7 +6890,7 @@ bool setTypesBuiltinImport(AstTree *tree, AstTreeSetTypesHelper helper,
     type_metadata->returnType = copyAstTree(&AST_TREE_NAMESPACE_TYPE);
 
     type_metadata->arguments[0] = (AstTreeTypeFunctionArgument){
-        .type = copyAstTree(file->type),
+        .type = fileType,
         .name_begin = PATH_STR,
         .name_end = PATH_STR + PATH_STR_SIZE,
         .str_begin = NULL,
