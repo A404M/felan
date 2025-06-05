@@ -1,4 +1,5 @@
 @import("basic.felan");
+file :: @import("file.felan");
 
 t :: (comptime formatter : string) macro -> string {
   i := 0;
@@ -26,6 +27,7 @@ t :: (comptime formatter : string) macro -> string {
 };
 
 main :: () -> void {
+  file.foo();
   a := '2';
   // @insert("a = '3';a = '5';");
   s :: t("hello");

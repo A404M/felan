@@ -408,6 +408,13 @@ AstTreeRoot *getAstTreeRoot(char *filePath, AstTreeRoots *roots
                             Time *lexingTime, Time *parsingTime
 #endif
 );
+bool astTreeDoImport(AstTreeRoots *roots, AstTreeRoot *root, AstTree *tree,
+                     AstTreeVariable *variable
+#ifdef PRINT_STATISTICS
+                     ,
+                     Time *lexingTime, Time *parsingTime
+#endif
+);
 AstTreeRoot *makeAstRoot(const ParserNode *parsedRoot, char *filePath);
 
 bool pushVariable(AstTreeVariables *variables, AstTreeVariable *variable);
@@ -459,12 +466,14 @@ AstTree *makeTypeOf(AstTree *value);
 AstTree *makeTypeOfFunction(AstTreeFunction *function, const char *str_begin,
                             const char *str_end);
 bool typeIsEqual(AstTree *type0, AstTree *type1, AstTreeScope *scope);
-bool typeIsEqualBack(const AstTree *type0, const AstTree *type1,AstTreeScope *scope);
+bool typeIsEqualBack(const AstTree *type0, const AstTree *type1,
+                     AstTreeScope *scope);
 AstTree *getValue(AstTree *tree, bool copy, AstTreeScope *scope);
 bool isIntType(AstTree *type);
 bool isFloatType(AstTree *type);
-bool isEqual(AstTree *left, AstTree *right,AstTreeScope *scope);
-bool isEqualVariable(AstTreeVariable *left, AstTreeVariable *right,AstTreeScope *scope);
+bool isEqual(AstTree *left, AstTree *right, AstTreeScope *scope);
+bool isEqualVariable(AstTreeVariable *left, AstTreeVariable *right,
+                     AstTreeScope *scope);
 
 void allOfVariablesWithImport(AstTreeVariables *variables, AstTreeRoot *root,
                               AstTreeRoots *checkedRoots);
