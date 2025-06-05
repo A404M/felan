@@ -1,6 +1,6 @@
 @import("basic.felan");
 
-t :: (comptime formatter : string) -> void {
+t :: (comptime formatter : string) -> string {
   i := 0;
   in := 0;
   opening := 0;
@@ -15,19 +15,25 @@ t :: (comptime formatter : string) -> void {
       in -= 1;
       if in == 0{
         str := sub_string(formatter,opening,i);
-        print(str);
+        return str;
       } else if in < 0 {
         in = 0;
       }
     }
     i += 1;
   }
+  return "a = '6';";
 };
 
 main :: () -> void {
   a := '2';
-  @insert("a = '3';a = '5';");
+  // @insert("a = '3';a = '5';");
+  s :: t("hello {a = '1';}");
+  @insert(s);
   print_char(a);
-  t("hello {world}");
+};
+
+p :: (comptime s:string)->void{
+  print(1234);
 };
 

@@ -3,6 +3,11 @@
 #include "compiler/ast-tree.h"
 #include <ffi.h>
 
+typedef struct ArrayValueStruct {
+  void *data;
+  size_t size;
+} ArrayValueStruct;
+
 void runnerVariableSetValue(AstTreeVariable *variable, AstTree *value,
                             AstTreeScope *scope);
 void runnerVariableSetValueWihtoutConstCheck(AstTreeVariable *variable,
@@ -20,7 +25,7 @@ AstTree *runAstTreeBuiltin(AstTree *tree, AstTreeScope *scope,
                            AstTree **arguments);
 
 AstTree *runAstTreeCFunction(AstTree *tree, AstTree **arguments,
-                             size_t arguments_size);
+                             size_t arguments_size, AstTreeScope *scope);
 
 AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                        bool isLeft, bool isComptime, u32 *breakCount,
@@ -33,6 +38,7 @@ AstTree *getForVariable(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
 bool discontinue(bool shouldRet, u32 breakCount);
 
 AstTree *toRawValue(AstTree *value, AstTreeScope *scope);
+AstTree *fromRawValue(AstTree *value);
 
 AstTree *castTo(AstTree *value, AstTree *to);
 
