@@ -75,11 +75,11 @@ test/big.felan: Makefile
 	echo "main :: () -> void {" > $@
 	for((n = 0;n < 1000000;n++)); do echo "  print('1');" >> $@; done
 	echo "};" >> $@
-	echo "libc :: @c_library(\"/lib/libc.so.6\");" >> $@
-	echo "putchar :: @c_function(libc,\"putchar\",(i32)->i32);" >> $@
+	# echo "libc :: @c_library(\"/lib/libc.so.6\");" >> $@
+	# echo "putchar :: @c_function(libc,\"putchar\",(i32)->i32);" >> $@
 	echo "print :: (value:u8) -> void {" >> $@
-	echo "  putchar(@cast(value,i32));" >> $@
-	# echo "  @putc(value);" >> $@
+	# echo "  putchar(@cast(value,i32));" >> $@
+	echo "  @putc(value);" >> $@
 	echo "};" >> $@
 
 # $@ = left hand of :

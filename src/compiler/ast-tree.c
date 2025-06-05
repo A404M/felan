@@ -1353,6 +1353,7 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
     new_metadata->arguments_size = metadata->arguments_size;
     new_metadata->arguments = a404m_malloc(sizeof(*new_metadata->arguments) *
                                            new_metadata->arguments_size);
+    new_metadata->isMacro = metadata->isMacro;
     for (size_t i = 0; i < metadata->arguments_size; ++i) {
       AstTreeTypeFunctionArgument arg = metadata->arguments[i];
       new_metadata->arguments[i].str_begin = arg.str_begin;
@@ -1392,6 +1393,7 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
     new_metadata->arguments =
         copyAstTreeVariables(metadata->arguments, oldVariables, newVariables,
                              variables_size, safetyCheck);
+    new_metadata->isMacro = metadata->isMacro;
 
     size_t new_variables_size = variables_size + 2;
     AstTreeVariables new_oldVariables[new_variables_size];
@@ -1756,6 +1758,7 @@ AstTreeFunction *copyAstTreeFunction(AstTreeFunction *metadata,
   new_metadata->arguments =
       copyAstTreeVariables(metadata->arguments, oldVariables, newVariables,
                            variables_size, safetyCheck);
+  new_metadata->isMacro = metadata->isMacro;
 
   const size_t new_variables_size = variables_size + 2;
   AstTreeVariables new_oldVariables[new_variables_size];
@@ -2630,6 +2633,7 @@ AstTree *astTreeParseFunction(const ParserNode *parserNode) {
 
   function->arguments.data = a404m_malloc(0);
   function->arguments.size = 0;
+  function->isMacro = node_metadata->isMacro;
 
   for (size_t i = 0; i < node_arguments->size; ++i) {
     const ParserNode *arg = node_arguments->data[i];
@@ -2846,6 +2850,7 @@ AstTree *astTreeParseTypeFunction(const ParserNode *parserNode) {
   typeFunction->arguments =
       a404m_malloc(arguments_size * sizeof(*typeFunction->arguments));
   typeFunction->arguments_size = 0;
+  typeFunction->isMacro = metadata->isMacro;
 
   for (size_t i = 0; i < node_arguments->size; ++i) {
     const ParserNode *node_argument = node_arguments->data[i];
@@ -4176,24 +4181,7 @@ AstTree *makeTypeOf(AstTree *value) {
   case AST_TREE_TOKEN_FUNCTION: {
     AstTreeFunction *function = value->metadata;
 
-    AstTreeTypeFunction *type_metadata = a404m_malloc(sizeof(*type_metadata));
-    type_metadata->arguments_size = function->arguments.size;
-    type_metadata->arguments = a404m_malloc(function->arguments.size *
-                                            sizeof(*type_metadata->arguments));
-    type_metadata->returnType = copyAstTree(function->returnType);
-
-    for (size_t i = 0; i < function->arguments.size; ++i) {
-      AstTreeVariable *arg = function->arguments.data[i];
-      type_metadata->arguments[i].name_begin = arg->name_begin;
-      type_metadata->arguments[i].name_end = arg->name_end;
-      type_metadata->arguments[i].str_begin = arg->name_begin;
-      type_metadata->arguments[i].str_end = arg->name_end;
-      type_metadata->arguments[i].type = copyAstTree(arg->type);
-      type_metadata->arguments[i].isComptime = arg->isConst;
-    }
-
-    return newAstTree(AST_TREE_TOKEN_TYPE_FUNCTION, type_metadata,
-                      &AST_TREE_TYPE_TYPE, value->str_begin, value->str_end);
+    return makeTypeOfFunction(function, value->str_begin, value->str_end);
   }
   case AST_TREE_TOKEN_VALUE_VOID:
     return &AST_TREE_VOID_TYPE;
@@ -4305,6 +4293,7 @@ AstTree *makeTypeOfFunction(AstTreeFunction *function, const char *str_begin,
   type_metadata->arguments = a404m_malloc(function->arguments.size *
                                           sizeof(*type_metadata->arguments));
   type_metadata->returnType = copyAstTree(function->returnType);
+  type_metadata->isMacro = function->isMacro;
 
   for (size_t i = 0; i < function->arguments.size; ++i) {
     AstTreeVariable *arg = function->arguments.data[i];
@@ -5696,6 +5685,8 @@ bool setTypesFunction(AstTree *tree, AstTreeSetTypesHelper _helper) {
     return true;
   }
 
+  // TODO: do something about macros
+
   AstTreeSetTypesHelper helper = {
       .lookingType = NULL,
       .dependencies = _helper.dependencies,
@@ -6726,6 +6717,7 @@ bool setTypesBuiltinCast(AstTree *tree, AstTreeSetTypesHelper helper,
     type_metadata->arguments_size = 2;
     type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
                                             sizeof(*type_metadata->arguments));
+    type_metadata->isMacro = false;
 
     type_metadata->returnType = copyAstTree(to);
 
@@ -6797,6 +6789,7 @@ bool setTypesBuiltinTypeOf(AstTree *tree, AstTreeSetTypesHelper helper,
     type_metadata->arguments_size = 1;
     type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
                                             sizeof(*type_metadata->arguments));
+    type_metadata->isMacro = false;
 
     type_metadata->returnType = copyAstTree(&AST_TREE_TYPE_TYPE);
 
@@ -6863,6 +6856,7 @@ bool setTypesBuiltinSizeOf(AstTree *tree, AstTreeSetTypesHelper helper,
     type_metadata->arguments_size = 1;
     type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
                                             sizeof(*type_metadata->arguments));
+    type_metadata->isMacro = false;
 
     type_metadata->returnType = copyAstTree(&AST_TREE_U64_TYPE);
 
@@ -6925,6 +6919,7 @@ bool setTypesBuiltinImport(AstTree *tree, AstTreeSetTypesHelper helper,
     type_metadata->arguments_size = 1;
     type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
                                             sizeof(*type_metadata->arguments));
+    type_metadata->isMacro = false;
 
     type_metadata->returnType = copyAstTree(&AST_TREE_NAMESPACE_TYPE);
 
@@ -7013,6 +7008,7 @@ bool setTypesBuiltinStackAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
     type_metadata->arguments_size = 2;
     type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
                                             sizeof(*type_metadata->arguments));
+    type_metadata->isMacro = false;
 
     type_metadata->returnType =
         newAstTree(AST_TREE_TOKEN_OPERATOR_POINTER, copyAstTree(type),
@@ -7198,6 +7194,7 @@ AFTER_SWITCH:
   type_metadata->arguments_size = 1;
   type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
                                           sizeof(*type_metadata->arguments));
+  type_metadata->isMacro = false;
 
   type_metadata->returnType = copyAstTree(type);
 
@@ -7279,6 +7276,7 @@ bool setTypesBuiltinBinaryAlsoPointer(AstTree *tree,
   type_metadata->arguments_size = 2;
   type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
                                           sizeof(*type_metadata->arguments));
+  type_metadata->isMacro = false;
 
   type_metadata->returnType = copyAstTree(left->type);
 
@@ -7361,6 +7359,7 @@ bool setTypesBuiltinBinary(AstTree *tree, AstTreeSetTypesHelper helper,
   type_metadata->arguments_size = 2;
   type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
                                           sizeof(*type_metadata->arguments));
+  type_metadata->isMacro = false;
 
   type_metadata->returnType = copyAstTree(left->type);
 
@@ -7441,6 +7440,7 @@ bool setTypesBuiltinBinaryWithRet(AstTree *tree, AstTreeSetTypesHelper helper,
   type_metadata->arguments_size = 2;
   type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
                                           sizeof(*type_metadata->arguments));
+  type_metadata->isMacro = false;
 
   type_metadata->returnType = copyAstTree(retType);
 
@@ -7502,6 +7502,7 @@ bool setTypesBuiltinPutc(AstTree *tree, AstTreeSetTypesHelper helper,
   type_metadata->arguments_size = 1;
   type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
                                           sizeof(*type_metadata->arguments));
+  type_metadata->isMacro = false;
 
   type_metadata->returnType = copyAstTree(&AST_TREE_VOID_TYPE);
 
@@ -7567,6 +7568,7 @@ bool setTypesBuiltinCLibrary(AstTree *tree, AstTreeSetTypesHelper helper,
     type_metadata->arguments_size = 1;
     type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
                                             sizeof(*type_metadata->arguments));
+    type_metadata->isMacro = false;
 
     type_metadata->returnType = copyAstTree(&AST_TREE_C_LIBRARY_TYPE);
 
@@ -7669,6 +7671,7 @@ bool setTypesBuiltinCFunction(AstTree *tree, AstTreeSetTypesHelper helper,
   type_metadata->arguments_size = 3;
   type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
                                           sizeof(*type_metadata->arguments));
+  type_metadata->isMacro = false;
 
   AstTreeCFunctionType *retType = a404m_malloc(sizeof(*retType));
   retType->funcType = copyAstTree(funcType);
@@ -7750,6 +7753,7 @@ bool setTypesBuiltinInsert(AstTree *tree, AstTreeSetTypesHelper helper,
   type_metadata->arguments_size = 1;
   type_metadata->arguments = a404m_malloc(type_metadata->arguments_size *
                                           sizeof(*type_metadata->arguments));
+  type_metadata->isMacro = false;
 
   type_metadata->returnType = copyAstTree(type);
 
@@ -8275,6 +8279,8 @@ AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
   AstTreeFunction *newFunction =
       copyAstTreeFunction(shapeShifter->function, NULL, NULL, 0, true);
 
+  newFunction->isMacro = shapeShifter->function->isMacro;
+
   AstTreeFunctionCallParam initedArguments[newFunction->arguments.size];
   size_t initedArguments_size = newFunction->arguments.size;
 
@@ -8455,16 +8461,6 @@ char *u8ArrayToCString(AstTree *tree) {
       .variables.data = a404m_malloc(0),
       .variables.size = 0,
   };
-  /*
-printLog("%s", AST_TREE_TOKEN_STRINGS[tree->token]);
-
-if (tree->token == AST_TREE_TOKEN_VARIABLE) {
-AstTreeVariable *variable = tree->metadata;
-printLog("%s", AST_TREE_TOKEN_STRINGS[variable->value->token]);
-  AstTreeObject *object = variable->value->metadata;
-printLog("%d", object->items_size);
-}
-  */
 
   AstTree *treeValue = getValue(tree, true, &scope);
 

@@ -149,6 +149,7 @@ typedef struct ParserNode {
 typedef struct ParserNodeTypeFunctionMetadata {
   ParserNode *arguments;
   ParserNode *returnType;
+  bool isMacro;
 } ParserNodeTypeFunctionMetadata;
 
 typedef struct ParserNodeVariableMetadata {
@@ -163,6 +164,7 @@ typedef struct ParserNodeFunctionDefnitionMetadata {
   ParserNode *arguments;
   ParserNode *returnType;
   ParserNode *body;
+  bool isMacro;
 } ParserNodeFunctionDefnitionMetadata;
 
 typedef struct ParserNodeArray {

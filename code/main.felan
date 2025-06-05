@@ -1,6 +1,6 @@
 @import("basic.felan");
 
-t :: (comptime formatter : string) -> string {
+t :: (comptime formatter : string) macro -> string {
   i := 0;
   in := 0;
   opening := 0;
@@ -28,12 +28,8 @@ t :: (comptime formatter : string) -> string {
 main :: () -> void {
   a := '2';
   // @insert("a = '3';a = '5';");
-  s :: t("hello {a = '1';}");
+  s :: t("hello");
   @insert(s);
   print_char(a);
-};
-
-p :: (comptime s:string)->void{
-  print(1234);
 };
 

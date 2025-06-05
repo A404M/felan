@@ -6,6 +6,7 @@
 #include "utils/memory.h"
 #include "utils/string.h"
 #include "utils/time.h"
+#include <stdio.h>
 
 const char *PARSER_TOKEN_STRINGS[] = {
     "PARSER_TOKEN_ROOT",
@@ -1179,6 +1180,7 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserStruct(node, end, parent);
   case LEXER_TOKEN_KEYWORD_LAZY:
   case LEXER_TOKEN_KEYWORD_ELSE:
+  case LEXER_TOKEN_KEYWORD_MACRO:
   case LEXER_TOKEN_BUILTIN:
   case LEXER_TOKEN_SYMBOL:
   case LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS:
@@ -1767,16 +1769,26 @@ ParserNode *parserCurlyBrackets(LexerNode *closing, LexerNode *begin,
 
 ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
                            ParserNode *parent) {
-  LexerNode *paramsNode = node - 1;
+  LexerNode *paramsOrFlagNode = node - 1;
   LexerNode *retTypeNode = node + 1;
-  if (paramsNode < begin || paramsNode->parserNode == NULL) {
+  if (paramsOrFlagNode < begin) {
     printError(node->str_begin, node->str_end, "No params");
     return NULL;
   } else if (retTypeNode >= end || retTypeNode->parserNode == NULL) {
     printError(node->str_begin, node->str_end, "No return type");
     return NULL;
   }
-  ParserNode *params = getUntilCommonParent(paramsNode->parserNode, parent);
+  LexerNode *macroFlagNode = NULL;
+  if (paramsOrFlagNode->token == LEXER_TOKEN_KEYWORD_MACRO) {
+    macroFlagNode = paramsOrFlagNode;
+    paramsOrFlagNode -= 1;
+  }
+  if (paramsOrFlagNode < begin || paramsOrFlagNode->parserNode == NULL) {
+    printError(node->str_begin, node->str_end, "No params");
+    return NULL;
+  }
+  ParserNode *params =
+      getUntilCommonParent(paramsOrFlagNode->parserNode, parent);
   ParserNode *retType = getUntilCommonParent(retTypeNode->parserNode, parent);
 
   LexerNode *bodyNode =
@@ -1936,19 +1948,37 @@ ParserNode *parserFunction(LexerNode *node, LexerNode *begin, LexerNode *end,
     metadata->arguments = params;
     metadata->returnType = retType;
 
+    ParserNode *parserNode =
+        newParserNode(PARSER_TOKEN_FUNCTION_DEFINITION, params->str_begin,
+                      body->str_end, metadata, parent);
+
+    if (macroFlagNode != NULL) {
+      metadata->isMacro = true;
+      macroFlagNode->parserNode = parserNode;
+    } else {
+      metadata->isMacro = false;
+    }
+
     return params->parent = retType->parent = body->parent = node->parserNode =
-               newParserNode(PARSER_TOKEN_FUNCTION_DEFINITION,
-                             params->str_begin, body->str_end, metadata,
-                             parent);
+               parserNode;
   } else {
     ParserNodeTypeFunctionMetadata *metadata = a404m_malloc(sizeof(*metadata));
 
     metadata->arguments = params;
     metadata->returnType = retType;
 
-    return params->parent = retType->parent = node->parserNode =
-               newParserNode(PARSER_TOKEN_TYPE_FUNCTION, params->str_begin,
-                             retType->str_end, metadata, parent);
+    ParserNode *parserNode =
+        newParserNode(PARSER_TOKEN_TYPE_FUNCTION, params->str_begin,
+                      retType->str_end, metadata, parent);
+
+    if (macroFlagNode != NULL) {
+      metadata->isMacro = true;
+      macroFlagNode->parserNode = parserNode;
+    } else {
+      metadata->isMacro = false;
+    }
+
+    return params->parent = retType->parent = node->parserNode = parserNode;
   }
 }
 

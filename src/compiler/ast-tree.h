@@ -213,6 +213,7 @@ typedef struct AstTreeFunction {
   AstTreeVariables arguments;
   AstTreeScope scope;
   AstTree *returnType;
+  bool isMacro;
 } AstTreeFunction;
 
 typedef struct AstTreeTypeFunctionArgument {
@@ -228,6 +229,7 @@ typedef struct AstTreeTypeFunction {
   AstTreeTypeFunctionArgument *arguments;
   size_t arguments_size;
   AstTree *returnType;
+  bool isMacro;
 } AstTreeTypeFunction;
 
 typedef struct AstTreeFunctionCallParam {

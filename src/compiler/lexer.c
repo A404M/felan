@@ -3,6 +3,7 @@
 #include "utils/log.h"
 #include "utils/memory.h"
 #include "utils/string.h"
+#include <stdio.h>
 
 const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_CLOSE_CURLY_BRACKET",
@@ -137,6 +138,7 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_OPEN_BRACKET",
     "LEXER_TOKEN_SYMBOL_OPEN_CURLY_BRACKET",
     "LEXER_TOKEN_KEYWORD_LAZY",
+    "LEXER_TOKEN_KEYWORD_MACRO",
 
     "LEXER_TOKEN_NONE",
 };
@@ -201,7 +203,7 @@ static const char *LEXER_KEYWORD_STRINGS[] = {
     "else",      "while",         "comptime", "null",
     "struct",    "undefined",     "code",     "lazy",
     "namespace", "shape_shifter", "break",    "continue",
-    "c_library", "c_function",
+    "c_library", "c_function",    "macro",
 };
 static const LexerToken LEXER_KEYWORD_TOKENS[] = {
     LEXER_TOKEN_KEYWORD_TYPE,      LEXER_TOKEN_KEYWORD_ANY_TYPE,
@@ -224,6 +226,7 @@ static const LexerToken LEXER_KEYWORD_TOKENS[] = {
     LEXER_TOKEN_KEYWORD_NAMESPACE, LEXER_TOKEN_KEYWORD_SHAPE_SHIFTER,
     LEXER_TOKEN_KEYWORD_BREAK,     LEXER_TOKEN_KEYWORD_CONTINUE,
     LEXER_TOKEN_KEYWORD_C_LIBRARY, LEXER_TOKEN_KEYWORD_C_FUNCTION,
+    LEXER_TOKEN_KEYWORD_MACRO,
 };
 static const size_t LEXER_KEYWORD_SIZE =
     sizeof(LEXER_KEYWORD_TOKENS) / sizeof(*LEXER_KEYWORD_TOKENS);
@@ -500,6 +503,7 @@ lexerPushClear(LexerNodeArray *array, size_t *array_size, char const *iter,
   case LEXER_TOKEN_KEYWORD_CODE:
   case LEXER_TOKEN_KEYWORD_NAMESPACE:
   case LEXER_TOKEN_KEYWORD_LAZY:
+  case LEXER_TOKEN_KEYWORD_MACRO:
   case LEXER_TOKEN_NUMBER:
   case LEXER_TOKEN_CHAR:
   case LEXER_TOKEN_STRING:
