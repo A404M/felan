@@ -462,6 +462,7 @@ bool isFunction(AstTree *value);
 bool isShapeShifter(AstTreeFunction *function);
 bool hasAnyTypeInside(AstTree *type);
 bool isConst(AstTree *tree);
+bool isLeftValue(AstTree *tree);
 AstTree *makeTypeOf(AstTree *value);
 AstTree *makeTypeOfFunction(AstTreeFunction *function, const char *str_begin,
                             const char *str_end);
@@ -556,6 +557,13 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
                                       AstTreeFunctionCall *functionCall);
 AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
                                 AstTreeSetTypesHelper helper);
+
+bool doesFunctionMatch(AstTreeTypeFunction *function,
+                       AstTreeFunctionCall *functionCall,
+                       AstTreeSetTypesHelper helper);
+bool doesShapeShifterMatch(AstTreeShapeShifter *shapeShifter,
+                           AstTreeFunctionCall *functionCall,
+                           AstTreeSetTypesHelper helper);
 
 char *u8ArrayToCString(AstTree *tree);
 
