@@ -6004,8 +6004,6 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
     LexerNodeArray lexerArray = lexer(code);
     if (lexerNodeArrayIsError(lexerArray)) {
       UNREACHABLE;
-    } else if (lexerArray.size == 0) {
-      UNREACHABLE;
     }
     ParserNode *rootParser = parser(lexerArray);
     if (rootParser == NULL) {
@@ -6025,7 +6023,20 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
       *tree = *ast;
       free(ast);
     } else {
-      if (nodeArray->size != 0) {
+      size_t parentIndex = _helper.scope->expressions_size;
+      for (size_t i = 0; i < _helper.scope->expressions_size; ++i) {
+        if (_helper.scope->expressions[i] == tree) {
+          parentIndex = i;
+          break;
+        }
+      }
+      if (parentIndex == _helper.scope->expressions_size) {
+        UNREACHABLE;
+      }
+      if (nodeArray->size == 0) {
+        astTreeDestroy(*tree);
+        *tree = AST_TREE_VOID_VALUE;
+      } else {
         AstTree *astNodes[nodeArray->size];
         for (size_t i = 0; i < nodeArray->size; ++i) {
           ParserNode *node = nodeArray->data[i];
@@ -6043,16 +6054,6 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
         free(astNodes[0]);
         if (!setAllTypes(tree, _helper, NULL, NULL)) {
           return false;
-        }
-        size_t parentIndex = _helper.scope->expressions_size;
-        for (size_t i = 0; i < _helper.scope->expressions_size; ++i) {
-          if (_helper.scope->expressions[i] == tree) {
-            parentIndex = i;
-            break;
-          }
-        }
-        if (parentIndex == _helper.scope->expressions_size) {
-          UNREACHABLE;
         }
         size_t expression_capacity =
             a404m_malloc_usable_size(_helper.scope->expressions) /

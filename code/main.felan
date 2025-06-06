@@ -15,22 +15,21 @@ t :: (comptime formatter : string) macro -> string {
     } else if c == '}' {
       in -= 1;
       if in == 0{
-        str := sub_string(formatter,opening,i);
-        return str;
+        return sub_string(formatter,opening,i);
       } else if in < 0 {
         in = 0;
       }
     }
     i += 1;
   }
-  return "a = '6';";
+  return "";
 };
 
 main :: () -> void {
   file.foo();
   a := '2';
   // @insert("a = '3';a = '5';");
-  s :: t("hello");
+  s :: t("hello {a = '6';}");
   @insert(s);
   print_char(a);
 };
