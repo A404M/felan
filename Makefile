@@ -1,6 +1,7 @@
 PROJECT_NAME := felan
 
-CC := gcc
+CC := cc
+# CC := gcc
 # CC := tcc
 # CC := clang
 
@@ -24,11 +25,11 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 # OP_FLAG := -Oz
 OP_FLAG := -g
 
-LINK_FLAGS := -lffi
+LDFLAGS := -lffi
 
-# CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 $(LINK_FLAGS) -DPRINT_STATISTICS -DPRINT_COMPILE_TREE $(OP_FLAG)
-CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 $(LINK_FLAGS) -DPRINT_STATISTICS $(OP_FLAG)
-# CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 $(LINK_FLAGS) $(OP_FLAG)
+# CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -DPRINT_STATISTICS -DPRINT_COMPILE_TREE $(OP_FLAG)
+CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 -DPRINT_STATISTICS $(OP_FLAG)
+# CFLAGS := $(INC_FLAGS) -Wall -Wextra -std=gnu23 $(OP_FLAG)
 
 EXEC_FILE := $(BUILD_DIR)/$(PROJECT_NAME)
 

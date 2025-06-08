@@ -23,7 +23,7 @@ A strongly statically typed programming language with a simple and friendly synt
 * Linux or *nix like OS
 * git
 * gnu make
-* gcc (you can use clang or tcc but you have to change make for it)
+* c compiler (gcc, clang, tcc, ...)
 * libffi (for calling C functions)
 
 # How to use ?
@@ -67,6 +67,8 @@ main :: () -> void {
 * ~Overloading [] operator~
 * ~Add code injection~
 * Add macro
+* Add \u and \x to char
+* Add vararg
 * Add enum
 * Compile AST to BBA
 * Compile BBA to ASM

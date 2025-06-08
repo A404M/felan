@@ -7,8 +7,6 @@
 #include "utils/type.h"
 #include <dlfcn.h>
 #include <ffi.h>
-#include <iso646.h>
-#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -77,7 +75,7 @@
     }                                                                          \
   }
 #else
-#define doCastAll(left, left_type, type, to)                                   \
+#define doCastAll(left, left_type, to)                                         \
   {                                                                            \
     const left_type value = *(left_type *)left->metadata;                      \
     switch (to->token) {                                                       \
@@ -1932,9 +1930,11 @@ AstTree *toRawValue(AstTree *value, AstTreeScope *scope) {
     const size_t size = getSizeOfType(value->type);
     AstTreeRawValue *rawValue = a404m_malloc(size);
     switch (value->token) {
+#ifdef FLOAT_16_SUPPORT
     case AST_TREE_TOKEN_TYPE_F16:
       *(f16 *)rawValue = *(f128 *)value->metadata;
       break;
+#endif
     case AST_TREE_TOKEN_TYPE_F32:
       *(f32 *)rawValue = *(f128 *)value->metadata;
       break;
@@ -2022,7 +2022,9 @@ AstTree *toRawValue(AstTree *value, AstTreeScope *scope) {
   case AST_TREE_TOKEN_TYPE_U32:
   case AST_TREE_TOKEN_TYPE_I64:
   case AST_TREE_TOKEN_TYPE_U64:
+#ifdef FLOAT_16_SUPPORT
   case AST_TREE_TOKEN_TYPE_F16:
+#endif
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
@@ -2154,7 +2156,9 @@ AstTree *fromRawValue(AstTree *value) {
   case AST_TREE_TOKEN_TYPE_U32:
   case AST_TREE_TOKEN_TYPE_I64:
   case AST_TREE_TOKEN_TYPE_U64:
+#ifdef FLOAT_16_SUPPORT
   case AST_TREE_TOKEN_TYPE_F16:
+#endif
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
@@ -2490,8 +2494,10 @@ ffi_type *toFFIType(AstTree *type) {
     return &ffi_type_sint64;
   case AST_TREE_TOKEN_TYPE_U64:
     return &ffi_type_uint64;
+#ifdef FLOAT_16_SUPPORT
   case AST_TREE_TOKEN_TYPE_F16:
     NOT_IMPLEMENTED;
+#endif
   case AST_TREE_TOKEN_TYPE_F32:
     return &ffi_type_float;
   case AST_TREE_TOKEN_TYPE_F64:

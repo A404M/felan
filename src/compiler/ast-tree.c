@@ -1686,6 +1686,7 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
   }
   printLog("Bad token %d", tree->token);
   UNREACHABLE;
+  return NULL;
 }
 
 AstTreeVariable *copyAstTreeBackFindVariable(AstTreeVariable *variable,
@@ -2992,6 +2993,7 @@ AstTree *astTreeParseIntValue(const ParserNode *parserNode) {
   }
   }
   UNREACHABLE;
+  return NULL;
 }
 
 AstTree *astTreeParseString(const ParserNode *parserNode) {
@@ -4058,6 +4060,7 @@ bool isConst(AstTree *tree) {
   }
   printLog("Unknown token '%d'", tree->token);
   UNREACHABLE;
+  return NULL;
 }
 
 bool isLeftValue(AstTree *tree) {
@@ -4116,7 +4119,9 @@ bool isLeftValue(AstTree *tree) {
   case AST_TREE_TOKEN_TYPE_U32:
   case AST_TREE_TOKEN_TYPE_I64:
   case AST_TREE_TOKEN_TYPE_U64:
+#ifdef FLOAT_16_SUPPORT
   case AST_TREE_TOKEN_TYPE_F16:
+#endif
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
@@ -7066,7 +7071,9 @@ bool setTypesBuiltinUnary(AstTree *tree, AstTreeSetTypesHelper helper,
   case AST_TREE_TOKEN_TYPE_U32:
   case AST_TREE_TOKEN_TYPE_I64:
   case AST_TREE_TOKEN_TYPE_U64:
+#ifdef FLOAT_16_SUPPORT
   case AST_TREE_TOKEN_TYPE_F16:
+#endif
   case AST_TREE_TOKEN_TYPE_F32:
   case AST_TREE_TOKEN_TYPE_F64:
   case AST_TREE_TOKEN_TYPE_F128:
@@ -8462,7 +8469,9 @@ size_t getSizeOfType(AstTree *type) {
     return 1;
   case AST_TREE_TOKEN_TYPE_I16:
   case AST_TREE_TOKEN_TYPE_U16:
+#ifdef FLOAT_16_SUPPORT
   case AST_TREE_TOKEN_TYPE_F16:
+#endif
     return 2;
   case AST_TREE_TOKEN_TYPE_I32:
   case AST_TREE_TOKEN_TYPE_U32:
