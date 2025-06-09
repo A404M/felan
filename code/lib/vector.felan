@@ -21,16 +21,26 @@ __get_item__ :: (left:vector(anytype),index:i64) -> (@type_of(left.ptr.*)) {
   return (left.ptr + index).*;
 };
 
-__set_item__ :: (left:vector(anytype),index:i64,item:@type_of(left.ptr.*)) -> (@type_of(left.ptr.*)) {
+__set_item__ :: (left:*vector(anytype),index:i64,item:@type_of(left.*.ptr.*)) -> (@type_of(left.ptr.*)) {
   return (left.ptr + index).* = item;
 };
 
-__get_item_address__ :: (left:vector(anytype),index:i64) -> (@type_of(left.ptr)) {
+__get_item_address__ :: (left:*vector(anytype),index:i64) -> (@type_of(left.*.ptr)) {
   return (left.ptr + index);
 };
 
-push_back :: (vec:vector(anytype),value:@type_of(vec.ptr.*)) -> void {
-  @putc('h');
+push_back :: (vec:*vector(anytype),value:@type_of(vec.*[0])) -> void {
+  _grow_if_needed(vec);
+};
+
+_grow_if_needed :: (vec:*vector(anytype)) -> void {
+  if vec.*.size == vec.*.capacity {
+    @putc('a');
+    vec.*.capacity = vec.*.capacity + vec.*.capacity/2u64 + 1u64;
+    vec.*.ptr = realloc(vec.*.ptr,vec.*.capacity);
+  }else{
+    @putc('b');
+  }
 };
 
 delete :: (vec:vector(anytype)) -> void {

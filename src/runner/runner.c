@@ -1676,13 +1676,12 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
   }
   case AST_TREE_TOKEN_OPERATOR_DEREFERENCE: {
     AstTreeSingleChild *metadata = expr->metadata;
-    AstTree *operand = runExpression(metadata, scope, shouldRet, false,
+    AstTree *operand = runExpression(metadata, scope, shouldRet, true,
                                      isComptime, breakCount, shouldContinue);
     if (discontinue(*shouldRet, *breakCount)) {
       return operand;
     }
-    if (operand->token == AST_TREE_TOKEN_RAW_VALUE ||
-        operand->token == AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED) {
+    if (operand->token == AST_TREE_TOKEN_RAW_VALUE) {
       if (operand->type->token != AST_TREE_TOKEN_OPERATOR_POINTER) {
         printLog("%s", AST_TREE_TOKEN_STRINGS[operand->type->token]);
         UNREACHABLE;
@@ -1694,6 +1693,16 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
       memcpy(value, *(void **)operand->metadata, size);
       astTreeDelete(operand);
       return newAstTree(AST_TREE_TOKEN_RAW_VALUE, value, type, NULL, NULL);
+    } else if (operand->token == AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED) {
+      if (operand->type->token != AST_TREE_TOKEN_OPERATOR_POINTER) {
+        printLog("%s", AST_TREE_TOKEN_STRINGS[operand->type->token]);
+        UNREACHABLE;
+      }
+      AstTree *type =
+          copyAstTree((AstTreeSingleChild *)operand->type->metadata);
+      AstTreeRawValue *value = *(void **)operand->metadata;
+      astTreeDelete(operand);
+      return newAstTree(AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED, value, type, NULL, NULL);
     } else if (operand->token == AST_TREE_TOKEN_VARIABLE) {
       AstTree *ret;
       if (isLeft) {

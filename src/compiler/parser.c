@@ -1522,7 +1522,7 @@ ParserNode *parserParenthesis(LexerNode *closing, LexerNode *begin,
       ParserNode *pNode =
           getUntilCommonParents(iter->parserNode, parent, parserNode);
       if (pNode == NULL) {
-        printLog(pNode->str_begin, pNode->str_end, "Bad node");
+        printError(pNode->str_begin, pNode->str_end, "Bad node");
         return NULL;
       } else {
         pNode->parent = parserNode;
@@ -1557,7 +1557,7 @@ ParserNode *parserFunctionCall(LexerNode *closing, LexerNode *begin,
       ParserNode *pNode =
           getUntilCommonParents(iter->parserNode, parent, parserNode);
       if (pNode == NULL) {
-        printLog(pNode->str_begin, pNode->str_end, "Bad node");
+        printError(pNode->str_begin, pNode->str_end, "Bad node");
         return NULL;
       } else {
         pNode->parent = parserNode;
@@ -1640,7 +1640,7 @@ ParserNode *parserBracketsRight(LexerNode *closing, LexerNode *begin,
       ParserNode *pNode =
           getUntilCommonParents(iter->parserNode, parent, parserNode);
       if (pNode == NULL) {
-        printLog(pNode->str_begin, pNode->str_end, "Bad node");
+        printError(pNode->str_begin, pNode->str_end, "Bad node");
         return NULL;
       } else {
         pNode->parent = parserNode;
@@ -1676,8 +1676,8 @@ ParserNode *parserBracketsLeft(LexerNode *closing, LexerNode *begin,
   if (afterNode >= end || afterNode->parserNode == NULL ||
       (after = getUntilCommonParent(afterNode->parserNode, parent)) == NULL ||
       !isExpression(after)) {
-    printLog(closing->str_begin, closing->str_end,
-             "Bad bracket can't be parsed");
+    printError(closing->str_begin, closing->str_end,
+               "Bad bracket can't be parsed");
     return NULL;
   }
 
@@ -1694,7 +1694,7 @@ ParserNode *parserBracketsLeft(LexerNode *closing, LexerNode *begin,
       ParserNode *pNode =
           getUntilCommonParents(iter->parserNode, parent, parserNode);
       if (pNode == NULL) {
-        printLog(pNode->str_begin, pNode->str_end, "Bad node");
+        printError(pNode->str_begin, pNode->str_end, "Bad node");
         return NULL;
       } else {
         pNode->parent = parserNode;

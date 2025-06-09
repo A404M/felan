@@ -30,7 +30,7 @@ t :: (comptime formatter : string) macro -> void {
 main :: () -> void {
   v := vector_new(u8);
 
-  push_back(v,2u8);
+  push_back(&v,'2');
 
   delete(v);
 };
