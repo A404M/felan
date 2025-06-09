@@ -4,9 +4,10 @@ libc :: @c_library("/usr/lib/libc.so.6");
 malloc :: @c_function(libc,"malloc",(i64)->(*void));
 realloc :: @c_function(libc,"realloc",(*void,i64)->(*void));
 free :: @c_function(libc,"free",(*void)->void);
+memcpy :: @c_function(libc,"memcpy",(*void,*void,i64)->(*void));
 
-malloc :: (size:i64,comptime t:type) -> (*t) {
-  return @cast(malloc(size*@cast(@size_of(t),i64)),*t);
+malloc :: (size:u64,comptime t:type) -> (*t) {
+  return @cast(malloc(@cast(size*@size_of(t),i64)),*t);
 };
 
 realloc :: (ptr:*anytype,size:u64) -> (@type_of(ptr)) {
@@ -21,4 +22,8 @@ realloc :: (ptr:*anytype,size:u64) -> (@type_of(ptr)) {
 
 free :: (ptr:*anytype) -> void {
   free(@cast(ptr,*void));
+};
+
+memcpy :: (dest:*anytype,src:@type_of(dest),n:u64) -> void {
+  memcpy(@cast(dest,*void),@cast(src,*void),@cast(n,i64));
 };

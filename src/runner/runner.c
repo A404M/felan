@@ -208,10 +208,17 @@ AstTree *runAstTreeFunction(AstTree *tree, AstTree **arguments,
   u32 breakCount = 0;
   bool shouldContinue = false;
 
+  AstTreeScope *currentScope;
+  if (function->isMacro) {
+    currentScope = scope;
+  } else {
+    currentScope = &function->scope;
+  }
+
   for (size_t i = 0; i < function->scope.expressions_size; ++i) {
-    AstTree *ret = runExpression(function->scope.expressions[i],
-                                 &function->scope, &shouldRet, false,
-                                 isComptime, &breakCount, &shouldContinue);
+    AstTree *ret =
+        runExpression(function->scope.expressions[i], currentScope, &shouldRet,
+                      false, isComptime, &breakCount, &shouldContinue);
     if (shouldRet) {
       return ret;
     } else {
@@ -1700,9 +1707,11 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
       }
       AstTree *type =
           copyAstTree((AstTreeSingleChild *)operand->type->metadata);
+      printLog("%s", AST_TREE_TOKEN_STRINGS[type->token]);
       AstTreeRawValue *value = *(void **)operand->metadata;
       astTreeDelete(operand);
-      return newAstTree(AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED, value, type, NULL, NULL);
+      return newAstTree(AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED, value, type, NULL,
+                        NULL);
     } else if (operand->token == AST_TREE_TOKEN_VARIABLE) {
       AstTree *ret;
       if (isLeft) {
@@ -1794,6 +1803,8 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
       }
       size_t index = 0;
       AstTreeStruct *type = tree->type->metadata;
+      printLog("%s %s", AST_TREE_TOKEN_STRINGS[tree->type->token],
+               AST_TREE_TOKEN_STRINGS[metadata->object->token]);
       for (size_t i = 0; i < metadata->member.index; ++i) {
         index += getSizeOfType(type->variables.data[i]->type);
       }

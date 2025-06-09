@@ -421,7 +421,7 @@ void astTreePrint(const AstTree *tree, int indent) {
   case AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED:
     goto RETURN_SUCCESS;
   case AST_TREE_TOKEN_TYPE_C_FUNCTION:
-    NOT_IMPLEMENTED;
+    goto RETURN_SUCCESS;
   case AST_TREE_TOKEN_KEYWORD_BREAK:
   case AST_TREE_TOKEN_KEYWORD_CONTINUE: {
     AstTreeLoopControl *meatadata = tree->metadata;
@@ -611,7 +611,11 @@ void astTreePrint(const AstTree *tree, int indent) {
     for (int i = 0; i < indent; ++i)
       printf(" ");
     printf("elseBody=\n");
-    astTreePrint(metadata->elseBody, indent + 1);
+    if (metadata->elseBody != NULL) {
+      astTreePrint(metadata->elseBody, indent + 1);
+    } else {
+      printf("null");
+    }
     printf("\n");
     for (int i = 0; i < indent; ++i)
       printf(" ");
@@ -5141,6 +5145,23 @@ bool isEqual(AstTree *left, AstTree *right, AstTreeScope *scope) {
     return memcmp(left_metadata, right_metadata, getSizeOfType(left->type)) ==
            0;
   }
+  case AST_TREE_TOKEN_TYPE_ARRAY: {
+    AstTreeBracket *left_metadata = left->metadata;
+    AstTreeBracket *right_metadata = right->metadata;
+
+    if (left_metadata->parameters.size != right_metadata->parameters.size) {
+      return false;
+    }
+
+    for (size_t i = 0; i < left_metadata->parameters.size; ++i) {
+      if (!isEqual(left_metadata->parameters.data[i],
+                   right_metadata->parameters.data[i], scope)) {
+        return false;
+      }
+    }
+
+    return isEqual(left_metadata->operand, right_metadata->operand, scope);
+  }
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_BUILTIN_CAST:
   case AST_TREE_TOKEN_BUILTIN_TYPE_OF:
@@ -5179,7 +5200,6 @@ bool isEqual(AstTree *left, AstTree *right, AstTreeScope *scope) {
   case AST_TREE_TOKEN_KEYWORD_COMPTIME:
   case AST_TREE_TOKEN_KEYWORD_STRUCT:
   case AST_TREE_TOKEN_TYPE_FUNCTION:
-  case AST_TREE_TOKEN_TYPE_ARRAY:
   case AST_TREE_TOKEN_FUNCTION_CALL:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER:
@@ -5902,6 +5922,7 @@ bool setTypesFunction(AstTree *tree, AstTreeSetTypesHelper _helper) {
   if (!setAllTypes(metadata->returnType, helper, NULL, NULL)) {
     return false;
   }
+  metadata->returnType = getValue(metadata->returnType, false, helper.scope);
 
   tree->type = makeTypeOf(tree);
 
@@ -6527,6 +6548,7 @@ bool setTypesIf(AstTree *tree, AstTreeSetTypesHelper helper,
     if (!setAllTypes(metadata->ifBody, helper, function, NULL) ||
         (metadata->elseBody != NULL &&
          !setAllTypes(metadata->elseBody, helper, function, NULL))) {
+      return false;
     }
 
     if (metadata->elseBody != NULL &&
@@ -8012,10 +8034,7 @@ bool setTypesAstFunction(AstTreeFunction *metadata,
   if (!setAllTypes(metadata->returnType, helper, NULL, NULL)) {
     return false;
   }
-
-  if (isConst(metadata->returnType)) {
-    metadata->returnType = getValue(metadata->returnType, false, helper.scope);
-  }
+  metadata->returnType = getValue(metadata->returnType, false, helper.scope);
 
   for (size_t i = 0; i < helper.dependencies.size; ++i) {
     deps[deps_size] = helper.dependencies.data[i];

@@ -800,6 +800,14 @@ __sub__ :: (left:*anytype,right:i64) -> (@type_of(left)) {
   return @sub(left,right);
 };
 
+__sum__ :: (left:*anytype,right:u64) -> (@type_of(left)) {
+  return @add(left,right);
+};
+
+__sub__ :: (left:*anytype,right:u64) -> (@type_of(left)) {
+  return @sub(left,right);
+};
+
 __get_item__ :: (left:**anytype,index:i64) -> (@type_of(left.*.*)) {
   return (left.* + index).*;
 };

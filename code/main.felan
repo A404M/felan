@@ -1,39 +1,16 @@
 @import("basic.felan");
 
-/*
-t :: (comptime formatter : string) macro -> void {
-  i := 0;
-  in := 0;
-  opening := 0;
-  while @cast(i,u64) < formatter.length {
-    c := formatter[i];
-    if c == '{' {
-      if in == 0 {
-        opening = i+1;
-      }
-      in += 1;
-    } else if c == '}' {
-      in -= 1;
-      if in == 0 {
-        return sub_string(formatter,opening,i);
-      } else if in < 0 {
-        in = 0;
-      }
-    }
-    i += 1;
-  }
-  return "";
-};
-*/
-
 main :: () -> void {
-  v := vector_new(i64);
+  // print_formatted("hello");
+  str := string_from("Hey");
 
-  push_back(&v,32);
+  print(str);
+  print_char('\n');
+  _grow_if_needed(&str,23u64);
+  // append(&str,"\nHello");
 
-  println(v.capacity);
-  println(v[0]);
+  print(str);
 
-  delete(v);
+  delete(str);
 };
 

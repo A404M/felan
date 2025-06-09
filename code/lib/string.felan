@@ -1,9 +1,104 @@
 @import("operator.felan");
+@import("io.felan");
 @import("types.felan");
+@import("memory.felan");
 
-sub_string :: (str:string, begin:i64, end:i64) -> string {
-  result :[0]u8 = undefined;
-  result.ptr = str.ptr + begin;
-  result.length = @cast(end-begin,u64);
+String :: struct {
+  ptr : *u8;
+  size : u64;
+  capacity : u64;
+};
+
+string_new :: () -> String {
+  str : String = undefined;
+
+  str.ptr = malloc(0u64,u8);
+  str.size = 0u64;
+  str.capacity = 0u64;
+
+  return str;
+};
+
+string_from :: (str:[]u8) -> String {
+  result : String = undefined;
+
+  result.ptr = malloc(str.length,u8);
+  result.size = str.length;
+  result.capacity = str.length;
+
+  memcpy(result.ptr,str.ptr,str.length);
+
   return result;
+};
+
+append :: (this:*String, str:String) -> void {
+  _grow_if_needed(this, str.size);
+
+  memcpy(this.*.ptr+this.*.size,str.ptr,str.size);
+
+  this.*.size += str.size;
+};
+
+append :: (this:*String, str:[]u8) -> void {
+  _grow_if_needed(this, str.length);
+
+  memcpy(this.*.ptr+this.*.size,str.ptr,str.length);
+
+  this.*.size += str.length;
+};
+
+append :: (this:*String, char:u8) -> void {
+  _grow_if_needed(this, 1u64);
+
+  this.*[this.*.size] = char;
+
+  this.*.size += 1u64;
+};
+
+_grow_if_needed :: (this:*String, count:u64) -> void {
+  new_size := this.*.size + count;
+  if new_size >= this.*.capacity {
+    cap := this.*.capacity + this.*.capacity / 2u64 + 1u64;
+    if new_size >= cap {
+      cap = new_size;
+    }
+    this.*.capacity = cap;
+    this.*.ptr = realloc(this.*.ptr,this.*.capacity);
+  }
+};
+
+delete :: (this:String) -> void {
+  free(this.ptr);
+};
+
+print :: (this:String) -> void {
+  i := 0u64;
+  while i < this.size {
+    @putc(this[i]);
+    i += 1u64;
+  }
+};
+
+__get_item__ :: (left:*String,index:i64) -> u8 {
+  return (left.*.ptr + index).*;
+};
+
+__set_item__ :: (left:*String,index:i64,item:u8) -> u8 {
+  return (left.*.ptr + index).* = item;
+};
+
+__get_item_address__ :: (left:*String,index:i64) -> (*u8) {
+  return (left.*.ptr + index);
+};
+
+__get_item__ :: (left:*String,index:u64) -> u8 {
+  return (left.*.ptr + index).*;
+};
+
+__set_item__ :: (left:*String,index:u64,item:u8) -> u8 {
+  return (left.*.ptr + index).* = item;
+};
+
+__get_item_address__ :: (left:*String,index:u64) -> (*u8) {
+  return (left.*.ptr + index);
 };
