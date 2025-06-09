@@ -1,8 +1,9 @@
-/*
-@import("basic.felan");
-file :: @import("file.felan");
+// @import("basic.felan");
+@import("lib/vector.felan");
+// @import("lib/memory.felan");
 
-t :: (comptime formatter : string) macro -> string {
+/*
+t :: (comptime formatter : string) macro -> void {
   i := 0;
   in := 0;
   opening := 0;
@@ -27,13 +28,8 @@ t :: (comptime formatter : string) macro -> string {
 };
 */
 
-p :: () macro -> void {
-  @putc(a);
-  // print("Hello world");
-};
-
 main :: () -> void {
-  a := 'a';
-  p();
+  v := vector_new(u8);
+  delete(v);
 };
 

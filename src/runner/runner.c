@@ -1270,6 +1270,12 @@ AstTree *runAstTreeCFunction(AstTree *tree, AstTree **arguments,
     if (!typeIsEqual(arg.type, arguments[i]->type, scope)) {
       printLog("%s %s", AST_TREE_TOKEN_STRINGS[arg.type->token],
                AST_TREE_TOKEN_STRINGS[arguments[i]->type->token]);
+      printLog(
+          "%s %s",
+          AST_TREE_TOKEN_STRINGS[((AstTreeSingleChild *)arg.type->metadata)
+                                     ->token],
+          AST_TREE_TOKEN_STRINGS
+              [((AstTreeSingleChild *)arguments[i]->type->metadata)->token]);
       UNREACHABLE;
     } else if (arguments[i]->token != AST_TREE_TOKEN_RAW_VALUE) {
       UNREACHABLE;
@@ -1343,7 +1349,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
       return function;
     }
 
-    const size_t args_size = metadata->parameters_size;
+    const size_t args_size = metadata->parameters.size;
     AstTree *args[args_size];
 
     AstTree *result;
@@ -1352,7 +1358,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
 
       for (size_t i = 0; i < args_size; ++i) {
         AstTreeVariable *function_arg = fun->arguments.data[i];
-        AstTreeFunctionCallParam param = metadata->parameters[i];
+        AstTreeFunctionCallParam param = metadata->parameters.data[i];
         args[i] =
             getForVariable(param.value, scope, shouldRet, false, isComptime,
                            breakCount, shouldContinue, function_arg->isLazy);
@@ -1368,7 +1374,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
     } else if (function->token >= AST_TREE_TOKEN_BUILTIN_BEGIN &&
                function->token <= AST_TREE_TOKEN_BUILTIN_END) {
       for (size_t i = 0; i < args_size; ++i) {
-        AstTreeFunctionCallParam param = metadata->parameters[i];
+        AstTreeFunctionCallParam param = metadata->parameters.data[i];
         if (function->token != AST_TREE_TOKEN_BUILTIN_TYPE_OF) {
           args[i] =
               getForVariable(param.value, scope, shouldRet, false, isComptime,
@@ -1392,7 +1398,7 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
       }
     } else if (function->token == AST_TREE_TOKEN_VALUE_C_FUNCTION) {
       for (size_t i = 0; i < args_size; ++i) {
-        AstTreeFunctionCallParam param = metadata->parameters[i];
+        AstTreeFunctionCallParam param = metadata->parameters.data[i];
         args[i] = getForVariable(param.value, scope, shouldRet, false,
                                  isComptime, breakCount, shouldContinue, false);
         if (discontinue(*shouldRet, *breakCount)) {

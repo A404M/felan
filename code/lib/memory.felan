@@ -1,3 +1,5 @@
+@import("operator.felan");
+
 libc :: @c_library("/usr/lib/libc.so.6");
 malloc :: @c_function(libc,"malloc",(i64)->(*void));
 free :: @c_function(libc,"free",(*void)->void);

@@ -3,3 +3,4 @@
 @import("lib/io.felan");
 @import("lib/memory.felan");
 @import("lib/string.felan");
+@import("lib/vector.felan");

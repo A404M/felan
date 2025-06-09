@@ -1,0 +1,22 @@
+@import("operator.felan");
+@import("memory.felan");
+
+vector :: (comptime t:type)->type{
+  return struct {
+    ptr : *t;
+    size : u64;
+    capacity : u64;
+  };
+};
+
+vector_new :: (comptime t:type) -> (vector(t)) {
+  v : vector(t) = undefined;
+  v.ptr = malloc(0,@type_of(v.ptr.*));
+  v.size = 0u64;
+  v.capacity = 0u64;
+  return v;
+};
+
+delete :: (vec:vector(anytype)) -> void {
+  free(vec.ptr);
+};

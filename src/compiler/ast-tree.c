@@ -554,8 +554,8 @@ void astTreePrint(const AstTree *tree, int indent) {
     for (int i = 0; i < indent; ++i)
       printf(" ");
     printf("paramters=[\n");
-    for (size_t i = 0; i < metadata->parameters_size; ++i) {
-      AstTreeFunctionCallParam param = metadata->parameters[i];
+    for (size_t i = 0; i < metadata->parameters.size; ++i) {
+      AstTreeFunctionCallParam param = metadata->parameters.data[i];
       for (int i = 0; i < indent + 1; ++i)
         printf(" ");
       printf("{name:\"%.*s\",\n", (int)(param.nameEnd - param.nameBegin),
@@ -816,10 +816,10 @@ void astTreeDeleteFunctionCall(AstTreeFunctionCall *functionCall) {
   if (functionCall->function != NULL) {
     astTreeDelete(functionCall->function);
   }
-  for (size_t i = 0; i < functionCall->parameters_size; ++i) {
-    astTreeDelete(functionCall->parameters[i].value);
+  for (size_t i = 0; i < functionCall->parameters.size; ++i) {
+    astTreeDelete(functionCall->parameters.data[i].value);
   }
-  free(functionCall->parameters);
+  free(functionCall->parameters.data);
   free(functionCall);
 }
 
@@ -910,6 +910,10 @@ void astTreeDestroy(AstTree tree) {
     for (size_t i = 0; i < metadata->generateds.size; ++i) {
       astTreeFunctionDestroy(*metadata->generateds.functions[i]);
       free(metadata->generateds.functions[i]);
+      for (size_t j = 0; j < metadata->generateds.calls[i].size; ++j) {
+        astTreeDelete(metadata->generateds.calls[i].data[j].value);
+      }
+      free(metadata->generateds.calls[i].data);
     }
     free(metadata->generateds.functions);
     free(metadata->generateds.calls);
@@ -1288,6 +1292,19 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
       new_metadata->generateds.functions[i] =
           copyAstTreeFunction(metadata->generateds.functions[i], oldVariables,
                               newVariables, variables_size, false);
+
+      new_metadata->generateds.calls[i].size =
+          metadata->generateds.calls[i].size;
+
+      new_metadata->generateds.calls[i].data =
+          a404m_malloc(sizeof(*new_metadata->generateds.calls[i].data) *
+                       new_metadata->generateds.calls[i].size);
+
+      for (size_t j = 0; j < new_metadata->generateds.calls[i].size; ++j) {
+        new_metadata->generateds.calls[i].data[j].value =
+            copyAstTreeBack(metadata->generateds.calls[i].data[j].value,
+                            oldVariables, newVariables, variables_size, false);
+      }
       new_metadata->generateds.calls[i] = metadata->generateds.calls[i];
     }
 
@@ -1848,14 +1865,16 @@ AstTreeFunctionCall *copyAstTreeFunctionCall(AstTreeFunctionCall *metadata,
       copyAstTreeBack(metadata->function, oldVariables, newVariables,
                       variables_size, safetyCheck);
 
-  new_metadata->parameters_size = metadata->parameters_size;
-  new_metadata->parameters = a404m_malloc(metadata->parameters_size *
-                                          sizeof(*new_metadata->parameters));
-  for (size_t i = 0; i < metadata->parameters_size; ++i) {
-    new_metadata->parameters[i].nameBegin = metadata->parameters[i].nameBegin;
-    new_metadata->parameters[i].nameEnd = metadata->parameters[i].nameEnd;
-    new_metadata->parameters[i].value =
-        copyAstTreeBack(metadata->parameters[i].value, oldVariables,
+  new_metadata->parameters.size = metadata->parameters.size;
+  new_metadata->parameters.data = a404m_malloc(
+      metadata->parameters.size * sizeof(*new_metadata->parameters.data));
+  for (size_t i = 0; i < metadata->parameters.size; ++i) {
+    new_metadata->parameters.data[i].nameBegin =
+        metadata->parameters.data[i].nameBegin;
+    new_metadata->parameters.data[i].nameEnd =
+        metadata->parameters.data[i].nameEnd;
+    new_metadata->parameters.data[i].value =
+        copyAstTreeBack(metadata->parameters.data[i].value, oldVariables,
                         newVariables, variables_size, safetyCheck);
   }
 
@@ -1999,7 +2018,7 @@ bool astTreeDoImport(AstTreeRoots *roots, AstTreeRoot *root, AstTree *tree,
       if (!setAllTypes(tree, helper, NULL, NULL)) {
         return false;
       }
-      AstTree *parameter = tree_metadata->parameters[0].value;
+      AstTree *parameter = tree_metadata->parameters.data[0].value;
       if (!isConst(parameter)) {
         printError(parameter->str_begin, parameter->str_end, "Is not constant");
         return false;
@@ -2142,7 +2161,7 @@ AstTreeRoot *makeAstRoot(const ParserNode *parsedRoot, char *filePath) {
       AstTreeFunctionCall *tree_metadata = tree->metadata;
       AstTree *operand = tree_metadata->function;
       if (operand->token == AST_TREE_TOKEN_BUILTIN_IMPORT) {
-        if (tree_metadata->parameters_size == 1) {
+        if (tree_metadata->parameters.size == 1) {
           goto PUSH;
         }
       }
@@ -2927,11 +2946,11 @@ AstTree *astTreeParseFunctionCall(const ParserNode *parserNode) {
   AstTreeFunctionCall *metadata = a404m_malloc(sizeof(*metadata));
   metadata->function = function;
 
-  metadata->parameters =
-      a404m_malloc(sizeof(*metadata->parameters) * node_metadata->params->size);
-  metadata->parameters_size = node_metadata->params->size;
+  metadata->parameters.data = a404m_malloc(sizeof(*metadata->parameters.data) *
+                                           node_metadata->params->size);
+  metadata->parameters.size = node_metadata->params->size;
 
-  for (size_t i = 0; i < metadata->parameters_size; ++i) {
+  for (size_t i = 0; i < metadata->parameters.size; ++i) {
     const ParserNode *node_param = node_metadata->params->data[i];
     if (node_param->token == PARSER_TOKEN_SYMBOL_COMMA) {
       node_param = (ParserNodeSingleChildMetadata *)node_param->metadata;
@@ -2949,7 +2968,7 @@ AstTree *astTreeParseFunctionCall(const ParserNode *parserNode) {
     param.nameBegin = param.nameEnd = NULL;
     param.value = astTreeParse(node_param);
   PUSH_PARAM:
-    metadata->parameters[i] = param;
+    metadata->parameters.data[i] = param;
   }
 
   return newAstTree(AST_TREE_TOKEN_FUNCTION_CALL, metadata, NULL,
@@ -3116,15 +3135,15 @@ AstTree *astTreeParseAssignOperator(const ParserNode *parserNode,
     left->token = AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS_ASSIGN;
     AstTreeFunctionCall *metadata = left->metadata;
 
-    metadata->parameters =
-        a404m_realloc(metadata->parameters, (metadata->parameters_size + 1) *
-                                                sizeof(*metadata->parameters));
+    metadata->parameters.data = a404m_realloc(
+        metadata->parameters.data,
+        (metadata->parameters.size + 1) * sizeof(*metadata->parameters.data));
 
-    metadata->parameters[metadata->parameters_size].value = right;
-    metadata->parameters[metadata->parameters_size].nameBegin = NULL;
-    metadata->parameters[metadata->parameters_size].nameEnd = NULL;
+    metadata->parameters.data[metadata->parameters.size].value = right;
+    metadata->parameters.data[metadata->parameters.size].nameBegin = NULL;
+    metadata->parameters.data[metadata->parameters.size].nameEnd = NULL;
 
-    metadata->parameters_size += 1;
+    metadata->parameters.size += 1;
 
     return left;
   } else {
@@ -3154,15 +3173,15 @@ AstTree *astTreeParseBinaryOperator(const ParserNode *parserNode,
 
   AstTreeFunctionCall *metadata = a404m_malloc(sizeof(*metadata));
 
-  metadata->parameters_size = 2;
-  metadata->parameters =
-      a404m_malloc(metadata->parameters_size * sizeof(*metadata->parameters));
-  metadata->parameters[0] = (AstTreeFunctionCallParam){
+  metadata->parameters.size = 2;
+  metadata->parameters.data = a404m_malloc(metadata->parameters.size *
+                                           sizeof(*metadata->parameters.data));
+  metadata->parameters.data[0] = (AstTreeFunctionCallParam){
       .value = left,
       .nameBegin = NULL,
       .nameEnd = NULL,
   };
-  metadata->parameters[1] = (AstTreeFunctionCallParam){
+  metadata->parameters.data[1] = (AstTreeFunctionCallParam){
       .value = right,
       .nameBegin = NULL,
       .nameEnd = NULL,
@@ -3178,18 +3197,18 @@ AstTree *astTreeParseUnaryOperator(const ParserNode *parserNode,
   ParserNodeSingleChildMetadata *node_metadata = parserNode->metadata;
 
   AstTreeFunctionCall *metadata = a404m_malloc(sizeof(*metadata));
-  metadata->parameters_size = 1;
-  metadata->parameters =
-      a404m_malloc(metadata->parameters_size * sizeof(*metadata->parameters));
+  metadata->parameters.size = 1;
+  metadata->parameters.data = a404m_malloc(metadata->parameters.size *
+                                           sizeof(*metadata->parameters.data));
   AstTree *operand = astTreeParse(node_metadata);
 
   if (operand == NULL) {
-    free(metadata->parameters);
+    free(metadata->parameters.data);
     free(metadata);
     return NULL;
   }
 
-  metadata->parameters[0] = (AstTreeFunctionCallParam){
+  metadata->parameters.data[0] = (AstTreeFunctionCallParam){
       .value = operand,
       .nameBegin = NULL,
       .nameEnd = NULL,
@@ -3246,15 +3265,15 @@ AstTree *astTreeParseOperateAssignOperator(const ParserNode *parserNode,
 
   AstTreeFunctionCall *metadata = a404m_malloc(sizeof(*metadata));
 
-  metadata->parameters_size = 2;
-  metadata->parameters =
-      a404m_malloc(metadata->parameters_size * sizeof(*metadata->parameters));
-  metadata->parameters[0] = (AstTreeFunctionCallParam){
+  metadata->parameters.size = 2;
+  metadata->parameters.data = a404m_malloc(metadata->parameters.size *
+                                           sizeof(*metadata->parameters.data));
+  metadata->parameters.data[0] = (AstTreeFunctionCallParam){
       .value = left,
       .nameBegin = NULL,
       .nameEnd = NULL,
   };
-  metadata->parameters[1] = (AstTreeFunctionCallParam){
+  metadata->parameters.data[1] = (AstTreeFunctionCallParam){
       .value = right,
       .nameBegin = NULL,
       .nameEnd = NULL,
@@ -3752,16 +3771,16 @@ AstTree *astTreeParseArrayAccessOperator(const ParserNode *parserNode) {
 
   metadata->function = NULL;
 
-  metadata->parameters_size = node_metadata->params->size + 1;
-  metadata->parameters =
-      a404m_malloc(metadata->parameters_size * sizeof(*metadata->parameters));
+  metadata->parameters.size = node_metadata->params->size + 1;
+  metadata->parameters.data = a404m_malloc(metadata->parameters.size *
+                                           sizeof(*metadata->parameters.data));
 
-  metadata->parameters[0].value = astTreeParse(node_metadata->operand);
-  metadata->parameters[0].nameBegin = NULL;
-  metadata->parameters[0].nameEnd = NULL;
+  metadata->parameters.data[0].value = astTreeParse(node_metadata->operand);
+  metadata->parameters.data[0].nameBegin = NULL;
+  metadata->parameters.data[0].nameEnd = NULL;
 
-  if (metadata->parameters[0].value == NULL) {
-    free(metadata->parameters);
+  if (metadata->parameters.data[0].value == NULL) {
+    free(metadata->parameters.data);
     free(metadata);
     return NULL;
   }
@@ -3773,10 +3792,10 @@ AstTree *astTreeParseArrayAccessOperator(const ParserNode *parserNode) {
       node_param = (ParserNodeSingleChildMetadata *)node_param->metadata;
     }
 
-    metadata->parameters[i + 1].value = astTreeParse(node_param);
-    metadata->parameters[i + 1].nameBegin = NULL;
-    metadata->parameters[i + 1].nameEnd = NULL;
-    if (metadata->parameters[i + 1].value == NULL) {
+    metadata->parameters.data[i + 1].value = astTreeParse(node_param);
+    metadata->parameters.data[i + 1].nameBegin = NULL;
+    metadata->parameters.data[i + 1].nameEnd = NULL;
+    if (metadata->parameters.data[i + 1].value == NULL) {
       return NULL;
     }
   }
@@ -3878,8 +3897,25 @@ bool hasAnyTypeInside(AstTree *type) {
     AstTreeBracket *metadata = type->metadata;
     return hasAnyTypeInside(metadata->operand);
   }
+  case AST_TREE_TOKEN_KEYWORD_STRUCT: {
+    AstTreeStruct *metadata = type->metadata;
+    for (size_t i = 0; i < metadata->variables.size; ++i) {
+      if (hasAnyTypeInside(metadata->variables.data[i]->type)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  case AST_TREE_TOKEN_FUNCTION_CALL: {
+    AstTreeFunctionCall *metadata = type->metadata;
+    for (size_t i = 0; i < metadata->parameters.size; ++i) {
+      if (hasAnyTypeInside(metadata->parameters.data[i].value)) {
+        return true;
+      }
+    }
+    return false;
+  }
   case AST_TREE_TOKEN_VARIABLE:
-  case AST_TREE_TOKEN_FUNCTION_CALL:
     return false;
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
@@ -3888,7 +3924,6 @@ bool hasAnyTypeInside(AstTree *type) {
   case AST_TREE_TOKEN_KEYWORD_IF:
   case AST_TREE_TOKEN_KEYWORD_WHILE:
   case AST_TREE_TOKEN_KEYWORD_COMPTIME:
-  case AST_TREE_TOKEN_KEYWORD_STRUCT:
   case AST_TREE_TOKEN_VARIABLE_DEFINE:
   case AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER:
   case AST_TREE_TOKEN_VALUE_C_LIBRARY:
@@ -4052,8 +4087,8 @@ bool isConst(AstTree *tree) {
       return true;
     }
 
-    for (size_t i = 0; i < metadata->parameters_size; ++i) {
-      if (!isConst(metadata->parameters[i].value)) {
+    for (size_t i = 0; i < metadata->parameters.size; ++i) {
+      if (!isConst(metadata->parameters.data[i].value)) {
         return false;
       }
     }
@@ -6022,8 +6057,8 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
       .isInScope = false,
   };
 
-  for (size_t i = 0; i < metadata->parameters_size; ++i) {
-    AstTreeFunctionCallParam param = metadata->parameters[i];
+  for (size_t i = 0; i < metadata->parameters.size; ++i) {
+    AstTreeFunctionCallParam param = metadata->parameters.data[i];
     if (!setAllTypes(param.value, helper, NULL, NULL)) {
       return false;
     }
@@ -6040,10 +6075,10 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
   if (metadata->function->type->token == AST_TREE_TOKEN_TYPE_FUNCTION) {
     AstTreeTypeFunction *function = metadata->function->type->metadata;
     if (function == NULL ||
-        function->arguments_size != metadata->parameters_size) {
+        function->arguments_size != metadata->parameters.size) {
       printError(tree->str_begin, tree->str_end,
                  "Arguments doesn't match %ld != %ld", function->arguments_size,
-                 metadata->parameters_size);
+                 metadata->parameters.size);
       return NULL;
     }
 
@@ -6112,7 +6147,7 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
   }
 
   if (metadata->function->token == AST_TREE_TOKEN_BUILTIN_INSERT) {
-    char *code = u8ArrayToCString(metadata->parameters[0].value);
+    char *code = u8ArrayToCString(metadata->parameters.data[0].value);
     filePush("", code);
     LexerNodeArray lexerArray = lexer(code);
     if (lexerNodeArrayIsError(lexerArray)) {
@@ -6257,8 +6292,8 @@ bool setTypesOperatorGeneral(AstTree *tree, AstTreeSetTypesHelper _helper,
       .isInScope = false,
   };
 
-  for (size_t i = 0; i < metadata->parameters_size; ++i) {
-    if (!setAllTypes(metadata->parameters[i].value, helper, NULL, NULL)) {
+  for (size_t i = 0; i < metadata->parameters.size; ++i) {
+    if (!setAllTypes(metadata->parameters.data[i].value, helper, NULL, NULL)) {
       return false;
     }
   }
@@ -6744,7 +6779,7 @@ bool setTypesOperatorAccess(AstTree *tree, AstTreeSetTypesHelper helper) {
 bool setTypesBuiltinCast(AstTree *tree, AstTreeSetTypesHelper helper,
                          AstTreeFunctionCall *functionCall) {
   (void)helper;
-  if (functionCall->parameters_size == 2) {
+  if (functionCall->parameters.size == 2) {
     AstTree *from = NULL;
     AstTree *to = NULL;
 
@@ -6755,8 +6790,8 @@ bool setTypesBuiltinCast(AstTree *tree, AstTreeSetTypesHelper helper,
     static const size_t TO_STR_SIZE =
         sizeof(TO_STR) / sizeof(*TO_STR) - sizeof(*TO_STR);
 
-    for (size_t i = 0; i < functionCall->parameters_size; ++i) {
-      AstTreeFunctionCallParam param = functionCall->parameters[i];
+    for (size_t i = 0; i < functionCall->parameters.size; ++i) {
+      AstTreeFunctionCallParam param = functionCall->parameters.data[i];
       const size_t param_name_size = param.nameEnd - param.nameBegin;
 
       if (param_name_size == 0) {
@@ -6826,15 +6861,15 @@ bool setTypesBuiltinCast(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesBuiltinTypeOf(AstTree *tree, AstTreeSetTypesHelper helper,
                            AstTreeFunctionCall *functionCall) {
   (void)helper;
-  if (functionCall->parameters_size == 1) {
+  if (functionCall->parameters.size == 1) {
     AstTree *variable = NULL;
 
     static const char VARIABLE_STR[] = "variable";
     static const size_t VARIABLE_STR_SIZE =
         sizeof(VARIABLE_STR) / sizeof(*VARIABLE_STR) - sizeof(*VARIABLE_STR);
 
-    for (size_t i = 0; i < functionCall->parameters_size; ++i) {
-      AstTreeFunctionCallParam param = functionCall->parameters[i];
+    for (size_t i = 0; i < functionCall->parameters.size; ++i) {
+      AstTreeFunctionCallParam param = functionCall->parameters.data[i];
       const size_t param_name_size = param.nameEnd - param.nameBegin;
 
       if (param_name_size == 0) {
@@ -6889,15 +6924,15 @@ bool setTypesBuiltinTypeOf(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesBuiltinSizeOf(AstTree *tree, AstTreeSetTypesHelper helper,
                            AstTreeFunctionCall *functionCall) {
   (void)helper;
-  if (functionCall->parameters_size == 1) {
+  if (functionCall->parameters.size == 1) {
     AstTree *type = NULL;
 
     static const char TYPE_STR[] = "type";
     static const size_t TYPE_STR_SIZE =
         sizeof(TYPE_STR) / sizeof(*TYPE_STR) - sizeof(*TYPE_STR);
 
-    for (size_t i = 0; i < functionCall->parameters_size; ++i) {
-      AstTreeFunctionCallParam param = functionCall->parameters[i];
+    for (size_t i = 0; i < functionCall->parameters.size; ++i) {
+      AstTreeFunctionCallParam param = functionCall->parameters.data[i];
       const size_t param_name_size = param.nameEnd - param.nameBegin;
 
       if (param_name_size == 0) {
@@ -6956,15 +6991,15 @@ bool setTypesBuiltinSizeOf(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesBuiltinImport(AstTree *tree, AstTreeSetTypesHelper helper,
                            AstTreeFunctionCall *functionCall) {
   (void)helper;
-  if (functionCall->parameters_size == 1) {
+  if (functionCall->parameters.size == 1) {
     AstTree *file = NULL;
 
     static const char PATH_STR[] = "path";
     static const size_t PATH_STR_SIZE =
         sizeof(PATH_STR) / sizeof(*PATH_STR) - sizeof(*PATH_STR);
 
-    for (size_t i = 0; i < functionCall->parameters_size; ++i) {
-      AstTreeFunctionCallParam param = functionCall->parameters[i];
+    for (size_t i = 0; i < functionCall->parameters.size; ++i) {
+      AstTreeFunctionCallParam param = functionCall->parameters.data[i];
       const size_t param_name_size = param.nameEnd - param.nameBegin;
 
       if (param_name_size == 0) {
@@ -7034,7 +7069,7 @@ bool setTypesBuiltinIsComptime(AstTree *tree, AstTreeSetTypesHelper helper) {
 bool setTypesBuiltinStackAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
                                AstTreeFunctionCall *functionCall) {
   (void)helper;
-  if (functionCall->parameters_size == 2) {
+  if (functionCall->parameters.size == 2) {
     AstTree *count = NULL;
     AstTree *type = NULL;
 
@@ -7045,8 +7080,8 @@ bool setTypesBuiltinStackAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
     static const size_t COUNT_STR_SIZE =
         sizeof(COUNT_STR) / sizeof(*COUNT_STR) - sizeof(*COUNT_STR);
 
-    for (size_t i = 0; i < functionCall->parameters_size; ++i) {
-      AstTreeFunctionCallParam param = functionCall->parameters[i];
+    for (size_t i = 0; i < functionCall->parameters.size; ++i) {
+      AstTreeFunctionCallParam param = functionCall->parameters.data[i];
       const size_t param_name_size = param.nameEnd - param.nameBegin;
 
       if (param_name_size == 0) {
@@ -7135,14 +7170,14 @@ bool setTypesBuiltinHeapAlloc(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesBuiltinUnary(AstTree *tree, AstTreeSetTypesHelper helper,
                           AstTreeFunctionCall *functionCall) {
   (void)helper;
-  if (functionCall->parameters_size != 1) {
+  if (functionCall->parameters.size != 1) {
     printError(tree->str_begin, tree->str_end, "Too many or too few arguments");
     return false;
   }
 
-  const char *str = functionCall->parameters[0].nameBegin;
-  const size_t str_size = functionCall->parameters[0].nameEnd -
-                          functionCall->parameters[0].nameBegin;
+  const char *str = functionCall->parameters.data[0].nameBegin;
+  const size_t str_size = functionCall->parameters.data[0].nameEnd -
+                          functionCall->parameters.data[0].nameBegin;
 
   static char VALUE_STR[] = "value";
   static size_t VALUE_STR_SIZE =
@@ -7150,12 +7185,12 @@ bool setTypesBuiltinUnary(AstTree *tree, AstTreeSetTypesHelper helper,
 
   if (str_size != 0 && (str_size != VALUE_STR_SIZE ||
                         !strnEquals(str, VALUE_STR, VALUE_STR_SIZE))) {
-    printError(functionCall->parameters[0].nameBegin,
-               functionCall->parameters[0].nameEnd, "Unknown parameter");
+    printError(functionCall->parameters.data[0].nameBegin,
+               functionCall->parameters.data[0].nameEnd, "Unknown parameter");
     return false;
   }
 
-  AstTree *type = functionCall->parameters[0].value->type;
+  AstTree *type = functionCall->parameters.data[0].value->type;
   switch (type->token) {
   case AST_TREE_TOKEN_TYPE_I8:
   case AST_TREE_TOKEN_TYPE_U8:
@@ -7272,8 +7307,8 @@ bool setTypesBuiltinUnary(AstTree *tree, AstTreeSetTypesHelper helper,
   case AST_TREE_TOKEN_SHAPE_SHIFTER_ELEMENT:
   case AST_TREE_TOKEN_NONE:
   }
-  printError(functionCall->parameters[0].nameBegin,
-             functionCall->parameters[0].nameEnd, "Bad argument");
+  printError(functionCall->parameters.data[0].nameBegin,
+             functionCall->parameters.data[0].nameEnd, "Bad argument");
   return false;
 
 AFTER_SWITCH:
@@ -7303,7 +7338,7 @@ bool setTypesBuiltinBinaryAlsoPointer(AstTree *tree,
                                       AstTreeSetTypesHelper helper,
                                       AstTreeFunctionCall *functionCall) {
   (void)helper;
-  if (functionCall->parameters_size != 2) {
+  if (functionCall->parameters.size != 2) {
     printError(tree->str_begin, tree->str_end, "Too many or too few arguments");
     return false;
   }
@@ -7317,8 +7352,8 @@ bool setTypesBuiltinBinaryAlsoPointer(AstTree *tree,
   static const size_t RIGHT_STR_SIZE =
       sizeof(RIGHT_STR) / sizeof(*RIGHT_STR) - sizeof(*RIGHT_STR);
 
-  for (size_t i = 0; i < functionCall->parameters_size; ++i) {
-    AstTreeFunctionCallParam param = functionCall->parameters[i];
+  for (size_t i = 0; i < functionCall->parameters.size; ++i) {
+    AstTreeFunctionCallParam param = functionCall->parameters.data[i];
     const size_t param_name_size = param.nameEnd - param.nameBegin;
 
     if (param_name_size == 0) {
@@ -7393,7 +7428,7 @@ bool setTypesBuiltinBinaryAlsoPointer(AstTree *tree,
 bool setTypesBuiltinBinary(AstTree *tree, AstTreeSetTypesHelper helper,
                            AstTreeFunctionCall *functionCall) {
   (void)helper;
-  if (functionCall->parameters_size != 2) {
+  if (functionCall->parameters.size != 2) {
     printError(tree->str_begin, tree->str_end, "Too many or too few arguments");
     return false;
   }
@@ -7407,8 +7442,8 @@ bool setTypesBuiltinBinary(AstTree *tree, AstTreeSetTypesHelper helper,
   static const size_t RIGHT_STR_SIZE =
       sizeof(RIGHT_STR) / sizeof(*RIGHT_STR) - sizeof(*RIGHT_STR);
 
-  for (size_t i = 0; i < functionCall->parameters_size; ++i) {
-    AstTreeFunctionCallParam param = functionCall->parameters[i];
+  for (size_t i = 0; i < functionCall->parameters.size; ++i) {
+    AstTreeFunctionCallParam param = functionCall->parameters.data[i];
     const size_t param_name_size = param.nameEnd - param.nameBegin;
 
     if (param_name_size == 0) {
@@ -7477,7 +7512,7 @@ bool setTypesBuiltinBinaryWithRet(AstTree *tree, AstTreeSetTypesHelper helper,
                                   AstTreeFunctionCall *functionCall,
                                   AstTree *retType) {
   (void)helper;
-  if (functionCall->parameters_size != 2) {
+  if (functionCall->parameters.size != 2) {
     printError(tree->str_begin, tree->str_end, "Too many or too few arguments");
     return false;
   }
@@ -7491,8 +7526,8 @@ bool setTypesBuiltinBinaryWithRet(AstTree *tree, AstTreeSetTypesHelper helper,
   static const size_t RIGHT_STR_SIZE =
       sizeof(RIGHT_STR) / sizeof(*RIGHT_STR) - sizeof(*RIGHT_STR);
 
-  for (size_t i = 0; i < functionCall->parameters_size; ++i) {
-    AstTreeFunctionCallParam param = functionCall->parameters[i];
+  for (size_t i = 0; i < functionCall->parameters.size; ++i) {
+    AstTreeFunctionCallParam param = functionCall->parameters.data[i];
     const size_t param_name_size = param.nameEnd - param.nameBegin;
 
     if (param_name_size == 0) {
@@ -7557,14 +7592,14 @@ bool setTypesBuiltinBinaryWithRet(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesBuiltinPutc(AstTree *tree, AstTreeSetTypesHelper helper,
                          AstTreeFunctionCall *functionCall) {
   (void)helper;
-  if (functionCall->parameters_size != 1) {
+  if (functionCall->parameters.size != 1) {
     printError(tree->str_begin, tree->str_end, "Too many or too few arguments");
     return false;
   }
 
-  const char *str = functionCall->parameters[0].nameBegin;
-  const size_t str_size = functionCall->parameters[0].nameEnd -
-                          functionCall->parameters[0].nameBegin;
+  const char *str = functionCall->parameters.data[0].nameBegin;
+  const size_t str_size = functionCall->parameters.data[0].nameEnd -
+                          functionCall->parameters.data[0].nameBegin;
 
   static char VALUE_STR[] = "value";
   static size_t VALUE_STR_SIZE =
@@ -7572,15 +7607,15 @@ bool setTypesBuiltinPutc(AstTree *tree, AstTreeSetTypesHelper helper,
 
   if (str_size != 0 && (str_size != VALUE_STR_SIZE ||
                         !strnEquals(str, VALUE_STR, VALUE_STR_SIZE))) {
-    printError(functionCall->parameters[0].nameBegin,
-               functionCall->parameters[0].nameEnd, "Unknown parameter");
+    printError(functionCall->parameters.data[0].nameBegin,
+               functionCall->parameters.data[0].nameEnd, "Unknown parameter");
     return false;
   }
 
-  if (!typeIsEqual(functionCall->parameters[0].value->type, &AST_TREE_U8_TYPE,
-                   helper.scope)) {
-    printError(functionCall->parameters[0].nameBegin,
-               functionCall->parameters[0].nameEnd,
+  if (!typeIsEqual(functionCall->parameters.data[0].value->type,
+                   &AST_TREE_U8_TYPE, helper.scope)) {
+    printError(functionCall->parameters.data[0].nameBegin,
+               functionCall->parameters.data[0].nameEnd,
                "Bad argument (must have a type of u8)");
     return false;
   }
@@ -7610,15 +7645,15 @@ bool setTypesBuiltinPutc(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesBuiltinCLibrary(AstTree *tree, AstTreeSetTypesHelper helper,
                              AstTreeFunctionCall *functionCall) {
   (void)helper;
-  if (functionCall->parameters_size == 1) {
+  if (functionCall->parameters.size == 1) {
     AstTree *path = NULL;
 
     static const char PATH_STR[] = "path";
     static const size_t PATH_STR_SIZE =
         sizeof(PATH_STR) / sizeof(*PATH_STR) - sizeof(*PATH_STR);
 
-    for (size_t i = 0; i < functionCall->parameters_size; ++i) {
-      AstTreeFunctionCallParam param = functionCall->parameters[i];
+    for (size_t i = 0; i < functionCall->parameters.size; ++i) {
+      AstTreeFunctionCallParam param = functionCall->parameters.data[i];
       const size_t param_name_size = param.nameEnd - param.nameBegin;
 
       if (param_name_size == 0) {
@@ -7680,7 +7715,7 @@ bool setTypesBuiltinCLibrary(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesBuiltinCFunction(AstTree *tree, AstTreeSetTypesHelper helper,
                               AstTreeFunctionCall *functionCall) {
   (void)helper;
-  if (functionCall->parameters_size != 3) {
+  if (functionCall->parameters.size != 3) {
     printError(tree->str_begin, tree->str_end, "Too many or too few arguments");
     return false;
   }
@@ -7698,8 +7733,8 @@ bool setTypesBuiltinCFunction(AstTree *tree, AstTreeSetTypesHelper helper,
   static const size_t FUNC_TYPE_STR_SIZE =
       sizeof(FUNC_TYPE_STR) / sizeof(*FUNC_TYPE_STR) - sizeof(*FUNC_TYPE_STR);
 
-  for (size_t i = 0; i < functionCall->parameters_size; ++i) {
-    AstTreeFunctionCallParam param = functionCall->parameters[i];
+  for (size_t i = 0; i < functionCall->parameters.size; ++i) {
+    AstTreeFunctionCallParam param = functionCall->parameters.data[i];
     const size_t param_name_size = param.nameEnd - param.nameBegin;
 
     if (param_name_size == 0) {
@@ -7801,14 +7836,14 @@ bool setTypesBuiltinCFunction(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesBuiltinInsert(AstTree *tree, AstTreeSetTypesHelper helper,
                            AstTreeFunctionCall *functionCall) {
   (void)helper;
-  if (functionCall->parameters_size != 1) {
+  if (functionCall->parameters.size != 1) {
     printError(tree->str_begin, tree->str_end, "Too many or too few arguments");
     return false;
   }
 
-  const char *str = functionCall->parameters[0].nameBegin;
-  const size_t str_size = functionCall->parameters[0].nameEnd -
-                          functionCall->parameters[0].nameBegin;
+  const char *str = functionCall->parameters.data[0].nameBegin;
+  const size_t str_size = functionCall->parameters.data[0].nameEnd -
+                          functionCall->parameters.data[0].nameBegin;
 
   static char CODE_STR[] = "code";
   static size_t CODE_STR_SIZE =
@@ -7816,22 +7851,22 @@ bool setTypesBuiltinInsert(AstTree *tree, AstTreeSetTypesHelper helper,
 
   if (str_size != 0 && (str_size != CODE_STR_SIZE ||
                         !strnEquals(str, CODE_STR, CODE_STR_SIZE))) {
-    printError(functionCall->parameters[0].nameBegin,
-               functionCall->parameters[0].nameEnd, "Unknown parameter");
+    printError(functionCall->parameters.data[0].nameBegin,
+               functionCall->parameters.data[0].nameEnd, "Unknown parameter");
     return false;
   }
 
-  AstTree *type = functionCall->parameters[0].value->type;
+  AstTree *type = functionCall->parameters.data[0].value->type;
   AstTree *stringType = makeStringType();
   if (typeIsEqual(type->type, stringType, helper.scope)) {
     astTreeDelete(stringType);
-    printError(functionCall->parameters[0].nameBegin,
-               functionCall->parameters[0].nameEnd,
+    printError(functionCall->parameters.data[0].nameBegin,
+               functionCall->parameters.data[0].nameEnd,
                "Type mismatch it must be `code`");
     return false;
-  } else if (!isConst(functionCall->parameters[0].value)) {
-    printError(functionCall->parameters[0].nameBegin,
-               functionCall->parameters[0].nameEnd, "Must be const");
+  } else if (!isConst(functionCall->parameters.data[0].value)) {
+    printError(functionCall->parameters.data[0].nameBegin,
+               functionCall->parameters.data[0].nameEnd, "Must be const");
     return false;
   }
   astTreeDelete(stringType);
@@ -8189,8 +8224,8 @@ AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
     initedArguments[i].value = NULL;
   }
 
-  for (size_t i = 0; i < metadata->parameters_size; ++i) {
-    AstTreeFunctionCallParam param = metadata->parameters[i];
+  for (size_t i = 0; i < metadata->parameters.size; ++i) {
+    AstTreeFunctionCallParam param = metadata->parameters.data[i];
     if (param.nameBegin != param.nameEnd) {
       const size_t param_name_size = param.nameEnd - param.nameBegin;
       for (size_t j = 0; j < newFunction->arguments.size; ++j) {
@@ -8215,8 +8250,8 @@ AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
   END_OF_NAMED_FOR1:
   }
 
-  for (size_t i = 0; i < metadata->parameters_size; ++i) {
-    AstTreeFunctionCallParam param = metadata->parameters[i];
+  for (size_t i = 0; i < metadata->parameters.size; ++i) {
+    AstTreeFunctionCallParam param = metadata->parameters.data[i];
     if (param.nameBegin == param.nameEnd) {
       for (size_t j = 0; j < newFunction->arguments.size; ++j) {
         AstTreeVariable *arg = newFunction->arguments.data[j];
@@ -8248,20 +8283,20 @@ AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
   }
 
   for (size_t i = 0; i < initedArguments_size; ++i) {
-    metadata->parameters[i] = initedArguments[i];
+    metadata->parameters.data[i] = initedArguments[i];
   }
 
   bool found = false;
   size_t element_index;
 
   for (size_t i = 0; i < shapeShifter->generateds.size; ++i) {
-    AstTreeFunctionCall *call = shapeShifter->generateds.calls[i];
-    if (metadata->parameters_size != call->parameters_size)
+    AstTreeFunctionCallParams call = shapeShifter->generateds.calls[i];
+    if (metadata->parameters.size != call.size)
       continue;
 
-    for (size_t i = 0; i < metadata->parameters_size; ++i) {
-      AstTreeFunctionCallParam p0 = metadata->parameters[i];
-      AstTreeFunctionCallParam p1 = call->parameters[i];
+    for (size_t i = 0; i < metadata->parameters.size; ++i) {
+      AstTreeFunctionCallParam p0 = metadata->parameters.data[i];
+      AstTreeFunctionCallParam p1 = call.data[i];
       if (!typeIsEqual(p0.value->type, p1.value->type, helper.scope)) {
         goto SEARCH_LOOP_CONTINUE;
       }
@@ -8337,7 +8372,29 @@ AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
     }
     shapeShifter->generateds.functions[shapeShifter->generateds.size] =
         newFunction;
-    shapeShifter->generateds.calls[shapeShifter->generateds.size] = metadata;
+
+    shapeShifter->generateds.calls[shapeShifter->generateds.size].size =
+        metadata->parameters.size;
+    shapeShifter->generateds.calls[shapeShifter->generateds.size].data =
+        a404m_malloc(
+            sizeof(
+                *shapeShifter->generateds.calls[shapeShifter->generateds.size]
+                     .data) *
+            shapeShifter->generateds.calls[shapeShifter->generateds.size].size);
+
+    for (size_t i = 0;
+         i < shapeShifter->generateds.calls[shapeShifter->generateds.size].size;
+         ++i) {
+      shapeShifter->generateds.calls[shapeShifter->generateds.size]
+          .data[i]
+          .value = copyAstTree(metadata->parameters.data[i].value);
+      shapeShifter->generateds.calls[shapeShifter->generateds.size]
+          .data[i]
+          .nameBegin = metadata->parameters.data[i].nameBegin;
+      shapeShifter->generateds.calls[shapeShifter->generateds.size]
+          .data[i]
+          .nameBegin = metadata->parameters.data[i].nameEnd;
+    }
 
     element_index = shapeShifter->generateds.size;
     shapeShifter->generateds.size += 1;
@@ -8356,7 +8413,7 @@ AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
 bool doesFunctionMatch(AstTreeTypeFunction *function,
                        AstTreeFunctionCall *functionCall,
                        AstTreeSetTypesHelper helper) {
-  if (function->arguments_size != functionCall->parameters_size) {
+  if (function->arguments_size != functionCall->parameters.size) {
     return false;
   }
 
@@ -8367,8 +8424,8 @@ bool doesFunctionMatch(AstTreeTypeFunction *function,
     initedArguments[i].value = NULL;
   }
 
-  for (size_t i = 0; i < functionCall->parameters_size; ++i) {
-    AstTreeFunctionCallParam param = functionCall->parameters[i];
+  for (size_t i = 0; i < functionCall->parameters.size; ++i) {
+    AstTreeFunctionCallParam param = functionCall->parameters.data[i];
     if (param.nameBegin != param.nameEnd) {
       const size_t param_name_size = param.nameEnd - param.nameBegin;
       for (size_t j = 0; j < function->arguments_size; ++j) {
@@ -8388,8 +8445,8 @@ bool doesFunctionMatch(AstTreeTypeFunction *function,
   END_OF_NAMED_FOR:
   }
 
-  for (size_t i = 0; i < functionCall->parameters_size; ++i) {
-    AstTreeFunctionCallParam param = functionCall->parameters[i];
+  for (size_t i = 0; i < functionCall->parameters.size; ++i) {
+    AstTreeFunctionCallParam param = functionCall->parameters.data[i];
     if (param.nameBegin == param.nameEnd) {
       for (size_t j = 0; j < function->arguments_size; ++j) {
         AstTreeTypeFunctionArgument arg = function->arguments[j];
@@ -8421,7 +8478,7 @@ bool doesShapeShifterMatch(AstTreeShapeShifter *shapeShifter,
                            AstTreeSetTypesHelper helper) {
   AstTreeFunction *function = shapeShifter->function;
 
-  if (function->arguments.size != functionCall->parameters_size) {
+  if (function->arguments.size != functionCall->parameters.size) {
     return false;
   }
 
@@ -8457,8 +8514,8 @@ bool doesShapeShifterMatch(AstTreeShapeShifter *shapeShifter,
       .isInScope = false,
   };
 
-  for (size_t i = 0; i < functionCall->parameters_size; ++i) {
-    AstTreeFunctionCallParam param = functionCall->parameters[i];
+  for (size_t i = 0; i < functionCall->parameters.size; ++i) {
+    AstTreeFunctionCallParam param = functionCall->parameters.data[i];
     if (param.nameBegin != param.nameEnd) {
       const size_t param_name_size = param.nameEnd - param.nameBegin;
       for (size_t j = 0; j < arguments.size; ++j) {
@@ -8488,8 +8545,8 @@ bool doesShapeShifterMatch(AstTreeShapeShifter *shapeShifter,
   END_OF_NAMED_FOR1:
   }
 
-  for (size_t i = 0; i < functionCall->parameters_size; ++i) {
-    AstTreeFunctionCallParam param = functionCall->parameters[i];
+  for (size_t i = 0; i < functionCall->parameters.size; ++i) {
+    AstTreeFunctionCallParam param = functionCall->parameters.data[i];
     if (param.nameBegin == param.nameEnd) {
       for (size_t j = 0; j < arguments.size; ++j) {
         AstTreeVariable *arg = arguments.data[j];

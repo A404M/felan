@@ -241,10 +241,14 @@ typedef struct AstTreeFunctionCallParam {
   AstTree *value;
 } AstTreeFunctionCallParam;
 
+typedef struct AstTreeFunctionCallParams {
+  AstTreeFunctionCallParam *data;
+  size_t size;
+} AstTreeFunctionCallParams;
+
 typedef struct AstTreeFunctionCall {
   AstTree *function;
-  AstTreeFunctionCallParam *parameters;
-  size_t parameters_size;
+  AstTreeFunctionCallParams parameters;
 } AstTreeFunctionCall;
 
 typedef u64 AstTreeInt;
@@ -325,7 +329,7 @@ typedef struct AstTreeNamespace {
 typedef struct AstTreeShapeShifter {
   AstTreeFunction *function;
   struct {
-    AstTreeFunctionCall **calls;
+    AstTreeFunctionCallParams *calls;
     AstTreeFunction **functions;
     size_t size;
   } generateds;
