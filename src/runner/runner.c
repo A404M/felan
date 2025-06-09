@@ -1707,7 +1707,6 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
       }
       AstTree *type =
           copyAstTree((AstTreeSingleChild *)operand->type->metadata);
-      printLog("%s", AST_TREE_TOKEN_STRINGS[type->token]);
       AstTreeRawValue *value = *(void **)operand->metadata;
       astTreeDelete(operand);
       return newAstTree(AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED, value, type, NULL,
@@ -1803,8 +1802,6 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
       }
       size_t index = 0;
       AstTreeStruct *type = tree->type->metadata;
-      printLog("%s %s", AST_TREE_TOKEN_STRINGS[tree->type->token],
-               AST_TREE_TOKEN_STRINGS[metadata->object->token]);
       for (size_t i = 0; i < metadata->member.index; ++i) {
         index += getSizeOfType(type->variables.data[i]->type);
       }
