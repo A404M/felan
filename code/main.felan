@@ -1,5 +1,4 @@
-// @import("basic.felan");
-@import("lib/vector.felan");
+@import("basic.felan");
 
 /*
 t :: (comptime formatter : string) macro -> void {
@@ -28,9 +27,12 @@ t :: (comptime formatter : string) macro -> void {
 */
 
 main :: () -> void {
-  v := vector_new(u8);
+  v := vector_new(i64);
 
-  push_back(&v,'2');
+  push_back(&v,32);
+
+  println(v.capacity);
+  println(v[0]);
 
   delete(v);
 };

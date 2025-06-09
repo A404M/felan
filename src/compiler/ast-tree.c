@@ -3775,7 +3775,10 @@ AstTree *astTreeParseArrayAccessOperator(const ParserNode *parserNode) {
   metadata->parameters.data = a404m_malloc(metadata->parameters.size *
                                            sizeof(*metadata->parameters.data));
 
-  metadata->parameters.data[0].value = astTreeParse(node_metadata->operand);
+  AstTree *value = astTreeParse(node_metadata->operand);
+  metadata->parameters.data[0].value =
+      newAstTree(AST_TREE_TOKEN_OPERATOR_ADDRESS, value, NULL, value->str_begin,
+                 value->str_end);
   metadata->parameters.data[0].nameBegin = NULL;
   metadata->parameters.data[0].nameEnd = NULL;
 
