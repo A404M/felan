@@ -3906,6 +3906,9 @@ bool hasAnyTypeInside(AstTree *type) {
     }
     return false;
   }
+  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS:
+  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS_ASSIGN:
+  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS_ADDRESS:
   case AST_TREE_TOKEN_FUNCTION_CALL: {
     AstTreeFunctionCall *metadata = type->metadata;
     for (size_t i = 0; i < metadata->parameters.size; ++i) {
@@ -3916,6 +3919,8 @@ bool hasAnyTypeInside(AstTree *type) {
     return false;
   }
   case AST_TREE_TOKEN_VARIABLE:
+  case AST_TREE_TOKEN_OPERATOR_ADDRESS:
+  case AST_TREE_TOKEN_OPERATOR_DEREFERENCE:
     return false;
   case AST_TREE_TOKEN_FUNCTION:
   case AST_TREE_TOKEN_KEYWORD_RETURN:
@@ -3944,15 +3949,10 @@ bool hasAnyTypeInside(AstTree *type) {
   case AST_TREE_TOKEN_OPERATOR_SMALLER:
   case AST_TREE_TOKEN_OPERATOR_GREATER_OR_EQUAL:
   case AST_TREE_TOKEN_OPERATOR_SMALLER_OR_EQUAL:
-  case AST_TREE_TOKEN_OPERATOR_ADDRESS:
-  case AST_TREE_TOKEN_OPERATOR_DEREFERENCE:
   case AST_TREE_TOKEN_OPERATOR_ACCESS:
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_NOT:
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_AND:
   case AST_TREE_TOKEN_OPERATOR_LOGICAL_OR:
-  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS:
-  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS_ASSIGN:
-  case AST_TREE_TOKEN_OPERATOR_ARRAY_ACCESS_ADDRESS:
   case AST_TREE_TOKEN_OPERATOR_BITWISE_NOT:
   case AST_TREE_TOKEN_OPERATOR_BITWISE_AND:
   case AST_TREE_TOKEN_OPERATOR_BITWISE_XOR:
@@ -8215,8 +8215,6 @@ AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
   AstTreeFunction *newFunction =
       copyAstTreeFunction(shapeShifter->function, NULL, NULL, 0, true);
 
-  newFunction->isMacro = shapeShifter->function->isMacro;
-
   AstTreeFunctionCallParam initedArguments[newFunction->arguments.size];
   size_t initedArguments_size = newFunction->arguments.size;
 
@@ -8531,6 +8529,8 @@ bool doesShapeShifterMatch(AstTreeShapeShifter *shapeShifter,
               goto RETURN_FALSE;
             }
             arg->value = copyAstTree(param.value);
+            astTreeDelete(arg->type);
+            arg->type = copyAstTree(param.value->type);
             initedArguments[j] = param;
             goto END_OF_NAMED_FOR1;
           } else {
@@ -8560,6 +8560,8 @@ bool doesShapeShifterMatch(AstTreeShapeShifter *shapeShifter,
               goto RETURN_FALSE;
             }
             arg->value = copyAstTree(param.value);
+            astTreeDelete(arg->type);
+            arg->type = copyAstTree(param.value->type);
             initedArguments[j] = param;
             goto END_OF_UNNAMED_FOR1;
           }

@@ -17,6 +17,22 @@ vector_new :: (comptime t:type) -> (vector(t)) {
   return v;
 };
 
+__get_item__ :: (left:vector(anytype),index:i64) -> (@type_of(left.ptr.*)) {
+  return (left.ptr + index).*;
+};
+
+__set_item__ :: (left:vector(anytype),index:i64,item:@type_of(left.ptr.*)) -> (@type_of(left.ptr.*)) {
+  return (left.ptr + index).* = item;
+};
+
+__get_item_address__ :: (left:vector(anytype),index:i64) -> (@type_of(left.ptr)) {
+  return (left.ptr + index);
+};
+
+push_back :: (vec:vector(anytype),value:@type_of(vec.ptr.*)) -> void {
+  @putc('h');
+};
+
 delete :: (vec:vector(anytype)) -> void {
   free(vec.ptr);
 };

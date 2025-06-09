@@ -8,6 +8,6 @@ malloc :: (size:i64,comptime t:type) -> (*t) {
   return @cast(malloc(size*@cast(@size_of(t),i64)),*t);
 };
 
-free :: (a:*anytype) -> void {
-  free(@cast(a,*void));
+free :: (ptr:*anytype) -> void {
+  free(@cast(ptr,*void));
 };
