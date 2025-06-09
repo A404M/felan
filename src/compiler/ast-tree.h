@@ -71,6 +71,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER,
   AST_TREE_TOKEN_TYPE_C_LIBRARY,
   AST_TREE_TOKEN_TYPE_C_FUNCTION,
+  AST_TREE_TOKEN_TYPE_MACRO,
   AST_TREE_TOKEN_TYPE_BOOL,
   AST_TREE_TOKEN_VALUE_VOID,
   AST_TREE_TOKEN_STATIC_VARS_END = AST_TREE_TOKEN_VALUE_VOID,
@@ -84,6 +85,7 @@ typedef enum AstTreeToken {
   AST_TREE_TOKEN_VALUE_SHAPE_SHIFTER,
   AST_TREE_TOKEN_VALUE_C_LIBRARY,
   AST_TREE_TOKEN_VALUE_C_FUNCTION,
+  AST_TREE_TOKEN_VALUE_MACRO,
   AST_TREE_TOKEN_VALUE_INT,
   AST_TREE_TOKEN_VALUE_FLOAT,
   AST_TREE_TOKEN_VALUE_BOOL,
@@ -161,6 +163,7 @@ extern AstTree AST_TREE_CODE_TYPE;
 extern AstTree AST_TREE_NAMESPACE_TYPE;
 extern AstTree AST_TREE_SHAPE_SHIFTER_TYPE;
 extern AstTree AST_TREE_C_LIBRARY_TYPE;
+extern AstTree AST_TREE_MACRO_TYPE;
 extern AstTree AST_TREE_VOID_VALUE;
 
 typedef struct AstTreeVariable {
@@ -354,12 +357,17 @@ typedef struct AstTreeCFunction {
   AstTree *funcType;
 } AstTreeCFunction;
 
+typedef struct AstTreeMacro {
+  AstTreeFunction *function;
+} AstTreeMacro;
+
 #ifdef PRINT_COMPILE_TREE
 void astTreePrint(const AstTree *tree, int indent);
 void astTreeVariablePrint(const AstTreeVariable *variable, int indent);
 void astTreeRootPrint(const AstTreeRoot *root);
 #endif
 
+void astTreeTypeFunctionDestroy(AstTreeTypeFunction functionType);
 void astTreeScopeDestroy(AstTreeScope scope);
 void astTreeFunctionDestroy(AstTreeFunction function);
 void astTreeDeleteFunctionCall(AstTreeFunctionCall *functionCall);

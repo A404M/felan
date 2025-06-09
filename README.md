@@ -67,6 +67,7 @@ main :: () -> void {
 * ~Overloading [] operator~
 * ~Add code injection~
 * Add macro
+* Fix scope bug in shape shifters
 * Add \u and \x to char
 * Add vararg
 * Add enum

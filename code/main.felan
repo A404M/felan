@@ -1,3 +1,4 @@
+/*
 @import("basic.felan");
 file :: @import("file.felan");
 
@@ -24,10 +25,15 @@ t :: (comptime formatter : string) macro -> string {
   }
   return "";
 };
+*/
+
+p :: () macro -> void {
+  @putc(a);
+  // print("Hello world");
+};
 
 main :: () -> void {
-  arr :[10][]u8 = undefined;
-  arr[0] = "Hello";
-  print(arr[0]);
+  a := 'a';
+  p();
 };
 
