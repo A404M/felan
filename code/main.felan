@@ -4,12 +4,9 @@ main :: () -> void {
   // print_formatted("hello");
   str := string_from("Hey");
 
-  print(str);
-  print_char('\n');
-  _grow_if_needed(&str,23u64);
-  // append(&str,"\nHello");
+  append(&str,"\nHello");
 
-  print(str);
+  print(slice(str,4,7));
 
   delete(str);
 };

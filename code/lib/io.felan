@@ -72,7 +72,7 @@ _print_unsigned :: (comptime t:type, value:t) -> void {
   } {}
 
   while i < NUMBERS_SIZE - 1 {
-    @putc(numbers[i]);
+    print_char(numbers[i]);
     i += 1;
   }
   return;

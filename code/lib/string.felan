@@ -67,6 +67,16 @@ _grow_if_needed :: (this:*String, count:u64) -> void {
   }
 };
 
+slice :: (this:String, begin:i64, end:i64) -> String {
+  result:String = undefined;
+
+  result.ptr = this.ptr + begin;
+  result.size = @cast(end-begin,u64);
+  result.capacity = 0u64;
+
+  return result;
+};
+
 delete :: (this:String) -> void {
   free(this.ptr);
 };
@@ -74,7 +84,7 @@ delete :: (this:String) -> void {
 print :: (this:String) -> void {
   i := 0u64;
   while i < this.size {
-    @putc(this[i]);
+    print_char(this[i]);
     i += 1u64;
   }
 };
