@@ -3750,6 +3750,11 @@ AstTree *astTreeParseBracket(const ParserNode *parserNode, AstTreeToken token) {
 
   metadata->operand = astTreeParse(node_metadata->operand);
 
+  if (metadata->operand == NULL) {
+    free(metadata);
+    return NULL;
+  }
+
   metadata->parameters.size = node_metadata->params->size;
   metadata->parameters.data = a404m_malloc(sizeof(*metadata->parameters.data) *
                                            metadata->parameters.size);
@@ -3762,6 +3767,11 @@ AstTree *astTreeParseBracket(const ParserNode *parserNode, AstTreeToken token) {
     }
 
     metadata->parameters.data[i] = astTreeParse(node_param);
+
+    if (metadata->parameters.data[i] == NULL) {
+      free(metadata);
+      return NULL;
+    }
   }
 
   return newAstTree(token, metadata, NULL, parserNode->str_begin,

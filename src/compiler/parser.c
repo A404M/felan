@@ -201,18 +201,13 @@ static const ParserOrder PARSER_ORDER[] = {
         .end = LEXER_TOKEN_ORDER13,
     },
     {
-        .ltr = false,
+        .ltr = true,
         .begin = LEXER_TOKEN_ORDER13,
         .end = LEXER_TOKEN_ORDER14,
     },
     {
-        .ltr = true,
-        .begin = LEXER_TOKEN_ORDER14,
-        .end = LEXER_TOKEN_ORDER15,
-    },
-    {
         .ltr = false,
-        .begin = LEXER_TOKEN_ORDER15,
+        .begin = LEXER_TOKEN_ORDER14,
         .end = LEXER_TOKEN_END_ORDERS,
     },
 };

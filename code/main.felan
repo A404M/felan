@@ -1,13 +1,25 @@
 @import("basic.felan");
 
+t :: (a:[]u8) -> void {
+  i := 0u64;
+  while i < a.length {
+    print(a[i]);
+    i += 1u64;
+    break;
+  }
+};
+
 main :: () -> void {
-  // print_formatted("hello");
-  str := string_from("Hey");
+  a := (comptime {
+    a:[10]u8 = undefined;
+    i := 0u64;
+    while i < a.length {
+      a[i] = @cast(i,u8);
+      i += 1u64;
+    }
+    a;
+  });
 
-  append(&str,"\nHello");
-
-  print(slice(str,4,7));
-
-  delete(str);
+  t(a);
 };
 

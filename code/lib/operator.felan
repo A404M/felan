@@ -833,3 +833,15 @@ __set_item__ :: (left:*[]anytype,index:i64,item:@type_of(left.*.ptr.*)) -> (@typ
 __get_item_address__ :: (left:*[]anytype,index:i64) -> (@type_of(left.*.ptr)) {
   return (left.*.ptr + index);
 };
+
+__get_item__ :: (left:*[]anytype,index:u64) -> (@type_of(left.*.ptr.*)) {
+  return (left.*.ptr + index).*;
+};
+
+__set_item__ :: (left:*[]anytype,index:u64,item:@type_of(left.*.ptr.*)) -> (@type_of(left.*.ptr.*)) {
+  return (left.*.ptr + index).* = item;
+};
+
+__get_item_address__ :: (left:*[]anytype,index:u64) -> (@type_of(left.*.ptr)) {
+  return (left.*.ptr + index);
+};
