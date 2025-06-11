@@ -1,25 +1,12 @@
 @import("basic.felan");
 
-t :: (a:[]u8) -> void {
-  i := 0u64;
-  while i < a.length {
-    print(a[i]);
-    i += 1u64;
-    break;
-  }
+t :: (comptime b:u8) -> void {
+  print(b);
+  print(a);
 };
 
 main :: () -> void {
-  a := (comptime {
-    a:[10]u8 = undefined;
-    i := 0u64;
-    while i < a.length {
-      a[i] = @cast(i,u8);
-      i += 1u64;
-    }
-    a;
-  });
-
-  t(a);
+  a := 2u8;
+  t(5u8);
 };
 
