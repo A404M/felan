@@ -555,7 +555,7 @@ bool setTypesBuiltinCFunction(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesBuiltinInsert(AstTree *tree, AstTreeSetTypesHelper helper,
                            AstTreeFunctionCall *functionCall);
 bool setTypesTypeArray(AstTree *tree, AstTreeSetTypesHelper helper);
-bool setTypesAstFunction(AstTreeFunction *function,
+bool setTypesAstFunction(AstTreeFunction *function,AstTree *tree,
                          AstTreeSetTypesHelper helper);
 
 bool setTypesAstVariable(AstTreeVariable *variable,

@@ -5891,92 +5891,7 @@ bool setTypesFunction(AstTree *tree, AstTreeSetTypesHelper _helper) {
     return true;
   }
 
-  // TODO: do something about macros
-
-  AstTreeSetTypesHelper helper = {
-      .lookingType = NULL,
-      .dependencies = _helper.dependencies,
-      .variables.data =
-          a404m_malloc((_helper.variables.size + metadata->arguments.size +
-                        metadata->scope.variables.size) *
-                       sizeof(*helper.variables.data)),
-      .variables.size = _helper.variables.size,
-      .root = _helper.root,
-      .loops = NULL,
-      .loops_size = 0,
-      .scope = &metadata->scope,
-      .isInScope = true,
-  };
-
-  for (size_t i = 0; i < _helper.variables.size; ++i) {
-    helper.variables.data[i] = _helper.variables.data[i];
-  }
-
-  AstTreeVariable *deps[helper.dependencies.size];
-  size_t deps_size = 0;
-
-  for (size_t i = 0; i < metadata->arguments.size; ++i) {
-    AstTreeVariable *variable = metadata->arguments.data[i];
-    if (!setTypesAstVariable(variable, helper)) {
-      return false;
-    }
-    helper.variables.data[helper.variables.size++] = variable;
-  }
-
-  if (!setAllTypes(metadata->returnType, helper, NULL, NULL)) {
-    return false;
-  }
-  metadata->returnType = getValue(metadata->returnType, false, helper.scope);
-
-  tree->type = makeTypeOf(tree);
-
-  for (size_t i = 0; i < helper.dependencies.size; ++i) {
-    AstTreeVariable *var = helper.dependencies.data[i];
-    if (var->value == tree || var->initValue == tree) {
-      continue;
-    }
-    deps[deps_size] = helper.dependencies.data[i];
-    deps_size += 1;
-  }
-
-  helper.dependencies.data = deps;
-  helper.dependencies.size = deps_size;
-
-  for (size_t i = 0; i < metadata->scope.variables.size; ++i) {
-    AstTreeVariable *variable = metadata->scope.variables.data[i];
-    if (variable->isConst) {
-      if (!setTypesAstVariable(variable, helper)) {
-        return false;
-      }
-      helper.variables.data[helper.variables.size++] = variable;
-    }
-  }
-
-  for (size_t i = 0; i < metadata->scope.expressions_size; ++i) {
-    AstTree *expr = metadata->scope.expressions[i];
-    if (expr->token == AST_TREE_TOKEN_VARIABLE_DEFINE) {
-      AstTreeVariable *variable = expr->metadata;
-      if (!setTypesAstVariable(variable, helper)) {
-        return false;
-      }
-      size_t variables_capacity =
-          a404m_malloc_usable_size(helper.variables.data) /
-          sizeof(*helper.variables.data);
-      if (variables_capacity == helper.variables.size) {
-        variables_capacity += variables_capacity / 2 + 1;
-        helper.variables.data =
-            a404m_realloc(helper.variables.data,
-                          variables_capacity * sizeof(*helper.variables.data));
-      }
-      helper.variables.data[helper.variables.size++] = variable;
-    }
-    if (!setAllTypes(expr, helper, metadata, NULL)) {
-      return false;
-    }
-  }
-
-  free(helper.variables.data);
-  return true;
+  return setTypesAstFunction(metadata, tree, _helper);
 }
 
 bool setTypesReturn(AstTree *tree, AstTreeSetTypesHelper _helper,
@@ -6149,7 +6064,7 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
     AstTreeFunction *function =
         copyAstTreeFunction(macro->function, NULL, NULL, 0, true);
 
-    if (!setTypesAstFunction(function, helper)) {
+    if (!setTypesAstFunction(function,NULL, helper)) {
       astTreeFunctionDestroy(*function);
       free(function);
       return false;
@@ -8003,7 +7918,7 @@ bool setTypesAstInfix(AstTreePureInfix *infix, AstTreeSetTypesHelper _helper) {
   return setAllTypes(infix->right, helper, NULL, NULL);
 }
 
-bool setTypesAstFunction(AstTreeFunction *metadata,
+bool setTypesAstFunction(AstTreeFunction *metadata, AstTree *tree,
                          AstTreeSetTypesHelper _helper) {
   AstTreeSetTypesHelper helper = {
       .lookingType = NULL,
@@ -8011,11 +7926,11 @@ bool setTypesAstFunction(AstTreeFunction *metadata,
       .variables.data =
           a404m_malloc((_helper.variables.size + metadata->arguments.size +
                         metadata->scope.variables.size) *
-                       sizeof(*_helper.variables.data)),
+                       sizeof(*helper.variables.data)),
       .variables.size = _helper.variables.size,
       .root = _helper.root,
-      .loops = _helper.loops,
-      .loops_size = _helper.loops_size,
+      .loops = NULL,
+      .loops_size = 0,
       .scope = &metadata->scope,
       .isInScope = true,
   };
@@ -8040,9 +7955,17 @@ bool setTypesAstFunction(AstTreeFunction *metadata,
   }
   metadata->returnType = getValue(metadata->returnType, false, helper.scope);
 
-  for (size_t i = 0; i < helper.dependencies.size; ++i) {
-    deps[deps_size] = helper.dependencies.data[i];
-    deps_size += 1;
+  if (tree != NULL) {
+    tree->type = makeTypeOf(tree);
+
+    for (size_t i = 0; i < helper.dependencies.size; ++i) {
+      AstTreeVariable *var = helper.dependencies.data[i];
+      if (var->value == tree || var->initValue == tree) {
+        continue;
+      }
+      deps[deps_size] = helper.dependencies.data[i];
+      deps_size += 1;
+    }
   }
 
   helper.dependencies.data = deps;
@@ -8185,7 +8108,7 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
         AstTreeFunction *function =
             copyAstTreeFunction(macro->function, NULL, NULL, 0, true);
 
-        if (!setTypesAstFunction(function, helper)) {
+        if (!setTypesAstFunction(function,NULL, helper)) {
           astTreeFunctionDestroy(*function);
           free(function);
           return NULL;
@@ -8378,7 +8301,7 @@ AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
       newHelper.variables.size += 1;
     }
 
-    if (!setTypesAstFunction(newFunction, helper)) {
+    if (!setTypesAstFunction(newFunction,NULL, helper)) {
       return NULL;
     }
 
