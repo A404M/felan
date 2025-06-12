@@ -1784,7 +1784,6 @@ AstTreeVariables copyAstTreeVariables(AstTreeVariables variables,
     result.data[i]->name_begin = variables.data[i]->name_begin;
     result.data[i]->name_end = variables.data[i]->name_end;
     result.data[i]->isConst = variables.data[i]->isConst;
-    result.data[i]->isLazy = variables.data[i]->isLazy;
     result.data[i]->type =
         copyAstTreeBack(variables.data[i]->type, new_oldVariables,
                         new_newVariables, new_variables_size, safetyCheck);
@@ -2115,7 +2114,6 @@ AstTreeRoot *makeAstRoot(const ParserNode *parsedRoot, char *filePath) {
       variable->name_begin = node_metadata->name->str_begin;
       variable->name_end = node_metadata->name->str_end;
       variable->isConst = node->token == PARSER_TOKEN_CONSTANT;
-      variable->isLazy = node_metadata->isLazy;
 
       if (node_metadata->isComptime && !variable->isConst) {
         printError(node->str_begin, node->str_end, "Bad comptime %s",
@@ -2678,7 +2676,6 @@ AstTree *astTreeParseFunction(const ParserNode *parserNode) {
     argument->name_begin = arg_metadata->name->str_begin;
     argument->name_end = arg_metadata->name->str_end;
     argument->isConst = arg_metadata->isComptime;
-    argument->isLazy = arg_metadata->isLazy;
 
     if (!pushVariable(&function->arguments, argument)) {
       astTreeVariableDelete(argument);
@@ -3329,7 +3326,6 @@ bool astTreeParseConstant(const ParserNode *parserNode,
   variable->name_begin = node_metadata->name->str_begin;
   variable->name_end = node_metadata->name->str_end;
   variable->isConst = true;
-  variable->isLazy = node_metadata->isLazy;
 
   if (!pushVariable(variables, variable)) {
     astTreeVariableDelete(variable);
@@ -3381,7 +3377,6 @@ AstTree *astTreeParseVariable(const ParserNode *parserNode,
   variable->name_begin = node_metadata->name->str_begin;
   variable->name_end = node_metadata->name->str_end;
   variable->isConst = false;
-  variable->isLazy = node_metadata->isLazy;
 
   if (!pushVariable(variables, variable)) {
     astTreeVariableDelete(variable);
@@ -3703,7 +3698,6 @@ AstTree *astTreeParseStruct(const ParserNode *parserNode) {
       variable->initValue = NULL;
       variable->isConst = false;
     }
-    variable->isLazy = node_variable->isLazy;
 
     variables.data[i] = variable;
   }

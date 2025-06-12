@@ -156,7 +156,6 @@ typedef struct ParserNodeVariableMetadata {
   ParserNode *name;
   ParserNode *type;
   ParserNode *value;
-  bool isLazy;
   bool isComptime;
 } ParserNodeVariableMetadata;
 

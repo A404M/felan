@@ -1,12 +1,33 @@
-@import("basic.felan");
+// @import("basic.felan");
 
+/*
 t :: (comptime b:u8) -> void {
   print(b);
-  print(a);
+};
+*/
+
+__equal__ :: (a:u8,b:u8) -> bool {
+  return @equal(a,b);
+};
+
+h :: (a:u8,b:u8) macro -> void {
+  if a == 0u8 {
+    if b == 0u8 {
+      @putc('0');
+    }else{
+      @putc('1');
+    }
+  }else{
+    @putc('2');
+  }
+};
+
+f :: (a:u8,c:u8) -> u8 {
+  @putc(c);
+  return a;
 };
 
 main :: () -> void {
-  a := 2u8;
-  t(5u8);
+  h(f(1u8,'a'),f(0u8,'b'));
 };
 

@@ -173,7 +173,6 @@ typedef struct AstTreeVariable {
   AstTree *value;
   AstTree *initValue;
   bool isConst;
-  bool isLazy;
 } AstTreeVariable;
 
 typedef struct AstTreeVariables {

@@ -353,7 +353,6 @@ void parserNodePrint(const ParserNode *node, int indent) {
   case PARSER_TOKEN_CONSTANT:
   case PARSER_TOKEN_VARIABLE: {
     const ParserNodeVariableMetadata *metadata = node->metadata;
-    printf("isLazy=%b,\n", metadata->isLazy);
     for (int i = 0; i < indent; ++i)
       printf(" ");
     printf("name=\n");
@@ -1177,7 +1176,6 @@ ParserNode *parseNode(LexerNode *node, LexerNode *begin, LexerNode *end,
     return parserComptime(node, end, parent);
   case LEXER_TOKEN_KEYWORD_STRUCT:
     return parserStruct(node, end, parent);
-  case LEXER_TOKEN_KEYWORD_LAZY:
   case LEXER_TOKEN_KEYWORD_ELSE:
   case LEXER_TOKEN_KEYWORD_MACRO:
   case LEXER_TOKEN_BUILTIN:
@@ -2071,14 +2069,10 @@ ParserNode *parserVariable(LexerNode *node, LexerNode *begin, LexerNode *end,
   metadata->name = name;
   metadata->type = type;
   metadata->isComptime = false;
-  metadata->isLazy = false;
 
   LexerNode *flagNode = nameNode - 1;
   while (flagNode >= begin && flagNode->parserNode == NULL) {
     switch (flagNode->token) {
-    case LEXER_TOKEN_KEYWORD_LAZY:
-      metadata->isLazy = true;
-      break;
     case LEXER_TOKEN_KEYWORD_COMPTIME:
       metadata->isComptime = true;
       break;

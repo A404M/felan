@@ -31,13 +31,10 @@ AstTree *runExpression(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
                        bool isLeft, bool isComptime, u32 *breakCount,
                        bool *shouldContinue);
 
-AstTree *getForVariable(AstTree *expr, AstTreeScope *scope, bool *shouldRet,
-                        bool isLeft, bool isComptime, u32 *breakCount,
-                        bool *shouldContinue, bool isLazy);
-
 bool discontinue(bool shouldRet, u32 breakCount);
 
 AstTree *toRawValue(AstTree *value, AstTreeScope *scope);
+bool canBeRaw(AstTree *type);
 AstTree *fromRawValue(AstTree *value);
 
 AstTree *castTo(AstTree *value, AstTree *to);

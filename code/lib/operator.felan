@@ -578,7 +578,7 @@ __logical_not__ :: (value:bool) -> bool {
   return value == false;
 };
 
-__logical_and__ :: (left:bool,lazy right:bool) -> bool {
+__logical_and__ :: (left:bool,right:bool) macro -> bool {
   if left == false {
     return false;
   } else if right == false {
@@ -588,7 +588,7 @@ __logical_and__ :: (left:bool,lazy right:bool) -> bool {
   }
 };
 
-__logical_or__ :: (left:bool,lazy right:bool) -> bool {
+__logical_or__ :: (left:bool,right:bool) macro -> bool {
   if left == true {
     return true;
   } else if right == true {

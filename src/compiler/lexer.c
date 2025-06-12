@@ -137,7 +137,6 @@ const char *LEXER_TOKEN_STRINGS[] = {
     "LEXER_TOKEN_SYMBOL_OPEN_PARENTHESIS",
     "LEXER_TOKEN_SYMBOL_OPEN_BRACKET",
     "LEXER_TOKEN_SYMBOL_OPEN_CURLY_BRACKET",
-    "LEXER_TOKEN_KEYWORD_LAZY",
     "LEXER_TOKEN_KEYWORD_MACRO",
 
     "LEXER_TOKEN_NONE",
@@ -192,40 +191,54 @@ static const size_t LEXER_SYMBOL_SIZE =
     sizeof(LEXER_SYMBOL_TOKENS) / sizeof(*LEXER_SYMBOL_TOKENS);
 
 static const char *LEXER_KEYWORD_STRINGS[] = {
-    "type",      "anytype",       "void",     "i8",
-    "u8",        "i16",           "u16",      "i32",
-    "u32",       "i64",           "u64",
+    "type",       "anytype",       "void",   "i8",        "u8",
+    "i16",        "u16",           "i32",    "u32",       "i64",
+    "u64",
 #ifdef FLOAT_16_SUPPORT
     "f16",
 #endif
-    "f32",       "f64",           "f128",     "bool",
-    "return",    "true",          "false",    "if",
-    "else",      "while",         "comptime", "null",
-    "struct",    "undefined",     "code",     "lazy",
-    "namespace", "shape_shifter", "break",    "continue",
-    "c_library", "c_function",    "macro",
+    "f32",        "f64",           "f128",   "bool",      "return",
+    "true",       "false",         "if",     "else",      "while",
+    "comptime",   "null",          "struct", "undefined", "code",
+    "namespace",  "shape_shifter", "break",  "continue",  "c_library",
+    "c_function", "macro",
 };
 static const LexerToken LEXER_KEYWORD_TOKENS[] = {
-    LEXER_TOKEN_KEYWORD_TYPE,      LEXER_TOKEN_KEYWORD_ANY_TYPE,
-    LEXER_TOKEN_KEYWORD_VOID,      LEXER_TOKEN_KEYWORD_I8,
-    LEXER_TOKEN_KEYWORD_U8,        LEXER_TOKEN_KEYWORD_I16,
-    LEXER_TOKEN_KEYWORD_U16,       LEXER_TOKEN_KEYWORD_I32,
-    LEXER_TOKEN_KEYWORD_U32,       LEXER_TOKEN_KEYWORD_I64,
+    LEXER_TOKEN_KEYWORD_TYPE,
+    LEXER_TOKEN_KEYWORD_ANY_TYPE,
+    LEXER_TOKEN_KEYWORD_VOID,
+    LEXER_TOKEN_KEYWORD_I8,
+    LEXER_TOKEN_KEYWORD_U8,
+    LEXER_TOKEN_KEYWORD_I16,
+    LEXER_TOKEN_KEYWORD_U16,
+    LEXER_TOKEN_KEYWORD_I32,
+    LEXER_TOKEN_KEYWORD_U32,
+    LEXER_TOKEN_KEYWORD_I64,
     LEXER_TOKEN_KEYWORD_U64,
 #ifdef FLOAT_16_SUPPORT
     LEXER_TOKEN_KEYWORD_F16,
 #endif
-    LEXER_TOKEN_KEYWORD_F32,       LEXER_TOKEN_KEYWORD_F64,
-    LEXER_TOKEN_KEYWORD_F128,      LEXER_TOKEN_KEYWORD_BOOL,
-    LEXER_TOKEN_KEYWORD_RETURN,    LEXER_TOKEN_KEYWORD_TRUE,
-    LEXER_TOKEN_KEYWORD_FALSE,     LEXER_TOKEN_KEYWORD_IF,
-    LEXER_TOKEN_KEYWORD_ELSE,      LEXER_TOKEN_KEYWORD_WHILE,
-    LEXER_TOKEN_KEYWORD_COMPTIME,  LEXER_TOKEN_KEYWORD_NULL,
-    LEXER_TOKEN_KEYWORD_STRUCT,    LEXER_TOKEN_KEYWORD_UNDEFINED,
-    LEXER_TOKEN_KEYWORD_CODE,      LEXER_TOKEN_KEYWORD_LAZY,
-    LEXER_TOKEN_KEYWORD_NAMESPACE, LEXER_TOKEN_KEYWORD_SHAPE_SHIFTER,
-    LEXER_TOKEN_KEYWORD_BREAK,     LEXER_TOKEN_KEYWORD_CONTINUE,
-    LEXER_TOKEN_KEYWORD_C_LIBRARY, LEXER_TOKEN_KEYWORD_C_FUNCTION,
+    LEXER_TOKEN_KEYWORD_F32,
+    LEXER_TOKEN_KEYWORD_F64,
+    LEXER_TOKEN_KEYWORD_F128,
+    LEXER_TOKEN_KEYWORD_BOOL,
+    LEXER_TOKEN_KEYWORD_RETURN,
+    LEXER_TOKEN_KEYWORD_TRUE,
+    LEXER_TOKEN_KEYWORD_FALSE,
+    LEXER_TOKEN_KEYWORD_IF,
+    LEXER_TOKEN_KEYWORD_ELSE,
+    LEXER_TOKEN_KEYWORD_WHILE,
+    LEXER_TOKEN_KEYWORD_COMPTIME,
+    LEXER_TOKEN_KEYWORD_NULL,
+    LEXER_TOKEN_KEYWORD_STRUCT,
+    LEXER_TOKEN_KEYWORD_UNDEFINED,
+    LEXER_TOKEN_KEYWORD_CODE,
+    LEXER_TOKEN_KEYWORD_NAMESPACE,
+    LEXER_TOKEN_KEYWORD_SHAPE_SHIFTER,
+    LEXER_TOKEN_KEYWORD_BREAK,
+    LEXER_TOKEN_KEYWORD_CONTINUE,
+    LEXER_TOKEN_KEYWORD_C_LIBRARY,
+    LEXER_TOKEN_KEYWORD_C_FUNCTION,
     LEXER_TOKEN_KEYWORD_MACRO,
 };
 static const size_t LEXER_KEYWORD_SIZE =
@@ -502,7 +515,6 @@ lexerPushClear(LexerNodeArray *array, size_t *array_size, char const *iter,
   case LEXER_TOKEN_KEYWORD_UNDEFINED:
   case LEXER_TOKEN_KEYWORD_CODE:
   case LEXER_TOKEN_KEYWORD_NAMESPACE:
-  case LEXER_TOKEN_KEYWORD_LAZY:
   case LEXER_TOKEN_KEYWORD_MACRO:
   case LEXER_TOKEN_NUMBER:
   case LEXER_TOKEN_CHAR:
