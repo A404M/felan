@@ -2,7 +2,6 @@
 #include "utils/memory.h"
 #include "utils/string.h"
 #include <dlfcn.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 

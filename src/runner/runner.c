@@ -8,8 +8,7 @@
 #include <dlfcn.h>
 #include <ffi.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <memory.h>
 
 #define doOperation(op0, op1, operator, originalType, type)                    \
   *((originalType *)(op0)->metadata) =                                         \
