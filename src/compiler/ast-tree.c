@@ -1309,7 +1309,6 @@ AstTree *copyAstTreeBack(AstTree *tree, AstTreeVariables oldVariables[],
             copyAstTreeBack(metadata->generateds.calls[i].data[j].value,
                             oldVariables, newVariables, variables_size, false);
       }
-      new_metadata->generateds.calls[i] = metadata->generateds.calls[i];
     }
 
     return newAstTree(tree->token, new_metadata,
@@ -6064,7 +6063,7 @@ bool setTypesFunctionCall(AstTree *tree, AstTreeSetTypesHelper _helper) {
     AstTreeFunction *function =
         copyAstTreeFunction(macro->function, NULL, NULL, 0, true);
 
-    if (!setTypesAstFunction(function,NULL, helper)) {
+    if (!setTypesAstFunction(function, NULL, helper)) {
       astTreeFunctionDestroy(*function);
       free(function);
       return false;
@@ -8108,7 +8107,7 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
         AstTreeFunction *function =
             copyAstTreeFunction(macro->function, NULL, NULL, 0, true);
 
-        if (!setTypesAstFunction(function,NULL, helper)) {
+        if (!setTypesAstFunction(function, NULL, helper)) {
           astTreeFunctionDestroy(*function);
           free(function);
           return NULL;
@@ -8238,8 +8237,9 @@ AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
 
   for (size_t i = 0; i < shapeShifter->generateds.size; ++i) {
     AstTreeFunctionCallParams call = shapeShifter->generateds.calls[i];
-    if (metadata->parameters.size != call.size)
+    if (metadata->parameters.size != call.size) {
       continue;
+    }
 
     for (size_t i = 0; i < metadata->parameters.size; ++i) {
       AstTreeFunctionCallParam p0 = metadata->parameters.data[i];
@@ -8301,18 +8301,19 @@ AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
       newHelper.variables.size += 1;
     }
 
-    if (!setTypesAstFunction(newFunction,NULL, helper)) {
+    if (!setTypesAstFunction(newFunction, NULL, helper)) {
       return NULL;
     }
 
     size_t generateds_size =
-        a404m_malloc_usable_size(shapeShifter->generateds.functions) /
-        sizeof(*shapeShifter->generateds.functions);
+        a404m_malloc_usable_size(shapeShifter->generateds.calls) /
+        sizeof(*shapeShifter->generateds.calls);
     if (generateds_size == shapeShifter->generateds.size) {
       generateds_size += generateds_size / 2 + 1;
       shapeShifter->generateds.functions = a404m_realloc(
           shapeShifter->generateds.functions,
           generateds_size * sizeof(*shapeShifter->generateds.functions));
+      printLog("%ld", generateds_size);
       shapeShifter->generateds.calls = a404m_realloc(
           shapeShifter->generateds.calls,
           generateds_size * sizeof(*shapeShifter->generateds.calls));
@@ -8340,7 +8341,7 @@ AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
           .nameBegin = metadata->parameters.data[i].nameBegin;
       shapeShifter->generateds.calls[shapeShifter->generateds.size]
           .data[i]
-          .nameBegin = metadata->parameters.data[i].nameEnd;
+          .nameEnd = metadata->parameters.data[i].nameEnd;
     }
 
     element_index = shapeShifter->generateds.size;
