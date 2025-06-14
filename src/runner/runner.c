@@ -139,8 +139,7 @@ bool runAstTree(AstTreeRoots roots) {
 
   AstTreeVariable *mainVariable = NULL;
 
-  AstTreeScope *scope = a404m_malloc(sizeof(*scope));
-  *scope = (AstTreeScope){
+  AstTreeScope scope = {
       .expressions = a404m_malloc(0),
       .expressions_size = 0,
       .variables.data = a404m_malloc(0),
@@ -165,7 +164,8 @@ bool runAstTree(AstTreeRoots roots) {
       }
       if (!variable->isConst) {
         runnerVariableSetValueWihtoutConstCheck(variable, variable->initValue,
-                                                scope);
+                                                &scope);
+        variable->initValue = NULL;
       }
     }
   }
@@ -183,12 +183,11 @@ bool runAstTree(AstTreeRoots roots) {
     return false;
   }
 
-  AstTree *res = runAstTreeFunction(main, NULL, 0, scope, false);
+  AstTree *res = runAstTreeFunction(main, NULL, 0, &scope, false);
   const bool ret = res == &AST_TREE_VOID_VALUE;
   astTreeDelete(res);
   astTreeDelete(main);
-  astTreeDelete(
-      newAstTree(AST_TREE_TOKEN_SCOPE, scope, &AST_TREE_VOID_TYPE, NULL, NULL));
+  astTreeScopeDestroy(scope);
   return ret;
 }
 

@@ -34,25 +34,25 @@ main :: () -> void {
   SCREEN_WIDTH :: 800i32;
   SCREEN_HEIGHT :: 450i32;
 
-  RAYWHITE := color(245u8,245u8,245u8,255u8);
-  LIGHTGRAY := color(200u8,200u8,200u8,255u8);
-  GRAY := color(130u8,130u8,130u8,255u8);
-  GREEN := color(0u8,228u8,48u8,255u8);
-  DARKGREEN := color(0u8,117u8,44u8,255u8);
-  BLUE := color(0u8,121u8,241u8,255u8);
-  DARKBLUE := color(0u8,82u8,172u8,255u8);
-  PURPLE := color(200u8,122u8,255u8,255u8);
-  MAROON := color(100u8,33u8,55u8,255u8);
+  RAYWHITE :: color(245u8,245u8,245u8,255u8);
+  LIGHTGRAY :: color(200u8,200u8,200u8,255u8);
+  GRAY :: color(130u8,130u8,130u8,255u8);
+  GREEN :: color(0u8,228u8,48u8,255u8);
+  DARKGREEN :: color(0u8,117u8,44u8,255u8);
+  BLUE :: color(0u8,121u8,241u8,255u8);
+  DARKBLUE :: color(0u8,82u8,172u8,255u8);
+  PURPLE :: color(200u8,122u8,255u8,255u8);
+  MAROON :: color(100u8,33u8,55u8,255u8);
 
   title := "Hello\0";
 
-  InitWindow(SCREEN_WIDTH,SCREEN_HEIGHT,&title[0]);
+  InitWindow(SCREEN_WIDTH,SCREEN_HEIGHT,title.ptr);
 
   currentScreen := LOGO;
 
   framesCounter := 0;
 
-  SetTargetFPS(60i32);
+  SetTargetFPS(144i32);
 
   while(!WindowShouldClose()){
     if currentScreen == LOGO {
@@ -77,11 +77,7 @@ main :: () -> void {
     BeginDrawing();
 
     if currentScreen == LOGO {
-      ClearBackground(RAYWHITE);
-      title := "LOGO SCREEN\0";
-      DrawText(title.ptr,20i32,20i32,40i32,LIGHTGRAY);
-      text := "WAIT for 2 SECONDS...\0";
-      DrawText(text.ptr,290i32,220i32,20i32,LIGHTGRAY);
+      drawLogo();
     } else if currentScreen == TITLE {
       ClearBackground(GREEN);
       title := "TITLE SCREEN\0";
@@ -89,11 +85,7 @@ main :: () -> void {
       text := "PRESS ENTER or TAP to JUMP to GAMEPLAY SCREEN\0";
       DrawText(text.ptr,120i32,220i32,20i32,DARKGREEN);
     } else if currentScreen == GAMEPLAY {
-      ClearBackground(PURPLE);
-      title := "GAMEPLAY SCREEN\0";
-      DrawText(title.ptr,20i32,20i32,40i32,MAROON);
-      text := "PRESS ENTER or TAP to JUMP to ENDING SCREEN\0";
-      DrawText(text.ptr,130i32,220i32,20i32,MAROON);
+      drawGamePlay();
     } else if currentScreen == ENDING {
       ClearBackground(BLUE);
       title := "ENDING SCREEN\0";
@@ -104,12 +96,50 @@ main :: () -> void {
       println(-1);
       return;
     }
-    println(GetFPS());
 
     EndDrawing();
   }
 
   CloseWindow();
+};
+
+drawLogo :: () -> void {
+  ClearBackground(RAYWHITE);
+  title := "LOGO SCREEN\0";
+  DrawText(title.ptr,20i32,20i32,40i32,LIGHTGRAY);
+  text := "WAIT for 2 SECONDS...\0";
+  DrawText(text.ptr,290i32,220i32,20i32,LIGHTGRAY);
+};
+
+x := 0i32;
+y := 0i32;
+
+dx := 1i32;
+dy := 1i32;
+
+RECT_SIZE :: 40i32;
+
+drawGamePlay :: () -> void {
+  ClearBackground(PURPLE);
+  title := "GAMEPLAY SCREEN\0";
+  DrawText(title.ptr,20i32,20i32,40i32,MAROON);
+  text := "PRESS ENTER or TAP to JUMP to ENDING SCREEN\0";
+  DrawText(text.ptr,130i32,220i32,20i32,MAROON);
+  DrawRectangle(x,y,RECT_SIZE,RECT_SIZE,MAROON);
+
+  x += dx;
+  y += dy;
+  if x <= 0i32 {
+    dx = 1i32;
+  } else if x+RECT_SIZE >= SCREEN_WIDTH {
+    dx = -1i32;
+  }
+
+  if y <= 0i32 {
+    dy = 1i32;
+  } else if y+RECT_SIZE >= SCREEN_HEIGHT {
+    dy = -1i32;
+  }
 };
 
 color :: (r:u8,g:u8,b:u8,a:u8)->Color {
