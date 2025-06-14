@@ -7,8 +7,8 @@
 #include "utils/type.h"
 #include <dlfcn.h>
 #include <ffi.h>
-#include <stdio.h>
 #include <memory.h>
+#include <stdio.h>
 
 #define doOperation(op0, op1, operator, originalType, type)                    \
   *((originalType *)(op0)->metadata) =                                         \
@@ -1284,6 +1284,7 @@ AstTree *runAstTreeCFunction(AstTree *tree, AstTree **arguments,
               [((AstTreeSingleChild *)arguments[i]->type->metadata)->token]);
       UNREACHABLE;
     } else if (arguments[i]->token != AST_TREE_TOKEN_RAW_VALUE) {
+      printLog("%s", AST_TREE_TOKEN_STRINGS[arguments[i]->type->token]);
       UNREACHABLE;
     }
     values[i] = arguments[i]->metadata;

@@ -1,11 +1,132 @@
 @import("basic.felan");
 
-t :: (comptime b:u8) -> void {
-  print(b);
+raylib :: @c_library("/usr/lib/libraylib.so.5.5.0");
+InitWindow :: @c_function(raylib,"InitWindow",(i32,i32,*u8)->void);
+SetTargetFPS :: @c_function(raylib,"SetTargetFPS",(i32)->void);
+WindowShouldClose :: @c_function(raylib,"WindowShouldClose",()->bool);
+CloseWindow :: @c_function(raylib,"CloseWindow",()->void);
+BeginDrawing :: @c_function(raylib,"BeginDrawing",()->void);
+ClearBackground :: @c_function(raylib,"ClearBackground",(Color)->void);
+EndDrawing :: @c_function(raylib,"EndDrawing",()->void);
+IsKeyPressed :: @c_function(raylib,"IsKeyPressed",(i32)->bool);
+IsGestureDetected :: @c_function(raylib,"IsGestureDetected",(u32)->bool);
+DrawText :: @c_function(raylib,"DrawText",(*u8,i32,i32,i32,Color)->void);
+DrawRectangle :: @c_function(raylib,"DrawRectangle",(i32,i32,i32,i32,Color)->void);
+
+Color :: struct {
+  r:u8;
+  g:u8;
+  b:u8;
+  a:u8;
 };
+
+KEY_ENTER :: 257i32;
+
+GESTURE_TAP :: 1u32;
+
+LOGO :: 0;
+TITLE :: 1;
+GAMEPLAY :: 2;
+ENDING :: 3;
 
 main :: () -> void {
-  a := 3u8;
-  t(2u8);
+  SCREEN_WIDTH :: 800i32;
+  SCREEN_HEIGHT :: 450i32;
+
+  RAYWHITE := color(245u8,245u8,245u8,255u8);
+  LIGHTGRAY := color(200u8,200u8,200u8,255u8);
+  GRAY := color(130u8,130u8,130u8,255u8);
+  GREEN := color(0u8,228u8,48u8,255u8);
+  DARKGREEN := color(0u8,117u8,44u8,255u8);
+  BLUE := color(0u8,121u8,241u8,255u8);
+  DARKBLUE := color(0u8,82u8,172u8,255u8);
+  PURPLE := color(200u8,122u8,255u8,255u8);
+  MAROON := color(100u8,33u8,55u8,255u8);
+
+  title := "Hello\0";
+
+  InitWindow(SCREEN_WIDTH,SCREEN_HEIGHT,&title[0]);
+
+  currentScreen := LOGO;
+
+  framesCounter := 0;
+
+  SetTargetFPS(60i32);
+
+  while(!WindowShouldClose()){
+    if currentScreen == LOGO {
+      framesCounter += 1;
+      if framesCounter > 120 {
+        currentScreen = TITLE;
+      }
+    } else if currentScreen == TITLE {
+      if IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP) {
+        currentScreen = GAMEPLAY;
+      }
+    } else if currentScreen == GAMEPLAY {
+      if IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP) {
+        currentScreen = ENDING;
+      }
+    } else if currentScreen == ENDING {
+      if IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP) {
+        currentScreen = TITLE;
+      }
+    }
+
+    BeginDrawing();
+
+    ClearBackground(RAYWHITE);
+
+    if currentScreen == LOGO {
+      title := "LOGO SCREEN\0";
+      DrawText(&title[0],20i32,20i32,40i32,LIGHTGRAY);
+      text := "WAIT for 2 SECONDS...\0";
+      DrawText(&text[0],290i32,220i32,20i32,LIGHTGRAY);
+    } else if currentScreen == TITLE {
+      DrawRectangle(0i32,0i32,SCREEN_WIDTH,SCREEN_HEIGHT,GREEN);
+      title := "TITLE SCREEN\0";
+      DrawText(&title[0],20i32,20i32,40i32,DARKGREEN);
+      text := "PRESS ENTER or TAP to JUMP to GAMEPLAY SCREEN\0";
+      DrawText(&text[0],120i32,220i32,20i32,DARKGREEN);
+    } else if currentScreen == GAMEPLAY {
+      DrawRectangle(0i32,0i32,SCREEN_WIDTH,SCREEN_HEIGHT,PURPLE);
+      title := "GAMEPLAY SCREEN\0";
+      DrawText(&title[0],20i32,20i32,40i32,MAROON);
+      text := "PRESS ENTER or TAP to JUMP to ENDING SCREEN\0";
+      DrawText(&text[0],120i32,220i32,20i32,MAROON);
+    } else if currentScreen == ENDING {
+      DrawRectangle(0i32,0i32,SCREEN_WIDTH,SCREEN_HEIGHT,BLUE);
+      title := "ENDING SCREEN\0";
+      DrawText(&title[0],20i32,20i32,40i32,DARKBLUE);
+      text := "PRESS ENTER or TAP to JUMP to TITLE SCREEN\0";
+      DrawText(&text[0],120i32,220i32,20i32,DARKBLUE);
+    }
+
+    EndDrawing();
+  }
+
+  CloseWindow();
 };
 
+color :: (r:u8,g:u8,b:u8,a:u8)->Color {
+  result:Color = undefined;
+
+  result.r = r;
+  result.g = g;
+  result.b = b;
+  result.a = a;
+
+  return result;
+};
+
+
+color :: (value : u32) -> Color {
+  result:Color = undefined;
+
+  result.r = @cast(value >> @cast(3*8,u32),u8);
+  result.g = @cast(value >> @cast(2*8,u32),u8);
+  result.b = @cast(value >> @cast(1*8,u32),u8);
+  result.a = @cast(value >> @cast(0*8,u32),u8);
+
+  return result;
+};

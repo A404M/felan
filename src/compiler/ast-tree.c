@@ -6256,6 +6256,36 @@ bool setTypesOperatorGeneral(AstTree *tree, AstTreeSetTypesHelper _helper,
   if (metadata->function->type->token == AST_TREE_TOKEN_TYPE_FUNCTION) {
     AstTreeTypeFunction *function = metadata->function->type->metadata;
     tree->type = copyAstTree(function->returnType);
+  } else if (metadata->function->type->token == AST_TREE_TOKEN_TYPE_MACRO) {
+    metadata->function = getValue(metadata->function, false, helper.scope);
+    if (metadata->function->token != AST_TREE_TOKEN_VALUE_MACRO) {
+      UNREACHABLE;
+    }
+    AstTreeMacro *macro = metadata->function->metadata;
+    AstTreeFunction *function =
+        copyAstTreeFunction(macro->function, NULL, NULL, 0, true);
+
+    if (!setTypesAstFunction(function, NULL, helper)) {
+      astTreeFunctionDestroy(*function);
+      free(function);
+      return false;
+    }
+
+    AstTree *functionType = makeTypeOfFunction(function, NULL, NULL);
+
+    if (!doesFunctionMatch(functionType->metadata, metadata, helper)) {
+      printError(tree->str_begin, tree->str_end, "Function call doesn't match");
+      return NULL;
+    }
+
+    const char *str_begin = metadata->function->str_begin;
+    const char *str_end = metadata->function->str_end;
+    astTreeDelete(metadata->function);
+
+    metadata->function = newAstTree(AST_TREE_TOKEN_FUNCTION, function,
+                                    functionType, str_begin, str_end);
+
+    tree->type = copyAstTree(function->returnType);
   } else if (metadata->function->type->token ==
              AST_TREE_TOKEN_TYPE_SHAPE_SHIFTER) {
     AstTree *function = getShapeShifterElement(metadata, helper);
@@ -6266,6 +6296,7 @@ bool setTypesOperatorGeneral(AstTree *tree, AstTreeSetTypesHelper _helper,
     AstTreeTypeFunction *functionType = metadata->function->type->metadata;
     tree->type = copyAstTree(functionType->returnType);
   } else {
+    printLog("%s", AST_TREE_TOKEN_STRINGS[metadata->function->type->token]);
     UNREACHABLE;
   }
 
@@ -8313,7 +8344,6 @@ AstTree *getShapeShifterElement(AstTreeFunctionCall *metadata,
       shapeShifter->generateds.functions = a404m_realloc(
           shapeShifter->generateds.functions,
           generateds_size * sizeof(*shapeShifter->generateds.functions));
-      printLog("%ld", generateds_size);
       shapeShifter->generateds.calls = a404m_realloc(
           shapeShifter->generateds.calls,
           generateds_size * sizeof(*shapeShifter->generateds.calls));
