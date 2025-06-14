@@ -1283,8 +1283,10 @@ AstTree *runAstTreeCFunction(AstTree *tree, AstTree **arguments,
           AST_TREE_TOKEN_STRINGS
               [((AstTreeSingleChild *)arguments[i]->type->metadata)->token]);
       UNREACHABLE;
-    } else if (arguments[i]->token != AST_TREE_TOKEN_RAW_VALUE) {
-      printLog("%s", AST_TREE_TOKEN_STRINGS[arguments[i]->type->token]);
+    } else if (arguments[i]->token != AST_TREE_TOKEN_RAW_VALUE &&
+               arguments[i]->token != AST_TREE_TOKEN_RAW_VALUE_NOT_OWNED) {
+      printLog("%s %p", AST_TREE_TOKEN_STRINGS[arguments[i]->token],
+               arguments[i]);
       UNREACHABLE;
     }
     values[i] = arguments[i]->metadata;

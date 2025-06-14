@@ -12,6 +12,7 @@ IsKeyPressed :: @c_function(raylib,"IsKeyPressed",(i32)->bool);
 IsGestureDetected :: @c_function(raylib,"IsGestureDetected",(u32)->bool);
 DrawText :: @c_function(raylib,"DrawText",(*u8,i32,i32,i32,Color)->void);
 DrawRectangle :: @c_function(raylib,"DrawRectangle",(i32,i32,i32,i32,Color)->void);
+GetFPS :: @c_function(raylib,"GetFPS",()->i32);
 
 Color :: struct {
   r:u8;
@@ -75,32 +76,35 @@ main :: () -> void {
 
     BeginDrawing();
 
-    ClearBackground(RAYWHITE);
-
     if currentScreen == LOGO {
+      ClearBackground(RAYWHITE);
       title := "LOGO SCREEN\0";
-      DrawText(&title[0],20i32,20i32,40i32,LIGHTGRAY);
+      DrawText(title.ptr,20i32,20i32,40i32,LIGHTGRAY);
       text := "WAIT for 2 SECONDS...\0";
-      DrawText(&text[0],290i32,220i32,20i32,LIGHTGRAY);
+      DrawText(text.ptr,290i32,220i32,20i32,LIGHTGRAY);
     } else if currentScreen == TITLE {
-      DrawRectangle(0i32,0i32,SCREEN_WIDTH,SCREEN_HEIGHT,GREEN);
+      ClearBackground(GREEN);
       title := "TITLE SCREEN\0";
-      DrawText(&title[0],20i32,20i32,40i32,DARKGREEN);
+      DrawText(title.ptr,20i32,20i32,40i32,DARKGREEN);
       text := "PRESS ENTER or TAP to JUMP to GAMEPLAY SCREEN\0";
-      DrawText(&text[0],120i32,220i32,20i32,DARKGREEN);
+      DrawText(text.ptr,120i32,220i32,20i32,DARKGREEN);
     } else if currentScreen == GAMEPLAY {
-      DrawRectangle(0i32,0i32,SCREEN_WIDTH,SCREEN_HEIGHT,PURPLE);
+      ClearBackground(PURPLE);
       title := "GAMEPLAY SCREEN\0";
-      DrawText(&title[0],20i32,20i32,40i32,MAROON);
+      DrawText(title.ptr,20i32,20i32,40i32,MAROON);
       text := "PRESS ENTER or TAP to JUMP to ENDING SCREEN\0";
-      DrawText(&text[0],120i32,220i32,20i32,MAROON);
+      DrawText(text.ptr,130i32,220i32,20i32,MAROON);
     } else if currentScreen == ENDING {
-      DrawRectangle(0i32,0i32,SCREEN_WIDTH,SCREEN_HEIGHT,BLUE);
+      ClearBackground(BLUE);
       title := "ENDING SCREEN\0";
-      DrawText(&title[0],20i32,20i32,40i32,DARKBLUE);
-      text := "PRESS ENTER or TAP to JUMP to TITLE SCREEN\0";
-      DrawText(&text[0],120i32,220i32,20i32,DARKBLUE);
+      DrawText(title.ptr,20i32,20i32,40i32,DARKBLUE);
+      text := "PRESS ENTER or TAP to RETURN to TITLE SCREEN\0";
+      DrawText(text.ptr,120i32,220i32,20i32,DARKBLUE);
+    } else {
+      println(-1);
+      return;
     }
+    println(GetFPS());
 
     EndDrawing();
   }
