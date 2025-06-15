@@ -6359,6 +6359,23 @@ bool setTypesVariableDefine(AstTree *tree, AstTreeSetTypesHelper helper) {
 
 bool setTypesAstVariable(AstTreeVariable *variable,
                          AstTreeSetTypesHelper _helper) {
+  for (size_t i = 0; i < _helper.variables[0].size; ++i) { // TODO: change this
+    if (variable == _helper.variables[0].data[i]) {
+      _helper = (AstTreeSetTypesHelper){
+          .root = _helper.root,
+          .variables = _helper.variables,
+          .variables_size = 1,
+          .dependencies = _helper.dependencies,
+          .lookingType = _helper.lookingType,
+          .loops = _helper.loops,
+          .loops_size = _helper.loops_size,
+          .scope = _helper.scope,
+          .isInScope = false,
+      };
+      break;
+    }
+  }
+
   AstTreeVariable *deps[_helper.dependencies.size + 1];
 
   for (size_t i = 0; i < _helper.dependencies.size; ++i) {
@@ -7382,7 +7399,6 @@ bool setTypesBuiltinBinaryAlsoPointer(AstTree *tree,
   } else if (left->type->token == AST_TREE_TOKEN_OPERATOR_POINTER &&
              !typeIsEqual(right->type, &AST_TREE_I64_TYPE, helper.scope) &&
              !typeIsEqual(right->type, &AST_TREE_U64_TYPE, helper.scope)) {
-    *(u8 *)0 = 0;
     printError(tree->str_begin, tree->str_end,
                "Pointer can only have right hand as u64 or i64");
     return false;
@@ -8208,7 +8224,6 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
     for (size_t i = 0; i < helper.variables_size; ++i) {
       printLog("is %ld", helper.variables[i].size);
     }
-    *(u8 *)0 = 0;
     printError(name_begin, name_end, "No candidates found for %.*s",
                (int)(name_end - name_begin), name_begin);
     return NULL;

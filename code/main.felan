@@ -31,20 +31,20 @@ TITLE :: 1;
 GAMEPLAY :: 2;
 ENDING :: 3;
 
+SCREEN_WIDTH :: 800i32;
+SCREEN_HEIGHT :: 450i32;
+
+RAYWHITE :: color(245u8,245u8,245u8,255u8);
+LIGHTGRAY :: color(200u8,200u8,200u8,255u8);
+GRAY :: color(130u8,130u8,130u8,255u8);
+GREEN :: color(0u8,228u8,48u8,255u8);
+DARKGREEN :: color(0u8,117u8,44u8,255u8);
+BLUE :: color(0u8,121u8,241u8,255u8);
+DARKBLUE :: color(0u8,82u8,172u8,255u8);
+PURPLE :: color(200u8,122u8,255u8,255u8);
+MAROON :: color(100u8,33u8,55u8,255u8);
+
 main :: () -> void {
-  SCREEN_WIDTH :: 800i32;
-  SCREEN_HEIGHT :: 450i32;
-
-  RAYWHITE :: color(245u8,245u8,245u8,255u8);
-  LIGHTGRAY :: color(200u8,200u8,200u8,255u8);
-  GRAY :: color(130u8,130u8,130u8,255u8);
-  GREEN :: color(0u8,228u8,48u8,255u8);
-  DARKGREEN :: color(0u8,117u8,44u8,255u8);
-  BLUE :: color(0u8,121u8,241u8,255u8);
-  DARKBLUE :: color(0u8,82u8,172u8,255u8);
-  PURPLE :: color(200u8,122u8,255u8,255u8);
-  MAROON :: color(100u8,33u8,55u8,255u8);
-
   title := "Hello\0";
 
   InitWindow(SCREEN_WIDTH,SCREEN_HEIGHT,title.ptr);
