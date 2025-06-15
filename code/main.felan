@@ -13,6 +13,7 @@ IsGestureDetected :: @c_function(raylib,"IsGestureDetected",(u32)->bool);
 DrawText :: @c_function(raylib,"DrawText",(*u8,i32,i32,i32,Color)->void);
 DrawRectangle :: @c_function(raylib,"DrawRectangle",(i32,i32,i32,i32,Color)->void);
 GetFPS :: @c_function(raylib,"GetFPS",()->i32);
+DrawLine :: @c_function(raylib,"DrawLine",(startPosX:i32,startPosY:i32,endPosX:i32,endPosY:i32,color:Color)->void);
 
 Color :: struct {
   r:u8;
@@ -50,14 +51,15 @@ main :: () -> void {
 
   currentScreen := LOGO;
 
-  framesCounter := 0;
+  framesCounter := 0i32;
 
-  SetTargetFPS(144i32);
+  TARGET_FPS :: 144i32;
+  SetTargetFPS(TARGET_FPS);
 
   while(!WindowShouldClose()){
     if currentScreen == LOGO {
-      framesCounter += 1;
-      if framesCounter > 120 {
+      framesCounter += 1i32;
+      if framesCounter > TARGET_FPS * 2i32 {
         currentScreen = TITLE;
       }
     } else if currentScreen == TITLE {
@@ -126,6 +128,7 @@ drawGamePlay :: () -> void {
   text := "PRESS ENTER or TAP to JUMP to ENDING SCREEN\0";
   DrawText(text.ptr,130i32,220i32,20i32,MAROON);
   DrawRectangle(x,y,RECT_SIZE,RECT_SIZE,MAROON);
+  DrawLine(SCREEN_WIDTH/2i32,0i32,SCREEN_WIDTH/2i32,SCREEN_HEIGHT,MAROON);
 
   x += dx;
   y += dy;

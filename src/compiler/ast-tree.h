@@ -290,7 +290,8 @@ typedef struct AstTreeWhile {
 typedef struct AstTreeSetTypesHelper {
   AstTree *lookingType;
   AstTreeVariables dependencies;
-  AstTreeVariables variables;
+  AstTreeVariables *variables;
+  size_t variables_size;
   AstTreeRoot *root;
   AstTreeWhile **loops;
   size_t loops_size;
@@ -555,7 +556,7 @@ bool setTypesBuiltinCFunction(AstTree *tree, AstTreeSetTypesHelper helper,
 bool setTypesBuiltinInsert(AstTree *tree, AstTreeSetTypesHelper helper,
                            AstTreeFunctionCall *functionCall);
 bool setTypesTypeArray(AstTree *tree, AstTreeSetTypesHelper helper);
-bool setTypesAstFunction(AstTreeFunction *function,AstTree *tree,
+bool setTypesAstFunction(AstTreeFunction *function, AstTree *tree,
                          AstTreeSetTypesHelper helper);
 
 bool setTypesAstVariable(AstTreeVariable *variable,
