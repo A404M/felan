@@ -18,6 +18,14 @@ print_char :: (value:u8) -> void {
   putchar(@cast(value,i32));
 };
 
+print :: (value:[]u8) -> void {
+  i := 0u64;
+  while i < value.length {
+    print_char(value[i]);
+    i += 1u64;
+  }
+};
+
 print :: (value:i8) -> void {
   _print_signed(@type_of(value),value);
 };

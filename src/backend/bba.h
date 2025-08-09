@@ -55,6 +55,7 @@ typedef enum BBAOperation {
 
 typedef union BBAInstructionValue {
   struct BBAInstruction *instruction;
+  struct BBABlock *block;
 
   u8 u8;
   i8 i8;
@@ -87,4 +88,11 @@ typedef struct BBABlock {
 } BBABlock;
 
 typedef struct BBA {
+  BBAInstructionValue *globals;
+  size_t globals_size;
+  BBABlock blocks;
+  size_t blocks_size;
 } BBA;
+
+BBA makeBBA(AstTreeRoots roots);
+bool makeBBABack(BBA *bba, AstTreeRoot *root);

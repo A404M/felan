@@ -1,15 +1,19 @@
 @import("basic.felan");
 
-raylib :: @c_library("/lib/libraylib.so.5.5.0");
+raylib :: @c_library("/usr/lib/libraylib.so.5.5.0");
 InitWindow :: @c_function(raylib,"InitWindow",(i32,i32,*u8)->void);
+SetTargetFPS :: @c_function(raylib,"SetTargetFPS",(i32)->void);
 WindowShouldClose :: @c_function(raylib,"WindowShouldClose",()->bool);
-BeginDrawing :: @c_function(raylib,"BeginDrawing",()->void);
-EndDrawing :: @c_function(raylib,"EndDrawing",()->void);
 CloseWindow :: @c_function(raylib,"CloseWindow",()->void);
+BeginDrawing :: @c_function(raylib,"BeginDrawing",()->void);
 ClearBackground :: @c_function(raylib,"ClearBackground",(Color)->void);
+EndDrawing :: @c_function(raylib,"EndDrawing",()->void);
+IsKeyPressed :: @c_function(raylib,"IsKeyPressed",(i32)->bool);
+IsGestureDetected :: @c_function(raylib,"IsGestureDetected",(u32)->bool);
 DrawText :: @c_function(raylib,"DrawText",(*u8,i32,i32,i32,Color)->void);
-// void DrawRectangle(int posX, int posY, int width, int height, Color color); 
-DrawRectangle :: @c_function(raylib,"DrawRectangle",(posX:i32,posY:i32,width:i32,height:i32,color:Color)->void);
+DrawRectangle :: @c_function(raylib,"DrawRectangle",(i32,i32,i32,i32,Color)->void);
+GetFPS :: @c_function(raylib,"GetFPS",()->i32);
+DrawLine :: @c_function(raylib,"DrawLine",(startPosX:i32,startPosY:i32,endPosX:i32,endPosY:i32,color:Color)->void);
 
 Color :: struct {
   r:u8;
@@ -18,70 +22,148 @@ Color :: struct {
   a:u8;
 };
 
-main :: ()->void{
-  b := "raylib [core] example - basic window\0";
-  c := "Congrats! You created your first window!\0";
-  str := &b[0];
-  str2 := &c[0];
-  screenWidth :i32: 800;
-  screenHeight :i32: 450;
-  a : u8 : 255;
-  b : u8 : 0;
-  WHITE :: color(a,a,a,a);
-  BLACK :: color(@cast(0xff0000ff,u32));
-  InitWindow(screenWidth,screenHeight,str);
-  rect_posx :i32= 0;
-  rect_posy :i32= 0;
-  dx : i32 = 1;
-  dy : i32 = 1;
-  while !WindowShouldClose() {
+KEY_ENTER :: 257i32;
+
+GESTURE_TAP :: 1u32;
+
+LOGO :: 0;
+TITLE :: 1;
+GAMEPLAY :: 2;
+ENDING :: 3;
+
+SCREEN_WIDTH :: 800i32;
+SCREEN_HEIGHT :: 450i32;
+
+RAYWHITE :: color(245u8,245u8,245u8,255u8);
+LIGHTGRAY :: color(200u8,200u8,200u8,255u8);
+GRAY :: color(130u8,130u8,130u8,255u8);
+GREEN :: color(0u8,228u8,48u8,255u8);
+DARKGREEN :: color(0u8,117u8,44u8,255u8);
+BLUE :: color(0u8,121u8,241u8,255u8);
+DARKBLUE :: color(0u8,82u8,172u8,255u8);
+PURPLE :: color(200u8,122u8,255u8,255u8);
+MAROON :: color(100u8,33u8,55u8,255u8);
+
+main :: () -> void {
+  title := "Hello\0";
+
+  InitWindow(SCREEN_WIDTH,SCREEN_HEIGHT,title.ptr);
+
+  currentScreen := LOGO;
+
+  framesCounter := 0i32;
+
+  TARGET_FPS :: 144i32;
+  SetTargetFPS(TARGET_FPS);
+
+  while(!WindowShouldClose()){
+    if currentScreen == LOGO {
+      framesCounter += 1i32;
+      if framesCounter > TARGET_FPS * 2i32 {
+        currentScreen = TITLE;
+      }
+    } else if currentScreen == TITLE {
+      if IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP) {
+        currentScreen = GAMEPLAY;
+      }
+    } else if currentScreen == GAMEPLAY {
+      if IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP) {
+        currentScreen = ENDING;
+      }
+    } else if currentScreen == ENDING {
+      if IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP) {
+        currentScreen = TITLE;
+      }
+    }
+
     BeginDrawing();
-    ClearBackground(WHITE);
-    DrawRectangle(rect_posx,rect_posy,@cast(200,i32),@cast(40,i32),color(@cast(0x00ffff,u32)));
-    DrawText(str2,@cast(190,i32),@cast(200,i32),@cast(20,i32),BLACK);
+
+    if currentScreen == LOGO {
+      drawLogo();
+    } else if currentScreen == TITLE {
+      ClearBackground(GREEN);
+      title := "TITLE SCREEN\0";
+      DrawText(title.ptr,20i32,20i32,40i32,DARKGREEN);
+      text := "PRESS ENTER or TAP to JUMP to GAMEPLAY SCREEN\0";
+      DrawText(text.ptr,120i32,220i32,20i32,DARKGREEN);
+    } else if currentScreen == GAMEPLAY {
+      drawGamePlay();
+    } else if currentScreen == ENDING {
+      ClearBackground(BLUE);
+      title := "ENDING SCREEN\0";
+      DrawText(title.ptr,20i32,20i32,40i32,DARKBLUE);
+      text := "PRESS ENTER or TAP to RETURN to TITLE SCREEN\0";
+      DrawText(text.ptr,120i32,220i32,20i32,DARKBLUE);
+    } else {
+      println(-1);
+      return;
+    }
+
     EndDrawing();
-    rect_posx += dx;
-    rect_posy += dy;
-    /*
-    print(rect_posx);
-    print_char(' ');
-    print(rect_posy);
-    print_char('\n');
-    */
-    if rect_posx >= screenWidth {
-      print("hello");
-      print(dx);
-      print("\n");
-      dx = @cast(-1,i32);
-    }else if rect_posx < @cast(0,i32) {
-      dx = @cast(1,i32);
-    }
-    if rect_posy >= screenHeight {
-      print("hi");
-      print(dy);
-      print("\n");
-      dy = @cast(-@cast(1,i32),i32);
-    }else if rect_posy < @cast(0,i32) {
-      dy = @cast(1,i32);
-    }
   }
+
   CloseWindow();
 };
 
-color :: (a:u8,r:u8,g:u8,b:u8)->Color{
-  c : Color = undefined;
-  c.r = r;
-  c.g = g;
-  c.b = b;
-  c.a = a;
-  return c;
+drawLogo :: () -> void {
+  ClearBackground(RAYWHITE);
+  title := "LOGO SCREEN\0";
+  DrawText(title.ptr,20i32,20i32,40i32,LIGHTGRAY);
+  text := "WAIT for 2 SECONDS...\0";
+  DrawText(text.ptr,290i32,220i32,20i32,LIGHTGRAY);
 };
 
-color :: (value:u32)->Color{
-  c : Color = undefined;
-  c.r = @cast((value&@cast(0xff000000,u32))>>@cast(6*4,u32),u8);
-  c.g = @cast((value&@cast(0x00ff0000,u32))>>@cast(4*4,u32),u8);
-  c.b = @cast((value&@cast(0x0000ff00,u32))>>@cast(2*4,u32),u8);
-  c.a = @cast((value&@cast(0x000000ff,u32))>>@cast(0*4,u32),u8);
-  return c;
-}
+x := 0i32;
+y := 0i32;
+
+dx := 1i32;
+dy := 1i32;
+
+RECT_SIZE :: 40i32;
+
+drawGamePlay :: () -> void {
+  ClearBackground(PURPLE);
+  title := "GAMEPLAY SCREEN\0";
+  DrawText(title.ptr,20i32,20i32,40i32,MAROON);
+  text := "PRESS ENTER or TAP to JUMP to ENDING SCREEN\0";
+  DrawText(text.ptr,130i32,220i32,20i32,MAROON);
+  DrawRectangle(x,y,RECT_SIZE,RECT_SIZE,MAROON);
+  DrawLine(SCREEN_WIDTH/2i32,0i32,SCREEN_WIDTH/2i32,SCREEN_HEIGHT,MAROON);
+
+  x += dx;
+  y += dy;
+  if x <= 0i32 {
+    dx = 1i32;
+  } else if x+RECT_SIZE >= SCREEN_WIDTH {
+    dx = -1i32;
+  }
+
+  if y <= 0i32 {
+    dy = 1i32;
+  } else if y+RECT_SIZE >= SCREEN_HEIGHT {
+    dy = -1i32;
+  }
+};
+
+color :: (r:u8,g:u8,b:u8,a:u8)->Color {
+  result:Color = undefined;
+
+  result.r = r;
+  result.g = g;
+  result.b = b;
+  result.a = a;
+
+  return result;
+};
+
+
+color :: (value : u32) -> Color {
+  result:Color = undefined;
+
+  result.r = @cast(value >> @cast(3*8,u32),u8);
+  result.g = @cast(value >> @cast(2*8,u32),u8);
+  result.b = @cast(value >> @cast(1*8,u32),u8);
+  result.a = @cast(value >> @cast(0*8,u32),u8);
+
+  return result;
+};

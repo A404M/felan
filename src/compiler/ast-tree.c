@@ -8220,10 +8220,6 @@ AstTreeVariable *setTypesFindVariable(const char *name_begin,
     }
   }
   if (variable.var == NULL) {
-    printLog("%ld", helper.variables_size);
-    for (size_t i = 0; i < helper.variables_size; ++i) {
-      printLog("is %ld", helper.variables[i].size);
-    }
     printError(name_begin, name_end, "No candidates found for %.*s",
                (int)(name_end - name_begin), name_begin);
     return NULL;
